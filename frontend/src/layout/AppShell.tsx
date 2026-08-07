@@ -26,8 +26,9 @@ function Navigation({ mobile = false }: { mobile?: boolean }) {
         </NavLink>
       ))}
       {mobile && (
-        <NavLink to="/expenses/new" className="mobile-nav__add" aria-label="Nova despesa">
+        <NavLink to="/expenses/new" className={({ isActive }) => isActive ? 'mobile-nav__add mobile-nav__add--active' : 'mobile-nav__add'} aria-label="Nova despesa">
           <Plus aria-hidden="true" />
+          <span>Novo</span>
         </NavLink>
       )}
     </nav>

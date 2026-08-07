@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, Sparkles } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -13,15 +13,27 @@ export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const reduceMotion = useReducedMotion();
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setError('');
+    const nextErrors: { email?: string; password?: string } = {};
+    if (!email.trim()) nextErrors.email = 'Introduza o seu email.';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) nextErrors.email = 'Introduza um email válido.';
+    if (!password) nextErrors.password = 'Introduza a sua palavra-passe.';
+    setFieldErrors(nextErrors);
+    if (nextErrors.email || nextErrors.password) {
+      (nextErrors.email ? emailRef : passwordRef).current?.focus();
+      return;
+    }
     setIsSubmitting(true);
 
     try {
@@ -42,7 +54,7 @@ export function LoginPage() {
         <div className="auth-story__body">
           <div className="auth-story__content">
             <p className="eyebrow"><Sparkles size={14} aria-hidden="true" /> Contas em dia, cabeça leve</p>
-            <h1>Veja o seu dinheiro <em>sem ruído.</em></h1>
+            <p className="auth-story__headline">Veja o seu dinheiro <em>sem ruído.</em></p>
             <p>Registe cada despesa no momento certo e transforme pequenos movimentos em uma visão clara do mês.</p>
           </div>
           <AuthFlowVisual />
@@ -60,7 +72,7 @@ export function LoginPage() {
           <div className="auth-form-heading">
             <div>
               <p className="eyebrow">Bem-vindo de volta</p>
-              <h2>Entrar na conta</h2>
+              <h1>Entrar na conta</h1>
               <p className="form-intro">Continue de onde ficou.</p>
             </div>
             <span className="form-index" aria-hidden="true">01</span>
@@ -79,35 +91,43 @@ export function LoginPage() {
               <span className="field__control">
                 <Mail aria-hidden="true" />
                 <input
+                  ref={emailRef}
                   type="email"
                   name="email"
                   autoComplete="email"
                   inputMode="email"
                   required
                   value={email}
-                  onChange={(event) => setEmail(event.target.value)}
+                  onChange={(event) => { setEmail(event.target.value); setFieldErrors((current) => ({ ...current, email: undefined })); }}
                   placeholder="nome@exemplo.pt"
+                  aria-invalid={Boolean(fieldErrors.email)}
+                  aria-describedby={fieldErrors.email ? 'login-email-error' : undefined}
                 />
               </span>
+              {fieldErrors.email && <small className="field__error" id="login-email-error">{fieldErrors.email}</small>}
             </label>
             <label className="field">
               <span>Palavra-passe</span>
               <span className="field__control field__control--password">
                 <LockKeyhole aria-hidden="true" />
                 <input
+                  ref={passwordRef}
                   type={showPassword ? 'text' : 'password'}
                   name="password"
                   autoComplete="current-password"
                   minLength={8}
                   required
                   value={password}
-                  onChange={(event) => setPassword(event.target.value)}
+                  onChange={(event) => { setPassword(event.target.value); setFieldErrors((current) => ({ ...current, password: undefined })); }}
                   placeholder="A sua palavra-passe"
+                  aria-invalid={Boolean(fieldErrors.password)}
+                  aria-describedby={fieldErrors.password ? 'login-password-error' : undefined}
                 />
                 <button className="field__action" type="button" onClick={() => setShowPassword((current) => !current)} aria-label={showPassword ? 'Ocultar palavra-passe' : 'Mostrar palavra-passe'}>
                   {showPassword ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
                 </button>
               </span>
+              {fieldErrors.password && <small className="field__error" id="login-password-error">{fieldErrors.password}</small>}
             </label>
             <motion.button className="button button--primary button--wide" type="submit" disabled={isSubmitting} whileHover={reduceMotion ? undefined : { y: -2 }} whileTap={reduceMotion ? undefined : { scale: 0.985 }}>
               {isSubmitting ? <Spinner label="A entrar" /> : <>Entrar <ArrowRight aria-hidden="true" /></>}

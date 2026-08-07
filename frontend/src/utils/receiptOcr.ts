@@ -9,163 +9,188 @@ export interface ReceiptOcrResult {
   amount?: string;
   date?: string;
   categoryId?: string;
+  confidence: {
+    amount: number;
+    date: number;
+    category: number;
+  };
+  pdf?: {
+    pageCount: number;
+    usedOcr: boolean;
+  };
+}
+
+interface ParsedValue<T> {
+  value?: T;
+  confidence: number;
 }
 
 function normalizeText(value: string) {
-  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
-function parseAmount(text: string) {
-  const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
-  const moneyPattern = /(?:€|eur)?\s*([\d.\s]+(?:[,\.]\d{2})|\d+[,\.]\d{2})\b/gi;
-  const candidates = lines.flatMap((line) => {
-    const matches = [...line.matchAll(moneyPattern)];
-    return matches.map((match) => ({ line, value: match[1] || '' }));
-  });
-  const totalCandidate = candidates.find(({ line }) => /total|pagar|importe|valor|amount|due/i.test(line));
-  const fallback = candidates.at(-1);
-  const raw = totalCandidate?.value || fallback?.value;
-  if (!raw) return undefined;
-
-  const normalized = raw.replace(/\s/g, '').replace(/\.(?=\d{3}(?:[,.]|$))/g, '').replace(',', '.');
-  const amount = Number(normalized);
-  return Number.isFinite(amount) && amount > 0 ? amount.toFixed(2) : undefined;
-}
-
-function parseDate(text: string) {
-  const match = text.match(/\b(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})\b/);
-  if (!match) return undefined;
-  const [, day, month, yearValue] = match;
-  const year = yearValue.length === 2 ? `20${yearValue}` : yearValue;
-  const date = new Date(Number(year), Number(month) - 1, Number(day));
-  if (date.getFullYear() !== Number(year) || date.getMonth() !== Number(month) - 1 || date.getDate() !== Number(day)) return undefined;
-  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-}
-
-function usefulLines(text: string) {
-  const ignored = /^(total|subtotal|iva|nif|www\.|tel|telefone|fatura|tal[aã]o|recibo|data|hora|obrigado|troco|multibanco)/i;
+function textLines(text: string) {
   return text
     .split(/\r?\n/)
     .map((line) => line.replace(/\s+/g, ' ').trim())
-    .filter((line) => line.length >= 3 && !ignored.test(line) && !/^[-\d\s.,€]+$/.test(line));
+    .filter(Boolean);
+}
+
+function parseMoney(raw: string) {
+  const compact = raw.replace(/\s/g, '');
+  const decimalIndex = Math.max(compact.lastIndexOf(','), compact.lastIndexOf('.'));
+  if (decimalIndex < 0) return undefined;
+  const integer = compact.slice(0, decimalIndex).replace(/[.,]/g, '');
+  const decimals = compact.slice(decimalIndex + 1).replace(/\D/g, '');
+  if (!integer || decimals.length !== 2) return undefined;
+  const amount = Number(`${integer}.${decimals}`);
+  return Number.isFinite(amount) && amount > 0 && amount <= 99_999_999.99 ? amount : undefined;
+}
+
+function parseAmount(text: string): ParsedValue<string> {
+  const lines = textLines(text);
+  const moneyPattern = /(?<![\d.,])(\d{1,3}(?:[.\s,]\d{3})+[.,]\d{2}|\d+[.,]\d{2})(?!\d)/g;
+  const candidates: Array<{ value: number; score: number; index: number }> = [];
+
+  lines.forEach((line, index) => {
+    const normalized = normalizeText(line);
+    let score = (index / Math.max(lines.length, 1)) * 12;
+    if (/\b(total a pagar|montante a pagar|valor a pagar|importe a pagar|grand total|amount due|payment due|saldo a pagar)\b/.test(normalized)) score += 150;
+    else if (/\btotal\b/.test(normalized) && !/\bsub\s*total\b/.test(normalized)) score += 85;
+    else if (/\b(pagar|montante|importe|valor)\b/.test(normalized)) score += 38;
+    if (/\b(sub\s*total|iva|vat|imposto|taxa|base tributavel|incidencia|desconto|troco|entregue|retencao)\b/.test(normalized)) score -= 125;
+    if (/\b(preco unitario|unitario|quantidade|qtd)\b/.test(normalized)) score -= 70;
+    if (/\bd{1,2}\s*%\b/.test(normalized)) score -= 70;
+
+    for (const match of line.matchAll(moneyPattern)) {
+      const value = parseMoney(match[1]);
+      if (value !== undefined) candidates.push({ value, score, index });
+    }
+  });
+
+  if (!candidates.length) return { confidence: 0 };
+  const labelled = candidates.filter((candidate) => candidate.score >= 35);
+  const pool = labelled.length ? labelled : candidates;
+  const best = [...pool].sort((left, right) => right.score - left.score || right.value - left.value || right.index - left.index)[0];
+  const confidence = best.score >= 120 ? 0.99 : best.score >= 75 ? 0.9 : best.score >= 35 ? 0.78 : 0.58;
+  return { value: best.value.toFixed(2), confidence };
+}
+
+function validDate(year: number, month: number, day: number) {
+  const date = new Date(year, month - 1, day);
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+}
+
+function parseDate(text: string): ParsedValue<string> {
+  const lines = textLines(text);
+  const candidates: Array<{ value: string; score: number; index: number }> = [];
+  lines.forEach((line, index) => {
+    const normalized = normalizeText(line);
+    let score = 15 - (index / Math.max(lines.length, 1)) * 5;
+    if (/\b(data de emissao|data emissao|emitido em|data da fatura|data fatura|data do documento)\b/.test(normalized)) score += 90;
+    else if (/\bdata\b/.test(normalized)) score += 45;
+    if (/\b(vencimento|validade|limite de pagamento|pagar ate)\b/.test(normalized)) score -= 110;
+
+    for (const match of line.matchAll(/\b(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})\b/g)) {
+      const day = Number(match[1]);
+      const month = Number(match[2]);
+      const year = Number(match[3].length === 2 ? `20${match[3]}` : match[3]);
+      if (validDate(year, month, day)) candidates.push({ value: `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`, score, index });
+    }
+    for (const match of line.matchAll(/\b(20\d{2})-(\d{1,2})-(\d{1,2})\b/g)) {
+      const year = Number(match[1]);
+      const month = Number(match[2]);
+      const day = Number(match[3]);
+      if (validDate(year, month, day)) candidates.push({ value: `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`, score, index });
+    }
+  });
+  if (!candidates.length) return { confidence: 0 };
+  const best = [...candidates].sort((left, right) => right.score - left.score || left.index - right.index)[0];
+  return { value: best.value, confidence: best.score >= 80 ? 0.96 : best.score >= 40 ? 0.82 : 0.62 };
+}
+
+function usefulLines(text: string) {
+  const ignored = /^(pagina \d+|total|sub\s*total|iva|vat|nif|nipc|www\.|tel|telefone|fatura|fatura recibo|talao|recibo|data|hora|obrigado|troco|multibanco|contribuinte)\b/i;
+  return textLines(text).filter((line) => {
+    const normalized = normalizeText(line);
+    return line.length >= 3
+      && line.length <= 100
+      && !ignored.test(normalized)
+      && /[a-z]{3}/.test(normalized)
+      && !/^[-\d\s.,€:$%/]+$/.test(line);
+  });
 }
 
 function parseDescription(lines: string[]) {
-  return lines.find((line) => /[a-záàâãéêíóôõúç]{3}/i.test(line) && line.length <= 80);
+  return lines.find((line) => !/\b(rua|avenida|av|largo|travessa|estrada|praca|codigo postal)\b/.test(normalizeText(line)))?.slice(0, 120);
 }
 
 function parseLocation(lines: string[]) {
-  return lines.find((line) => /^(rua|r\.?|avenida|av\.?|largo|travessa|estrada|praça|praca)\b/i.test(line))?.slice(0, 120);
+  return lines.find((line) => /\b(rua|avenida|av|largo|travessa|estrada|praca)\b/.test(normalizeText(line)))?.slice(0, 120);
 }
 
-const categorySignals: Record<string, string[]> = {
-  alimentacao: ['aliment', 'mercado', 'supermercado', 'restaurante', 'cafe', 'talho', 'padaria', 'mercearia'],
-  transportes: ['transport', 'combust', 'gasolina', 'uber', 'bolt', 'metro', 'comboio', 'portagem', 'estacionamento'],
-  casa: ['casa', 'renda', 'aluguer', 'luz', 'agua', 'eletric', 'gas', 'internet'],
-  saude: ['saude', 'farmacia', 'hospital', 'consulta', 'dentista', 'clinica'],
-  compras: ['compras', 'loja', 'roupa', 'calcado', 'shopping'],
+const categorySignals: Record<string, Array<[RegExp, number]>> = {
+  alimentacao: [
+    [/\b(supermercado|hipermercado|mercearia|mercado|restaurante|cafe|cafeteria|padaria|pastelaria|talho|refeicao|delivery|glovo|ubereats|continente|pingo doce|lidl|aldi|auchan|intermarche)\b/, 90],
+    [/\b(alimentacao|comida|bebida)\b/, 55],
+  ],
+  transportes: [
+    [/\b(combustivel|gasolina|gasoleo|posto|portagem|estacionamento|metro|comboio|autocarro|uber|bolt|freennow|cp|fertagus)\b/, 90],
+    [/\b(transporte|mobilidade|viagem)\b/, 50],
+  ],
+  casa: [
+    [/\b(renda|aluguer|condominio|eletricidade|energia|agua|internet|telecomunicacoes|mobiliario|ikea|leroy merlin)\b/, 85],
+    [/\b(habitacao|domestico)\b/, 50],
+  ],
+  saude: [
+    [/\b(farmacia|hospital|clinica|consulta|dentista|medicamento|analises|saude)\b/, 90],
+  ],
+  lazer: [
+    [/\b(cinema|teatro|concerto|bilhete|festival|jogo|streaming|netflix|spotify|lazer)\b/, 85],
+  ],
+  compras: [
+    [/\b(roupa|calcado|vestuario|shopping|loja|zara|primark|decathlon|amazon)\b/, 75],
+  ],
 };
 
-function inferCategory(text: string, categories: Category[]) {
+function inferCategory(text: string, categories: Category[]): ParsedValue<string> {
   const normalized = normalizeText(text);
-  const exact = categories.find((category) => normalized.includes(normalizeText(category.name)));
-  if (exact) return exact;
-  return categories.find((category) => {
-    const categoryName = normalizeText(category.name);
-    const key = Object.keys(categorySignals).find((signal) => categoryName.includes(signal));
-    return key ? categorySignals[key].some((signal) => normalized.includes(signal)) : false;
-  });
+  const scored = categories.map((category) => {
+    const name = normalizeText(category.name);
+    let score = 0;
+    if (name.length >= 5 && new RegExp(`\\b${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(normalized)) score += 100;
+    const ruleKey = Object.keys(categorySignals).find((key) => name.includes(key));
+    if (ruleKey) {
+      for (const [pattern, weight] of categorySignals[ruleKey]) if (pattern.test(normalized)) score += weight;
+    }
+    return { category, score };
+  }).sort((left, right) => right.score - left.score);
+  const best = scored[0];
+  if (!best || best.score < 50) return { confidence: 0 };
+  return { value: best.category.id, confidence: best.score >= 100 ? 0.95 : best.score >= 80 ? 0.86 : 0.72 };
 }
 
 export function parseReceiptText(text: string, categories: Category[] = []): ReceiptOcrResult {
   const lines = usefulLines(text);
-  const matchedCategory = inferCategory(text, categories);
-
+  const amount = parseAmount(text);
+  const date = parseDate(text);
+  const category = inferCategory(text, categories);
   return {
     rawText: text,
     source: 'image',
     description: parseDescription(lines),
     location: parseLocation(lines),
-    amount: parseAmount(text),
-    date: parseDate(text),
-    categoryId: matchedCategory?.id,
+    amount: amount.value,
+    date: date.value,
+    categoryId: category.value,
+    confidence: { amount: amount.confidence, date: date.confidence, category: category.confidence },
   };
-}
-
-function decodePdfLiteral(value: string) {
-  const unescaped = value
-    .replace(/\\([nrt()\\])/g, (_match, character: string) => ({ n: '\n', r: '\r', t: '\t', '(': '(', ')': ')', '\\': '\\' }[character] || character))
-    .replace(/\\[0-7]{1,3}/g, (match) => String.fromCharCode(Number.parseInt(match.slice(1), 8)));
-  return unescaped.replace(/\s+/g, ' ').trim();
-}
-
-function extractPdfTokens(binary: string) {
-  const literals = [...binary.matchAll(/\((?:\\.|[^\\()]){3,}\)/g)]
-    .map((match) => decodePdfLiteral(match[0].slice(1, -1)))
-    .filter((value) => /[\p{L}\d]{2}/u.test(value));
-  const hexStrings = [...binary.matchAll(/<([0-9a-fA-F]{6,})>/g)].flatMap((match) => {
-    const hex = match[1];
-    const bytesInString = new Uint8Array(hex.length / 2);
-    for (let index = 0; index < bytesInString.length; index += 1) bytesInString[index] = Number.parseInt(hex.slice(index * 2, index * 2 + 2), 16);
-    if (bytesInString[0] === 0xfe && bytesInString[1] === 0xff) {
-      let value = '';
-      for (let index = 2; index + 1 < bytesInString.length; index += 2) value += String.fromCharCode((bytesInString[index] << 8) | bytesInString[index + 1]);
-      return [value.trim()];
-    }
-    return [new TextDecoder('utf-8').decode(bytesInString).trim()];
-  }).filter((value) => /[\p{L}\d]{2}/u.test(value));
-  return [...literals, ...hexStrings];
-}
-
-async function inflatePdfStreams(binary: string) {
-  if (typeof DecompressionStream === 'undefined') return [];
-  const inflated: string[] = [];
-  let filterIndex = binary.indexOf('/FlateDecode');
-  while (filterIndex >= 0) {
-    const streamIndex = binary.indexOf('stream', filterIndex);
-    if (streamIndex < 0 || streamIndex - filterIndex > 200) break;
-    const start = binary.slice(streamIndex + 6).search(/[\r\n]/);
-    if (start < 0) break;
-    const dataStart = streamIndex + 6 + start + (binary[streamIndex + 6 + start] === '\r' && binary[streamIndex + 7 + start] === '\n' ? 2 : 1);
-    const end = binary.indexOf('endstream', dataStart);
-    if (end < 0) break;
-    const compressed = Uint8Array.from(binary.slice(dataStart, end), (character) => character.charCodeAt(0));
-    try {
-      const stream = new Blob([compressed]).stream().pipeThrough(new DecompressionStream('deflate'));
-      inflated.push(new TextDecoder('latin1').decode(await new Response(stream).arrayBuffer()));
-    } catch {
-      // A malformed stream should not prevent attaching the original PDF.
-    }
-    filterIndex = binary.indexOf('/FlateDecode', end);
-  }
-  return inflated;
-}
-
-/**
- * Reads text embedded in a digital PDF without uploading it anywhere.
- * Scanned/image-only PDFs have no text layer; those are reported as empty so
- * the user can still attach the file and complete the fields manually.
- */
-async function extractPdfText(file: File, onProgress?: (progress: number, status: string) => void) {
-  onProgress?.(0.1, 'A preparar o PDF…');
-  const maybeArrayBuffer = file as File & { arrayBuffer?: () => Promise<ArrayBuffer> };
-  const buffer = maybeArrayBuffer.arrayBuffer
-    ? await maybeArrayBuffer.arrayBuffer()
-    : await new Promise<ArrayBuffer>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as ArrayBuffer);
-      reader.onerror = () => reject(reader.error || new Error('Não foi possível ler o ficheiro.'));
-      reader.readAsArrayBuffer(file);
-    });
-  const bytes = new Uint8Array(buffer);
-  const binary = new TextDecoder('latin1').decode(bytes);
-  const streams = await inflatePdfStreams(binary);
-  const text = [...new Set([...
-    extractPdfTokens(binary),
-    ...streams.flatMap((stream) => extractPdfTokens(stream)),
-  ])].join('\n');
-  onProgress?.(1, text ? 'Texto do PDF identificado.' : 'Este PDF não tem texto selecionável.');
-  return text;
 }
 
 export async function readReceiptFile(
@@ -174,14 +199,14 @@ export async function readReceiptFile(
   onProgress?: (progress: number, status: string) => void,
 ) {
   if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
-    const text = await extractPdfText(file, onProgress);
-    return { ...parseReceiptText(text, categories), rawText: text, source: 'pdf' as const };
+    const { readPdfReceipt } = await import('./pdfReceiptReader');
+    const pdf = await readPdfReceipt(file, onProgress);
+    return { ...parseReceiptText(pdf.text, categories), rawText: pdf.text, source: 'pdf' as const, pdf: { pageCount: pdf.pageCount, usedOcr: pdf.usedOcr } };
   }
 
   const worker = await Tesseract.createWorker('por+eng', Tesseract.OEM.LSTM_ONLY, {
     logger: ({ progress, status }) => onProgress?.(progress, status),
   });
-
   try {
     const result = await worker.recognize(file);
     return parseReceiptText(result.data.text, categories);

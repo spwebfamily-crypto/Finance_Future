@@ -35,6 +35,8 @@ export function ExpenseFormPage() {
   const { expenseId } = useParams();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const readRunIdRef = useRef(0);
+  const lastAutofillRef = useRef<Partial<ExpenseInput>>({});
   const isEditing = Boolean(expenseId);
   const [categories, setCategories] = useState<Category[]>([]);
   const [form, setForm] = useState<ExpenseInput>(initialForm);
@@ -49,6 +51,7 @@ export function ExpenseFormPage() {
   const [ocrProgress, setOcrProgress] = useState(0);
   const [ocrMessage, setOcrMessage] = useState('');
   const [ocrSource, setOcrSource] = useState<'image' | 'pdf' | null>(null);
+  const [ocrConfidence, setOcrConfidence] = useState<ReceiptOcrResult['confidence'] | null>(null);
 
   const previewUrl = useMemo(() => {
     if (!form.receipt) return null;
@@ -98,28 +101,35 @@ export function ExpenseFormPage() {
   }, [expenseId, isEditing]);
 
   function updateField<K extends keyof ExpenseInput>(field: K, value: ExpenseInput[K]) {
+    delete lastAutofillRef.current[field];
     setForm((current) => ({ ...current, [field]: value }));
     setErrors((current) => ({ ...current, [field]: undefined }));
   }
 
   async function readReceiptDetails(file: File) {
+    const runId = ++readRunIdRef.current;
     const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
     setOcrState('reading');
     setOcrSource(isPdf ? 'pdf' : 'image');
     setOcrProgress(0);
+    setOcrConfidence(null);
     setOcrMessage(isPdf ? 'A extrair texto do PDF localmente…' : 'A preparar a leitura local…');
     try {
       const result = await readReceiptFile(file, categories, (progress, status) => {
+        if (runId !== readRunIdRef.current) return;
         setOcrProgress(Math.round(progress * 100));
-        setOcrMessage(status === 'recognizing text' ? 'A identificar os detalhes…' : 'A preparar a leitura…');
+        setOcrMessage(status === 'recognizing text' ? 'A identificar os detalhes…' : status);
       });
+      if (runId !== readRunIdRef.current) return;
       applyReceiptResult(result);
       setOcrSource(result.source);
+      setOcrConfidence(result.confidence);
       setOcrState('done');
       setOcrMessage(result.rawText.trim()
-        ? `${result.source === 'pdf' ? 'PDF lido' : 'Leitura concluída'}. Confirme os dados antes de guardar.`
-        : 'PDF anexado, mas não tem texto selecionável. Confirme os dados manualmente.');
+        ? `${result.pdf?.usedOcr ? 'PDF digitalizado lido com OCR local' : result.source === 'pdf' ? 'Texto do PDF lido' : 'Leitura concluída'}. Confirme as sugestões antes de guardar.`
+        : 'Não foi encontrado texto legível. Confirme os dados manualmente.');
     } catch {
+      if (runId !== readRunIdRef.current) return;
       setOcrState('error');
       setOcrSource(null);
       setOcrMessage('Não foi possível ler o comprovativo. Pode preencher os campos manualmente.');
@@ -127,14 +137,27 @@ export function ExpenseFormPage() {
   }
 
   function applyReceiptResult(result: ReceiptOcrResult) {
-    setForm((current) => ({
-      ...current,
-      description: current.description || result.description || '',
-      location: current.location || result.location || '',
-      amount: current.amount || result.amount || '',
-      date: current.date === todayInputValue() && result.date ? result.date : current.date,
-      categoryId: current.categoryId || result.categoryId || '',
-    }));
+    setForm((current) => {
+      const next = { ...current };
+      const previous = lastAutofillRef.current;
+      const nextAutofill = { ...previous };
+      const apply = (field: 'description' | 'location' | 'amount' | 'date' | 'categoryId', value?: string) => {
+        if (!value) return;
+        const currentValue = current[field];
+        const canReplace = !currentValue || currentValue === previous[field] || (field === 'date' && currentValue === todayInputValue());
+        if (canReplace) {
+          next[field] = value;
+          nextAutofill[field] = value;
+        }
+      };
+      apply('description', result.description);
+      apply('location', result.location);
+      apply('amount', result.amount);
+      apply('date', result.date);
+      apply('categoryId', result.categoryId);
+      lastAutofillRef.current = nextAutofill;
+      return next;
+    });
   }
 
   function selectFile(file: File | undefined) {
@@ -148,9 +171,18 @@ export function ExpenseFormPage() {
       setErrors((current) => ({ ...current, receipt: 'O comprovativo não pode exceder 10 MB.' }));
       return;
     }
+    readRunIdRef.current += 1;
     setExistingReceipt(null);
     setExistingReceiptType(null);
-    setForm((current) => ({ ...current, receipt: file, removeReceipt: false }));
+    setForm((current) => {
+      const next = { ...current, receipt: file, removeReceipt: false };
+      const previous = lastAutofillRef.current;
+      for (const field of ['description', 'location', 'amount', 'date', 'categoryId'] as const) {
+        if (previous[field] !== undefined && current[field] === previous[field]) next[field] = field === 'date' ? todayInputValue() : '';
+      }
+      lastAutofillRef.current = {};
+      return next;
+    });
     setErrors((current) => ({ ...current, receipt: undefined }));
     void readReceiptDetails(file);
   }
@@ -166,6 +198,7 @@ export function ExpenseFormPage() {
   }
 
   function removeReceipt() {
+    readRunIdRef.current += 1;
     updateField('receipt', null);
     setForm((current) => ({ ...current, receipt: null, removeReceipt: Boolean(existingReceipt) }));
     setExistingReceipt(null);
@@ -173,6 +206,7 @@ export function ExpenseFormPage() {
     setOcrState('idle');
     setOcrProgress(0);
     setOcrMessage('');
+    setOcrConfidence(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
@@ -287,7 +321,7 @@ export function ExpenseFormPage() {
                 onDragLeave={() => setIsDragging(false)}
                 onDrop={handleDrop}
               >
-                <input ref={fileInputRef} type="file" name="receipt" accept="image/jpeg,image/png,image/webp,application/pdf,.pdf" capture="environment" onChange={handleFileChange} aria-describedby="receipt-help" />
+                <input ref={fileInputRef} type="file" name="receipt" accept="image/jpeg,image/png,image/webp,application/pdf,.pdf" onChange={handleFileChange} aria-describedby="receipt-help" />
                 <span className="upload-zone__icon" aria-hidden="true"><Upload /></span>
                 <span className="upload-zone__title">Foto ou PDF do recibo</span>
                 <span className="upload-zone__copy">Toque para escolher ou arraste um comprovativo</span>
@@ -300,6 +334,11 @@ export function ExpenseFormPage() {
                 <div className="receipt-ocr__copy">
                   <strong>{ocrState === 'reading' ? (ocrSource === 'pdf' ? 'A ler o PDF' : 'A ler o comprovativo') : ocrState === 'done' ? 'Sugestões prontas' : 'Preenchimento local'}</strong>
                   <p>{ocrMessage || 'A leitura acontece no seu dispositivo e apenas sugere valores para confirmar.'}</p>
+                  {ocrState === 'done' && ocrConfidence && <div className="receipt-ocr__confidence" aria-label="Confiança das sugestões">
+                    {form.amount && ocrConfidence.amount > 0 && <span>Valor {Math.round(ocrConfidence.amount * 100)}%</span>}
+                    {form.categoryId && ocrConfidence.category > 0 && <span>Categoria {Math.round(ocrConfidence.category * 100)}%</span>}
+                    {form.date && ocrConfidence.date > 0 && <span>Data {Math.round(ocrConfidence.date * 100)}%</span>}
+                  </div>}
                   {ocrState === 'reading' && <div className="receipt-ocr__progress" aria-label={`Leitura ${ocrProgress}%`}><span style={{ width: `${Math.max(4, ocrProgress)}%` }} /></div>}
                 </div>
                 {(ocrState === 'error' || ocrState === 'done') && <button className="button button--secondary button--small" type="button" onClick={() => void readReceiptDetails(form.receipt!)}>{ocrState === 'error' ? 'Tentar novamente' : 'Ler de novo'}</button>}

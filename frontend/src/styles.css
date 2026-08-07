@@ -2639,3 +2639,181 @@ body {
   .level-row:hover,
   .budget-row:hover { transform: none; padding-right: inherit; padding-left: inherit; }
 }
+
+/* Design review: authentication and mobile release gates ---------------- */
+html,
+body {
+  min-width: 0;
+  overflow-x: clip;
+}
+
+body,
+.auth-page,
+.app-shell {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.main-content {
+  overflow-x: clip;
+  overflow-y: visible;
+}
+
+.auth-page {
+  overflow-x: clip;
+  overflow-y: auto;
+}
+
+.auth-story,
+.auth-story__body,
+.auth-story__content,
+.auth-form-wrap,
+.auth-form-panel,
+.auth-form-heading > div,
+.stack-form,
+.field,
+.field__control,
+.auth-flow {
+  min-width: 0;
+}
+
+.auth-story__headline {
+  max-width: 12ch;
+  margin: 0 0 1rem;
+  font-size: clamp(2.8rem, 10vw, 5.5rem);
+  font-stretch: condensed;
+  font-weight: 570;
+  letter-spacing: -0.075em;
+  line-height: 0.9;
+}
+
+.auth-story__headline em {
+  color: var(--coral);
+  font-family: var(--font-serif);
+  font-weight: 400;
+}
+
+.auth-form-panel h1 {
+  position: relative;
+  margin-bottom: 0.25rem;
+  font-size: clamp(2rem, 8vw, 3rem);
+  font-stretch: condensed;
+  font-weight: 600;
+  letter-spacing: -0.06em;
+  line-height: 1;
+}
+
+.field__control > input {
+  width: 0;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.field__control--password { padding-right: 0; }
+.field__control--password input { padding-right: 3.5rem; }
+.field__action { position: absolute; z-index: 2; right: 0.24rem; min-width: 2.75rem; min-height: 2.75rem; }
+.auth-switch a { min-height: 2.75rem; padding: 0.4rem 0.2rem; }
+
+.mobile-header {
+  padding-top: max(0.75rem, env(safe-area-inset-top));
+}
+
+.mobile-account {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+}
+
+.mobile-nav {
+  right: max(0.55rem, env(safe-area-inset-right));
+  bottom: max(0.55rem, env(safe-area-inset-bottom));
+  left: max(0.55rem, env(safe-area-inset-left));
+  min-height: 4.45rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.2rem;
+}
+
+.mobile-nav .nav-link,
+.mobile-nav__add {
+  position: relative;
+  inset: auto;
+  display: flex;
+  width: auto;
+  height: auto;
+  min-width: 0;
+  min-height: 3.45rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.22rem;
+  padding: 0.35rem 0.2rem;
+  color: #bdbdb3;
+  background: transparent;
+  border: 0;
+  border-radius: 0.85rem;
+  transform: none;
+  font-size: 0.75rem;
+  font-weight: 680;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.mobile-nav__add svg,
+.mobile-nav .nav-link svg { width: 1.18rem; height: 1.18rem; }
+.mobile-nav__add--active { color: var(--ink); background: var(--coral); }
+.mobile-nav__add:not(.mobile-nav__add--active) { color: var(--coral); }
+
+.page {
+  padding-bottom: calc(7rem + env(safe-area-inset-bottom));
+}
+
+@media (max-width: 55.99rem) {
+  .auth-page { display: flex; flex-direction: column; }
+
+  .auth-story {
+    min-height: auto;
+    flex: 0 0 auto;
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+    padding: max(0.85rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) 0.85rem max(1rem, env(safe-area-inset-left));
+  }
+
+  .auth-story::before { width: 8rem; height: 8rem; right: -4rem; bottom: -5rem; }
+  .auth-story__body { display: none; }
+  .auth-story__footer { margin-left: auto; white-space: nowrap; }
+
+  .auth-form-wrap {
+    min-height: 0;
+    flex: 1 1 auto;
+    align-items: start;
+    padding: 1rem max(1rem, env(safe-area-inset-right)) calc(1.5rem + env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+  }
+
+  .auth-form-panel {
+    max-width: 32rem;
+    padding: clamp(1rem, 4vw, 1.45rem);
+    border-radius: 1rem;
+    box-shadow: 0 1rem 2.6rem rgb(23 25 20 / 9%);
+  }
+
+  .auth-form-heading { gap: 0.6rem; }
+  .auth-form-heading .form-index { font-size: 2.45rem; }
+  .auth-form-panel h1 { font-size: clamp(2rem, 9vw, 2.7rem); }
+  .form-intro { margin-bottom: 1.15rem; }
+  .stack-form { gap: 0.82rem; }
+  .auth-switch { min-height: 2.75rem; flex-wrap: wrap; margin-top: 0.9rem; }
+}
+
+@media (max-width: 22.5rem) {
+  .auth-story__footer { display: none; }
+  .auth-form-heading .form-index { display: none; }
+  .auth-form-panel { padding: 1rem; }
+}
+
+@media (orientation: landscape) and (max-height: 31rem) and (max-width: 55.99rem) {
+  .auth-story { display: none; }
+  .auth-form-wrap { min-height: 100vh; min-height: 100dvh; padding-block: 0.75rem; }
+  .auth-form-panel { margin-block: auto; }
+  .form-intro { margin-bottom: 0.75rem; }
+  .stack-form { gap: 0.65rem; }
+}
