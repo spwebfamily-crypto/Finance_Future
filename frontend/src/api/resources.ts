@@ -10,6 +10,8 @@ import type {
   AnalyticsSummary,
   SpendingLevelItem,
   AnalyticsTrend,
+  FinancialNote,
+  OcrExtraction,
 } from '../types';
 import { apiRequest } from './client';
 
@@ -116,4 +118,17 @@ export const analyticsApi = {
     if (month) params.set('month', month);
     return unwrap(await apiRequest<ApiEnvelope<AnalyticsTrend> | AnalyticsTrend>(`/analytics/trend?${params.toString()}`));
   },
+};
+
+export const ocrApi = {
+  extract: async (receipt: File) => {
+    const formData = new FormData();
+    formData.set('receipt', receipt);
+    return unwrap(await apiRequest<ApiEnvelope<OcrExtraction> | OcrExtraction>('/ocr/extract', { method: 'POST', body: formData }));
+  },
+};
+
+export const notesApi = {
+  list: async () => unwrap(await apiRequest<ApiEnvelope<FinancialNote[]> | FinancialNote[]>('/notes')),
+  generate: async () => unwrap(await apiRequest<ApiEnvelope<FinancialNote> | FinancialNote>('/notes/generate', { method: 'POST' })),
 };

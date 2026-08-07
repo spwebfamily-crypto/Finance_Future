@@ -125,3 +125,21 @@ export interface AnalyticsTrend {
   currency: string;
   series: TrendPoint[];
 }
+
+export interface OcrExtraction {
+  amount: string | null;
+  date: string | null;
+  merchant: string | null;
+  rawText: string;
+  confidence: number;
+  provider: 'google' | 'tesseract';
+}
+
+export interface FinancialNote {
+  id: string;
+  content: string;
+  severity: 'info' | 'warning' | 'critical';
+  relatedCategoryId: string | null;
+  relatedCategory?: Category | null;
+  createdAt: string;
+}
