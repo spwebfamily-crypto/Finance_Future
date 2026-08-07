@@ -1,19 +1,41 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { Check, Edit3, FolderPlus, LockKeyhole, Plus, Tag, Trash2, X } from 'lucide-react';
+import { Check, Edit3, FolderPlus, LockKeyhole, Plus, Trash2, X } from 'lucide-react';
 import { categoryApi } from '../api/resources';
 import { errorMessage } from '../api/client';
+import { CategoryIcon, CATEGORY_ICON_OPTIONS, categoryIconName } from '../components/CategoryIcon';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { PageHeader } from '../components/PageHeader';
 import { EmptyState, ErrorState, LoadingState, Spinner } from '../components/States';
 import type { Category } from '../types';
 
+function IconPicker({ value, onChange, label }: { value: string; onChange: (value: string) => void; label: string }) {
+  return (
+    <div className="icon-picker" role="radiogroup" aria-label={label}>
+      {CATEGORY_ICON_OPTIONS.map(({ value: optionValue, label: optionLabel, icon: Icon }) => (
+        <button
+          key={optionValue}
+          className={`icon-picker__option ${value === optionValue ? 'icon-picker__option--selected' : ''}`}
+          type="button"
+          role="radio"
+          aria-checked={value === optionValue}
+          aria-label={optionLabel}
+          title={optionLabel}
+          onClick={() => onChange(optionValue)}
+        >
+          <Icon size={17} aria-hidden="true" />
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [name, setName] = useState('');
-  const [icon, setIcon] = useState('');
+  const [icon, setIcon] = useState('sparkles');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
-  const [editingIcon, setEditingIcon] = useState('');
+  const [editingIcon, setEditingIcon] = useState('sparkles');
   const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -50,7 +72,7 @@ export function CategoriesPage() {
       const created = await categoryApi.create(name, icon);
       setCategories((current) => [...current, created]);
       setName('');
-      setIcon('');
+      setIcon('sparkles');
       setNotice('Categoria criada.');
     } catch (requestError) {
       setFormError(errorMessage(requestError));
@@ -62,7 +84,7 @@ export function CategoriesPage() {
   function startEditing(category: Category) {
     setEditingId(category.id);
     setEditingName(category.name);
-    setEditingIcon(category.icon || '');
+    setEditingIcon(categoryIconName(category.icon, category.name));
   }
 
   async function saveEdit(category: Category) {
@@ -111,11 +133,11 @@ export function CategoriesPage() {
           <span className="category-create__shape" aria-hidden="true"><FolderPlus /></span>
           <p className="eyebrow">Personalizar</p>
           <h2 id="new-category-title">Nova categoria</h2>
-          <p>Crie um nome curto e, se quiser, associe-lhe um símbolo.</p>
+          <p>Crie um nome curto e associe-lhe um ícone para reconhecer os seus gastos num relance.</p>
           <form className="stack-form" onSubmit={createCategory} noValidate>
             {formError && <div className="form-alert" role="alert">{formError}</div>}
             <label className="field"><span>Nome da categoria</span><input type="text" name="name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Ex.: Casa" maxLength={40} /></label>
-            <label className="field"><span>Ícone <small>(opcional)</small></span><input className="emoji-input" type="text" name="icon" value={icon} onChange={(event) => setIcon(event.target.value)} placeholder="Ex.: 🏠" maxLength={8} /></label>
+            <div className="field"><span>Ícone da categoria</span><IconPicker value={icon} onChange={setIcon} label="Escolher ícone da categoria" /></div>
             <button className="button button--primary button--wide" type="submit" disabled={isSaving}>{isSaving && !editingId ? <Spinner label="A criar" /> : <><Plus aria-hidden="true" /> Criar categoria</>}</button>
           </form>
         </section>
@@ -132,12 +154,12 @@ export function CategoriesPage() {
                     <span className="category-row__index" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
                     {isEditing ? (
                       <div className="category-row__edit-fields">
-                        <label><span className="sr-only">Ícone</span><input className="emoji-input" value={editingIcon} onChange={(event) => setEditingIcon(event.target.value)} maxLength={8} aria-label={`Ícone de ${category.name}`} /></label>
+                        <IconPicker value={editingIcon} onChange={setEditingIcon} label={`Ícone de ${category.name}`} />
                         <label><span className="sr-only">Nome</span><input value={editingName} onChange={(event) => setEditingName(event.target.value)} maxLength={40} aria-label={`Nome de ${category.name}`} /></label>
                       </div>
                     ) : (
                       <>
-                        <span className="category-row__icon" aria-hidden="true">{category.icon || <Tag />}</span>
+                        <span className="category-row__icon"><CategoryIcon icon={category.icon} categoryName={category.name} /></span>
                         <div className="category-row__name"><h3>{category.name}</h3><p>{category.isDefault ? 'Categoria base' : 'Categoria personalizada'}</p></div>
                       </>
                     )}

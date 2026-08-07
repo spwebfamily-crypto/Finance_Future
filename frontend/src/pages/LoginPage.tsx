@@ -1,8 +1,10 @@
 import { useState, type FormEvent } from 'react';
-import { ArrowRight, LockKeyhole, Mail } from 'lucide-react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, Sparkles } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { errorMessage } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
+import { AuthFlowVisual } from '../components/AuthFlowVisual';
 import { Brand } from '../components/Brand';
 import { Spinner } from '../components/States';
 
@@ -10,8 +12,10 @@ export function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const reduceMotion = useReducedMotion();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -32,30 +36,44 @@ export function LoginPage() {
   }
 
   return (
-    <main className="auth-page">
+    <main className="auth-page auth-page--login">
       <section className="auth-story" aria-label="ExpenseSnap">
         <Brand linked={false} />
-        <div className="auth-story__content">
-          <p className="eyebrow">Contas em dia, cabeça leve</p>
-          <h1>Veja o seu dinheiro <em>sem ruído.</em></h1>
-          <p>Registe cada despesa no momento certo e mantenha uma visão limpa do que saiu.</p>
+        <div className="auth-story__body">
+          <div className="auth-story__content">
+            <p className="eyebrow"><Sparkles size={14} aria-hidden="true" /> Contas em dia, cabeça leve</p>
+            <h1>Veja o seu dinheiro <em>sem ruído.</em></h1>
+            <p>Registe cada despesa no momento certo e transforme pequenos movimentos em uma visão clara do mês.</p>
+          </div>
+          <AuthFlowVisual />
         </div>
-        <div className="auth-story__ledger" aria-hidden="true">
-          <span>€</span><span>08.26</span><span>///</span>
-        </div>
+        <div className="auth-story__footer"><ShieldCheck size={16} aria-hidden="true" /> Os seus registos ficam sob o seu controlo.</div>
       </section>
 
       <section className="auth-form-wrap">
-        <div className="auth-form-panel">
-          <p className="form-index" aria-hidden="true">01</p>
-          <div>
-            <p className="eyebrow">Bem-vindo de volta</p>
-            <h2>Entrar na conta</h2>
-            <p className="form-intro">Continue de onde ficou.</p>
+        <motion.div
+          className="auth-form-panel"
+          initial={reduceMotion ? false : { opacity: 0, y: 18 }}
+          animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+          transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <div className="auth-form-heading">
+            <div>
+              <p className="eyebrow">Bem-vindo de volta</p>
+              <h2>Entrar na conta</h2>
+              <p className="form-intro">Continue de onde ficou.</p>
+            </div>
+            <span className="form-index" aria-hidden="true">01</span>
           </div>
 
           <form className="stack-form" onSubmit={handleSubmit} noValidate>
-            {error && <div className="form-alert" role="alert">{error}</div>}
+            <AnimatePresence initial={false}>
+              {error && (
+                <motion.div className="form-alert" role="alert" initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}>
+                  {error}
+                </motion.div>
+              )}
+            </AnimatePresence>
             <label className="field">
               <span>Email</span>
               <span className="field__control">
@@ -74,10 +92,10 @@ export function LoginPage() {
             </label>
             <label className="field">
               <span>Palavra-passe</span>
-              <span className="field__control">
+              <span className="field__control field__control--password">
                 <LockKeyhole aria-hidden="true" />
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   name="password"
                   autoComplete="current-password"
                   minLength={8}
@@ -86,15 +104,18 @@ export function LoginPage() {
                   onChange={(event) => setPassword(event.target.value)}
                   placeholder="A sua palavra-passe"
                 />
+                <button className="field__action" type="button" onClick={() => setShowPassword((current) => !current)} aria-label={showPassword ? 'Ocultar palavra-passe' : 'Mostrar palavra-passe'}>
+                  {showPassword ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
+                </button>
               </span>
             </label>
-            <button className="button button--primary button--wide" type="submit" disabled={isSubmitting}>
+            <motion.button className="button button--primary button--wide" type="submit" disabled={isSubmitting} whileHover={reduceMotion ? undefined : { y: -2 }} whileTap={reduceMotion ? undefined : { scale: 0.985 }}>
               {isSubmitting ? <Spinner label="A entrar" /> : <>Entrar <ArrowRight aria-hidden="true" /></>}
-            </button>
+            </motion.button>
           </form>
 
-          <p className="auth-switch">Ainda não tem conta? <Link to="/register">Criar conta</Link></p>
-        </div>
+          <p className="auth-switch">Ainda não tem conta? <Link to="/register">Criar conta <ArrowRight size={14} aria-hidden="true" /></Link></p>
+        </motion.div>
       </section>
     </main>
   );

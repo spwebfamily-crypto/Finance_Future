@@ -31,13 +31,13 @@ const authLimiter = rateLimit({
 });
 
 const defaultCategories = [
-  { name: 'Alimentação', icon: '🍽️', isDefault: true },
-  { name: 'Transportes', icon: '🚇', isDefault: true },
-  { name: 'Casa', icon: '🏠', isDefault: true },
-  { name: 'Saúde', icon: '🩺', isDefault: true },
-  { name: 'Lazer', icon: '🎟️', isDefault: true },
-  { name: 'Compras', icon: '🛍️', isDefault: true },
-  { name: 'Outros', icon: '✨', isDefault: true },
+  { name: 'Alimentação', icon: 'utensils', isDefault: true },
+  { name: 'Transportes', icon: 'car', isDefault: true },
+  { name: 'Casa', icon: 'house', isDefault: true },
+  { name: 'Saúde', icon: 'heart-pulse', isDefault: true },
+  { name: 'Lazer', icon: 'party-popper', isDefault: true },
+  { name: 'Compras', icon: 'shopping-bag', isDefault: true },
+  { name: 'Outros', icon: 'sparkles', isDefault: true },
 ] as const;
 
 async function issueTokens(

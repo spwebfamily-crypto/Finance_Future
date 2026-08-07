@@ -5,6 +5,7 @@ import { errorMessage } from '../api/client';
 import { categoryApi, expenseApi } from '../api/resources';
 import { useAuth } from '../auth/AuthContext';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { CategoryIcon } from '../components/CategoryIcon';
 import { EmptyState, ErrorState, LoadingState } from '../components/States';
 import { PageHeader } from '../components/PageHeader';
 import { AuthenticatedReceiptImage } from '../components/AuthenticatedReceiptImage';
@@ -119,7 +120,7 @@ export function ExpensesPage() {
             <span>Categoria</span>
             <select value={filterDraft.category} onChange={(event) => setFilterDraft((current) => ({ ...current, category: event.target.value }))}>
               <option value="">Todas as categorias</option>
-              {categories.map((category) => <option key={category.id} value={category.id}>{category.icon ? `${category.icon} ` : ''}{category.name}</option>)}
+              {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
             </select>
           </label>
           <label className="field field--compact"><span>De</span><input type="date" value={filterDraft.from} max={filterDraft.to || undefined} onChange={(event) => setFilterDraft((current) => ({ ...current, from: event.target.value }))} /></label>
@@ -158,7 +159,7 @@ export function ExpensesPage() {
                     : <Receipt aria-hidden="true" />}
                 </div>
                 <div className="expense-row__main">
-                  <span className="category-tag">{expense.category?.icon && <span aria-hidden="true">{expense.category.icon}</span>}{expense.category?.name || 'Sem categoria'}</span>
+              <span className="category-tag"><CategoryIcon icon={expense.category?.icon} categoryName={expense.category?.name} />{expense.category?.name || 'Sem categoria'}</span>
                   <h3>{expense.description}</h3>
                   <div className="expense-row__meta">
                     <span><MapPin aria-hidden="true" /> {expense.location}</span>

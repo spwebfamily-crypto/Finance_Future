@@ -1,4 +1,5 @@
 import { FolderKanban, LayoutDashboard, LogOut, Plus, ReceiptText, WifiOff } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
@@ -14,14 +15,14 @@ function Navigation({ mobile = false }: { mobile?: boolean }) {
   return (
     <nav className={mobile ? 'mobile-nav' : 'side-nav'} aria-label="Navegação principal">
       {navItems.map(({ to, label, icon: Icon }) => (
-        <NavLink
-          key={to}
-          to={to}
-          end={to === '/expenses'}
-          className={({ isActive }) => isActive ? 'nav-link nav-link--active' : 'nav-link'}
-        >
-          <Icon aria-hidden="true" />
-          <span>{label}</span>
+        <NavLink key={to} to={to} end={to === '/expenses'} className={({ isActive }) => isActive ? 'nav-link nav-link--active' : 'nav-link'}>
+          {({ isActive }) => (
+            <>
+              <Icon aria-hidden="true" />
+              <span>{label}</span>
+              {isActive && <motion.span className="nav-link__active-marker" layoutId={mobile ? 'mobile-nav-marker' : 'desktop-nav-marker'} transition={{ type: 'spring', stiffness: 420, damping: 32 }} aria-hidden="true" />}
+            </>
+          )}
         </NavLink>
       ))}
       {mobile && (

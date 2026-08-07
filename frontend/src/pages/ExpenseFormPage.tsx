@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent, type FormEvent } from 'react';
-import { ArrowLeft, CalendarDays, Camera, Check, FileImage, MapPin, ReceiptText, Tag, Upload, X } from 'lucide-react';
+import { ArrowLeft, CalendarDays, Camera, Check, FileImage, MapPin, ReceiptText, ScanText, Tag, Upload, X } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { errorMessage } from '../api/client';
 import { categoryApi, expenseApi } from '../api/resources';
@@ -8,6 +8,7 @@ import { AuthenticatedReceiptImage } from '../components/AuthenticatedReceiptIma
 import { ErrorState, LoadingState, Spinner } from '../components/States';
 import type { Category, ExpenseInput } from '../types';
 import { toDateInputValue, todayInputValue } from '../utils/format';
+import { readReceiptImage, type ReceiptOcrResult } from '../utils/receiptOcr';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -43,6 +44,9 @@ export function ExpenseFormPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [existingReceipt, setExistingReceipt] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [ocrState, setOcrState] = useState<'idle' | 'reading' | 'done' | 'error'>('idle');
+  const [ocrProgress, setOcrProgress] = useState(0);
+  const [ocrMessage, setOcrMessage] = useState('');
 
   const previewUrl = useMemo(() => {
     if (!form.receipt) return null;
@@ -95,6 +99,35 @@ export function ExpenseFormPage() {
     setErrors((current) => ({ ...current, [field]: undefined }));
   }
 
+  async function readReceiptDetails(file: File) {
+    setOcrState('reading');
+    setOcrProgress(0);
+    setOcrMessage('A preparar a leitura local…');
+    try {
+      const result = await readReceiptImage(file, categories, (progress, status) => {
+        setOcrProgress(Math.round(progress * 100));
+        setOcrMessage(status === 'recognizing text' ? 'A identificar os detalhes…' : 'A preparar a leitura…');
+      });
+      applyReceiptResult(result);
+      setOcrState('done');
+      setOcrMessage('Sugestões preenchidas. Confirme os dados antes de guardar.');
+    } catch {
+      setOcrState('error');
+      setOcrMessage('Não foi possível ler a imagem. Pode preencher os campos manualmente.');
+    }
+  }
+
+  function applyReceiptResult(result: ReceiptOcrResult) {
+    setForm((current) => ({
+      ...current,
+      description: current.description || result.description || '',
+      location: current.location || result.location || '',
+      amount: current.amount || result.amount || '',
+      date: current.date === todayInputValue() && result.date ? result.date : current.date,
+      categoryId: current.categoryId || result.categoryId || '',
+    }));
+  }
+
   function selectFile(file: File | undefined) {
     if (!file) return;
     if (!ALLOWED_FILE_TYPES.includes(file.type)) {
@@ -108,6 +141,7 @@ export function ExpenseFormPage() {
     setExistingReceipt(null);
     setForm((current) => ({ ...current, receipt: file, removeReceipt: false }));
     setErrors((current) => ({ ...current, receipt: undefined }));
+    void readReceiptDetails(file);
   }
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
@@ -124,6 +158,9 @@ export function ExpenseFormPage() {
     updateField('receipt', null);
     setForm((current) => ({ ...current, receipt: null, removeReceipt: Boolean(existingReceipt) }));
     setExistingReceipt(null);
+    setOcrState('idle');
+    setOcrProgress(0);
+    setOcrMessage('');
     if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
@@ -206,7 +243,7 @@ export function ExpenseFormPage() {
                 <span>Categoria</span>
                 <span className="field__control"><Tag aria-hidden="true" /><select name="categoryId" value={form.categoryId} onChange={(event) => updateField('categoryId', event.target.value)} aria-invalid={Boolean(errors.categoryId)} aria-describedby={errors.categoryId ? 'category-error' : undefined}>
                   <option value="">Escolha uma categoria</option>
-                  {categories.map((category) => <option key={category.id} value={category.id}>{category.icon ? `${category.icon} ` : ''}{category.name}</option>)}
+                  {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
                 </select></span>
                 {errors.categoryId && <small className="field__error" id="category-error">{errors.categoryId}</small>}
               </label>
@@ -242,6 +279,17 @@ export function ExpenseFormPage() {
                 <span className="upload-zone__copy">Toque para escolher ou arraste uma imagem</span>
                 <small id="receipt-help">JPG, PNG ou WEBP · máximo 5 MB</small>
               </label>
+            )}
+            {form.receipt && (
+              <div className={`receipt-ocr ${ocrState === 'error' ? 'receipt-ocr--error' : ''}`} role="status" aria-live="polite">
+                <span className="receipt-ocr__icon" aria-hidden="true"><ScanText /></span>
+                <div className="receipt-ocr__copy">
+                  <strong>{ocrState === 'reading' ? 'A ler o comprovativo' : ocrState === 'done' ? 'Leitura concluída' : 'Preenchimento local'}</strong>
+                  <p>{ocrMessage || 'A leitura acontece no seu dispositivo e apenas sugere valores para confirmar.'}</p>
+                  {ocrState === 'reading' && <div className="receipt-ocr__progress" aria-label={`Leitura ${ocrProgress}%`}><span style={{ width: `${Math.max(4, ocrProgress)}%` }} /></div>}
+                </div>
+                {(ocrState === 'error' || ocrState === 'done') && <button className="button button--secondary button--small" type="button" onClick={() => void readReceiptDetails(form.receipt!)}>{ocrState === 'error' ? 'Tentar novamente' : 'Ler de novo'}</button>}
+              </div>
             )}
             {errors.receipt && <p className="field__error" role="alert">{errors.receipt}</p>}
           </div>
