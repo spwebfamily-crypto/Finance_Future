@@ -8,6 +8,8 @@ import categoryRoutes from './routes/categories.js';
 import expenseRoutes from './routes/expenses.js';
 import budgetRoutes from './routes/budgets.js';
 import analyticsRoutes from './routes/analytics.js';
+import ocrRoutes from './routes/ocr.js';
+import noteRoutes from './routes/notes.js';
 
 export const app = express();
 
@@ -25,6 +27,8 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/budgets', budgetRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/ocr', ocrRoutes);
+app.use('/api/notes', noteRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
