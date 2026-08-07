@@ -12,6 +12,7 @@ import type {
   AnalyticsTrend,
   FinancialNote,
   OcrExtraction,
+  Household, NotificationPreferences,
 } from '../types';
 import { apiRequest } from './client';
 
@@ -132,3 +133,5 @@ export const notesApi = {
   list: async () => unwrap(await apiRequest<ApiEnvelope<FinancialNote[]> | FinancialNote[]>('/notes')),
   generate: async () => unwrap(await apiRequest<ApiEnvelope<FinancialNote> | FinancialNote>('/notes/generate', { method: 'POST' })),
 };
+export const householdApi = { list:async()=>unwrap(await apiRequest<ApiEnvelope<Household[]>|Household[]>('/households')), create:async(name:string)=>unwrap(await apiRequest<ApiEnvelope<Household>|Household>('/households',{method:'POST',body:{name}})), join:async(inviteCode:string)=>unwrap(await apiRequest<ApiEnvelope<Household>|Household>('/households/join',{method:'POST',body:{inviteCode}})), leave:(id:string)=>apiRequest<void>(`/households/${id}/leave`,{method:'DELETE'}), remove:(id:string)=>apiRequest<void>(`/households/${id}`,{method:'DELETE'}) };
+export const notificationApi = { config:async()=>unwrap(await apiRequest<ApiEnvelope<NotificationPreferences>|NotificationPreferences>('/notifications/config')), preferences:async()=>unwrap(await apiRequest<ApiEnvelope<NotificationPreferences>|NotificationPreferences>('/notifications/preferences')), update:async(body:Partial<NotificationPreferences>)=>unwrap(await apiRequest<ApiEnvelope<NotificationPreferences>|NotificationPreferences>('/notifications/preferences',{method:'PATCH',body:{...body}})), subscribe:(subscription:PushSubscriptionJSON)=>apiRequest('/notifications/subscribe',{method:'POST',body:{subscription}}), unsubscribe:(endpoint:string)=>apiRequest('/notifications/subscribe',{method:'DELETE',body:{endpoint}}) };

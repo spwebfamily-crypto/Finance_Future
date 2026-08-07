@@ -143,3 +143,5 @@ export interface FinancialNote {
   relatedCategory?: Category | null;
   createdAt: string;
 }
+export interface Household { id:string; name:string; inviteCode:string; ownerId:string; members:Array<{id:string;name:string;email:string}>; budgets:Array<{id:string;category?:Category;name?:string;monthlyLimit:number}>; }
+export interface NotificationPreferences { pushEnabled:boolean; emailEnabled:boolean; vapidPublicKey?:string | null; }
