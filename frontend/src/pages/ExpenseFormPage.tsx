@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent, type FormEvent } from 'react';
-import { ArrowLeft, CalendarDays, Camera, Check, FileImage, MapPin, ReceiptText, ScanText, Tag, Upload, X } from 'lucide-react';
+import { ArrowLeft, CalendarDays, Camera, Check, FileImage, FileText, MapPin, ReceiptText, ScanText, Tag, Upload, X } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { errorMessage } from '../api/client';
 import { categoryApi, expenseApi } from '../api/resources';
@@ -8,10 +8,10 @@ import { AuthenticatedReceiptImage } from '../components/AuthenticatedReceiptIma
 import { ErrorState, LoadingState, Spinner } from '../components/States';
 import type { Category, ExpenseInput } from '../types';
 import { toDateInputValue, todayInputValue } from '../utils/format';
-import { readReceiptImage, type ReceiptOcrResult } from '../utils/receiptOcr';
+import { readReceiptFile, type ReceiptOcrResult } from '../utils/receiptOcr';
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
-const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
 
 interface FormErrors {
   description?: string;
@@ -43,10 +43,12 @@ export function ExpenseFormPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [existingReceipt, setExistingReceipt] = useState<string | null>(null);
+  const [existingReceiptType, setExistingReceiptType] = useState<'application/pdf' | 'image/*' | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [ocrState, setOcrState] = useState<'idle' | 'reading' | 'done' | 'error'>('idle');
   const [ocrProgress, setOcrProgress] = useState(0);
   const [ocrMessage, setOcrMessage] = useState('');
+  const [ocrSource, setOcrSource] = useState<'image' | 'pdf' | null>(null);
 
   const previewUrl = useMemo(() => {
     if (!form.receipt) return null;
@@ -80,6 +82,7 @@ export function ExpenseFormPage() {
             receipt: null,
           });
           setExistingReceipt(expense.receiptImageUrl || null);
+          setExistingReceiptType(expense.receiptMimeType || null);
         }
       })
       .catch((requestError) => {
@@ -100,20 +103,26 @@ export function ExpenseFormPage() {
   }
 
   async function readReceiptDetails(file: File) {
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
     setOcrState('reading');
+    setOcrSource(isPdf ? 'pdf' : 'image');
     setOcrProgress(0);
-    setOcrMessage('A preparar a leitura local…');
+    setOcrMessage(isPdf ? 'A extrair texto do PDF localmente…' : 'A preparar a leitura local…');
     try {
-      const result = await readReceiptImage(file, categories, (progress, status) => {
+      const result = await readReceiptFile(file, categories, (progress, status) => {
         setOcrProgress(Math.round(progress * 100));
         setOcrMessage(status === 'recognizing text' ? 'A identificar os detalhes…' : 'A preparar a leitura…');
       });
       applyReceiptResult(result);
+      setOcrSource(result.source);
       setOcrState('done');
-      setOcrMessage('Sugestões preenchidas. Confirme os dados antes de guardar.');
+      setOcrMessage(result.rawText.trim()
+        ? `${result.source === 'pdf' ? 'PDF lido' : 'Leitura concluída'}. Confirme os dados antes de guardar.`
+        : 'PDF anexado, mas não tem texto selecionável. Confirme os dados manualmente.');
     } catch {
       setOcrState('error');
-      setOcrMessage('Não foi possível ler a imagem. Pode preencher os campos manualmente.');
+      setOcrSource(null);
+      setOcrMessage('Não foi possível ler o comprovativo. Pode preencher os campos manualmente.');
     }
   }
 
@@ -130,15 +139,17 @@ export function ExpenseFormPage() {
 
   function selectFile(file: File | undefined) {
     if (!file) return;
-    if (!ALLOWED_FILE_TYPES.includes(file.type)) {
-      setErrors((current) => ({ ...current, receipt: 'Escolha uma imagem JPG, PNG ou WEBP.' }));
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+    if (!ALLOWED_FILE_TYPES.includes(file.type) && !isPdf) {
+      setErrors((current) => ({ ...current, receipt: 'Escolha uma imagem JPG, PNG, WEBP ou um PDF.' }));
       return;
     }
     if (file.size > MAX_FILE_SIZE) {
-      setErrors((current) => ({ ...current, receipt: 'A imagem não pode exceder 5 MB.' }));
+      setErrors((current) => ({ ...current, receipt: 'O comprovativo não pode exceder 10 MB.' }));
       return;
     }
     setExistingReceipt(null);
+    setExistingReceiptType(null);
     setForm((current) => ({ ...current, receipt: file, removeReceipt: false }));
     setErrors((current) => ({ ...current, receipt: undefined }));
     void readReceiptDetails(file);
@@ -158,6 +169,7 @@ export function ExpenseFormPage() {
     updateField('receipt', null);
     setForm((current) => ({ ...current, receipt: null, removeReceipt: Boolean(existingReceipt) }));
     setExistingReceipt(null);
+    setExistingReceiptType(null);
     setOcrState('idle');
     setOcrProgress(0);
     setOcrMessage('');
@@ -258,11 +270,13 @@ export function ExpenseFormPage() {
             {(previewUrl || existingReceipt) ? (
               <div className="receipt-preview">
                 {previewUrl
-                  ? <img src={previewUrl} alt="Pré-visualização do recibo" />
+                  ? form.receipt?.type === 'application/pdf'
+                    ? <div className="receipt-file-card"><FileText aria-hidden="true" /><strong>Documento PDF</strong><a href={previewUrl} target="_blank" rel="noreferrer">Abrir comprovativo</a></div>
+                    : <img src={previewUrl} alt="Pré-visualização do recibo" />
                   : existingReceipt && <AuthenticatedReceiptImage receiptUrl={existingReceipt} alt="Pré-visualização do recibo" />}
                 <div className="receipt-preview__details">
-                  <FileImage aria-hidden="true" />
-                  <div><strong>{form.receipt?.name || 'Recibo guardado'}</strong><small>{form.receipt ? `${(form.receipt.size / 1024 / 1024).toFixed(1)} MB` : 'Imagem atual'}</small></div>
+                  {form.receipt?.type === 'application/pdf' || existingReceiptType === 'application/pdf' ? <FileText aria-hidden="true" /> : <FileImage aria-hidden="true" />}
+                  <div><strong>{form.receipt?.name || 'Comprovativo guardado'}</strong><small>{form.receipt ? `${(form.receipt.size / 1024 / 1024).toFixed(1)} MB` : 'Ficheiro atual'}</small></div>
                   <button type="button" className="icon-button icon-button--danger" onClick={removeReceipt} aria-label="Remover foto do recibo"><X aria-hidden="true" /></button>
                 </div>
               </div>
@@ -273,18 +287,18 @@ export function ExpenseFormPage() {
                 onDragLeave={() => setIsDragging(false)}
                 onDrop={handleDrop}
               >
-                <input ref={fileInputRef} type="file" name="receipt" accept="image/jpeg,image/png,image/webp" capture="environment" onChange={handleFileChange} aria-describedby="receipt-help" />
+                <input ref={fileInputRef} type="file" name="receipt" accept="image/jpeg,image/png,image/webp,application/pdf,.pdf" capture="environment" onChange={handleFileChange} aria-describedby="receipt-help" />
                 <span className="upload-zone__icon" aria-hidden="true"><Upload /></span>
-                <span className="upload-zone__title">Foto do recibo</span>
-                <span className="upload-zone__copy">Toque para escolher ou arraste uma imagem</span>
-                <small id="receipt-help">JPG, PNG ou WEBP · máximo 5 MB</small>
+                <span className="upload-zone__title">Foto ou PDF do recibo</span>
+                <span className="upload-zone__copy">Toque para escolher ou arraste um comprovativo</span>
+                <small id="receipt-help">JPG, PNG, WEBP ou PDF · máximo 10 MB</small>
               </label>
             )}
             {form.receipt && (
               <div className={`receipt-ocr ${ocrState === 'error' ? 'receipt-ocr--error' : ''}`} role="status" aria-live="polite">
                 <span className="receipt-ocr__icon" aria-hidden="true"><ScanText /></span>
                 <div className="receipt-ocr__copy">
-                  <strong>{ocrState === 'reading' ? 'A ler o comprovativo' : ocrState === 'done' ? 'Leitura concluída' : 'Preenchimento local'}</strong>
+                  <strong>{ocrState === 'reading' ? (ocrSource === 'pdf' ? 'A ler o PDF' : 'A ler o comprovativo') : ocrState === 'done' ? 'Sugestões prontas' : 'Preenchimento local'}</strong>
                   <p>{ocrMessage || 'A leitura acontece no seu dispositivo e apenas sugere valores para confirmar.'}</p>
                   {ocrState === 'reading' && <div className="receipt-ocr__progress" aria-label={`Leitura ${ocrProgress}%`}><span style={{ width: `${Math.max(4, ocrProgress)}%` }} /></div>}
                 </div>

@@ -6,7 +6,7 @@ ExpenseSnap é uma aplicação mobile-first para registar despesas pessoais e pe
 
 - Registo e login com access token e refresh token rotativo.
 - Criação, edição, consulta e remoção de despesas.
-- Fotografia opcional do comprovativo, guardada de forma privada.
+- Fotografia ou PDF opcional do comprovativo, guardado de forma privada (até 10 MB).
 - Leitura OCR opcional e local no navegador para sugerir descrição, local, valor, data e categoria. Os campos continuam editáveis e devem ser confirmados antes de guardar.
 - Categorias com ícones Lucide, sem emojis.
 - Dashboard com total mensal, médias históricas, comparação mensal, tendência e distribuição por categoria.
@@ -65,4 +65,4 @@ O frontend fica em <http://localhost:5173>, a API em <http://localhost:3000/api>
 - Start command: `npm run db:migrate -w backend && npm start -w backend`
 - Health check: `/api/health`
 
-O OCR local pode descarregar o modelo de idioma para o navegador, mas a imagem do comprovativo permanece no dispositivo até ser enviada como anexo quando a despesa é guardada.
+O OCR local pode descarregar o modelo de idioma para o navegador. Imagens são lidas localmente pelo Tesseract.js; PDFs digitais são analisados pelo texto incorporado. PDFs digitalizados sem camada de texto continuam a poder ser anexados, mas pedem confirmação manual dos campos. O ficheiro só é enviado para o backend quando a despesa é guardada.

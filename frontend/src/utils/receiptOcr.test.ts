@@ -21,4 +21,14 @@ describe('receipt OCR parsing', () => {
 
     expect(result.categoryId).toBe('food');
   });
+
+  it('reads text embedded in a PDF locally and suggests the amount/category', async () => {
+    const pdf = new File(['%PDF-1.4\n(MERCADO CENTRAL)\n(ALIMENTACAO)\n(Rua das Flores, 12)\n(Data 07/08/2026)\n(TOTAL 12,50)\n%%EOF'], 'fatura.pdf', { type: 'application/pdf' });
+    const { readReceiptFile } = await import('./receiptOcr');
+    const result = await readReceiptFile(pdf, [{ id: 'food', name: 'Alimentacao', icon: 'utensils', isDefault: true }]);
+
+    expect(result.source).toBe('pdf');
+    expect(result.amount).toBe('12.50');
+    expect(result.categoryId).toBe('food');
+  });
 });

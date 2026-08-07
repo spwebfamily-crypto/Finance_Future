@@ -32,6 +32,7 @@ export interface Expense {
   amount: string | number;
   date: string;
   receiptImageUrl?: string | null;
+  receiptMimeType?: 'application/pdf' | 'image/*' | null;
   createdAt?: string;
 }
 

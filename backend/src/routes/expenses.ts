@@ -18,19 +18,22 @@ const mimeExtensions: Record<string, string> = {
   'image/jpeg': '.jpg',
   'image/png': '.png',
   'image/webp': '.webp',
+  'application/pdf': '.pdf',
 };
 
 const upload = multer({
   storage: multer.diskStorage({
     destination: uploadDirectory,
     filename: (_request, file, callback) => {
-      callback(null, `${randomUUID()}${mimeExtensions[file.mimetype] ?? ''}`);
+      const extension = mimeExtensions[file.mimetype] ?? (file.originalname.toLowerCase().endsWith('.pdf') ? '.pdf' : '');
+      callback(null, `${randomUUID()}${extension}`);
     },
   }),
-  limits: { fileSize: 5 * 1024 * 1024, files: 1 },
+  limits: { fileSize: 10 * 1024 * 1024, files: 1 },
   fileFilter: (_request, file, callback) => {
-    if (!mimeExtensions[file.mimetype]) {
-      callback(new ApiError(415, 'INVALID_RECEIPT_TYPE', 'Use uma imagem JPG, PNG ou WEBP.'));
+    const isPdf = file.mimetype === 'application/pdf' || file.originalname.toLowerCase().endsWith('.pdf');
+    if (!mimeExtensions[file.mimetype] && !isPdf) {
+      callback(new ApiError(415, 'INVALID_RECEIPT_TYPE', 'Use uma imagem JPG, PNG, WEBP ou um PDF.'));
       return;
     }
     callback(null, true);
@@ -45,10 +48,12 @@ const expenseInclude = { category: true } satisfies Prisma.ExpenseInclude;
 type ExpenseWithCategory = Prisma.ExpenseGetPayload<{ include: typeof expenseInclude }>;
 
 function presentExpense(expense: ExpenseWithCategory) {
+  const receiptMimeType = expense.receiptImageUrl?.endsWith('.pdf') ? 'application/pdf' : expense.receiptImageUrl ? 'image/*' : null;
   return {
     ...expense,
     amount: expense.amount.toFixed(2),
     receiptImageUrl: expense.receiptImageUrl ? `/api/expenses/${expense.id}/receipt` : null,
+    receiptMimeType,
   };
 }
 
