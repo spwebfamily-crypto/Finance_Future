@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { authApi } from '../api/resources';
 import { refreshAccessToken } from '../api/client';
 import { clearSession, getAccessToken, getRefreshToken, getStoredUser, saveSession } from '../api/token-store';
+import { clearOfflineCache } from '../api/offline-cache';
 import type { User } from '../types';
 
 interface AuthContextValue {
@@ -20,9 +21,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isInitializing, setIsInitializing] = useState(() => Boolean(getRefreshToken() && !getAccessToken()));
 
   const logout = useCallback(() => {
+    clearOfflineCache(user);
     clearSession();
     setUser(null);
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     const handleExpiredSession = () => logout();

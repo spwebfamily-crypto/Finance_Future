@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent, type FormEvent } from 'react';
-import { ArrowLeft, CalendarDays, Camera, Check, FileImage, MapPin, ReceiptText, ScanLine, Tag, Upload, X } from 'lucide-react';
+import { ArrowLeft, CalendarDays, Camera, Check, FileImage, MapPin, ReceiptText, Tag, Upload, X } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { errorMessage } from '../api/client';
-import { categoryApi, expenseApi, ocrApi } from '../api/resources';
+import { categoryApi, expenseApi } from '../api/resources';
 import { PageHeader } from '../components/PageHeader';
 import { AuthenticatedReceiptImage } from '../components/AuthenticatedReceiptImage';
 import { ErrorState, LoadingState, Spinner } from '../components/States';
@@ -43,9 +43,6 @@ export function ExpenseFormPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [existingReceipt, setExistingReceipt] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [isReadingReceipt, setIsReadingReceipt] = useState(false);
-  const [ocrMessage, setOcrMessage] = useState('');
-  const [ocrError, setOcrError] = useState('');
 
   const previewUrl = useMemo(() => {
     if (!form.receipt) return null;
@@ -111,8 +108,6 @@ export function ExpenseFormPage() {
     setExistingReceipt(null);
     setForm((current) => ({ ...current, receipt: file, removeReceipt: false }));
     setErrors((current) => ({ ...current, receipt: undefined }));
-    setOcrMessage('');
-    setOcrError('');
   }
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
@@ -130,31 +125,6 @@ export function ExpenseFormPage() {
     setForm((current) => ({ ...current, receipt: null, removeReceipt: Boolean(existingReceipt) }));
     setExistingReceipt(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
-    setOcrMessage('');
-    setOcrError('');
-  }
-
-  async function readReceipt() {
-    if (!form.receipt) return;
-    setIsReadingReceipt(true);
-    setOcrError('');
-    setOcrMessage('');
-    try {
-      const extraction = await ocrApi.extract(form.receipt);
-      setForm((current) => ({
-        ...current,
-        amount: current.amount.trim() ? current.amount : extraction.amount || '',
-        date: current.date ? current.date : extraction.date || '',
-        location: current.location.trim() ? current.location : extraction.merchant || '',
-        description: current.description.trim() ? current.description : extraction.merchant || '',
-      }));
-      const found = [extraction.amount, extraction.date, extraction.merchant].filter(Boolean).length;
-      setOcrMessage(found ? `Leitura concluída (${Math.round(extraction.confidence * 100)}% de confiança). Só preenchemos campos vazios.` : 'A leitura foi concluída, mas não encontrámos dados seguros para sugerir.');
-    } catch (requestError) {
-      setOcrError(errorMessage(requestError));
-    } finally {
-      setIsReadingReceipt(false);
-    }
   }
 
   function validate() {
@@ -258,7 +228,6 @@ export function ExpenseFormPage() {
                   <div><strong>{form.receipt?.name || 'Recibo guardado'}</strong><small>{form.receipt ? `${(form.receipt.size / 1024 / 1024).toFixed(1)} MB` : 'Imagem atual'}</small></div>
                   <button type="button" className="icon-button icon-button--danger" onClick={removeReceipt} aria-label="Remover foto do recibo"><X aria-hidden="true" /></button>
                 </div>
-                {form.receipt && <div className="receipt-preview__ocr"><button className="button button--secondary button--small" type="button" onClick={() => void readReceipt()} disabled={isReadingReceipt}>{isReadingReceipt ? <Spinner label="A ler recibo" /> : <><ScanLine aria-hidden="true" /> Ler recibo</>}</button>{ocrMessage && <p className="ocr-feedback ocr-feedback--success" role="status">{ocrMessage}</p>}{ocrError && <p className="ocr-feedback ocr-feedback--error" role="alert">{ocrError}</p>}</div>}
               </div>
             ) : (
               <label

@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
-import { AlertTriangle, ArrowDownRight, ArrowUpRight, CheckCircle2, CircleHelp, Info, Pencil, Plus, Sparkles, Tag, Trash2 } from 'lucide-react';
+import { AlertTriangle, ArrowDownRight, ArrowUpRight, CheckCircle2, CircleHelp, Pencil, Plus, Tag, Trash2 } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { analyticsApi, budgetApi, categoryApi, notesApi } from '../api/resources';
+import { analyticsApi, budgetApi, categoryApi } from '../api/resources';
 import { errorMessage } from '../api/client';
 import { EmptyState, ErrorState, LoadingState, Spinner } from '../components/States';
 import { PageHeader } from '../components/PageHeader';
-import type { AnalyticsSummary, Budget, Category, FinancialNote, SpendingLevelItem } from '../types';
-import { formatCurrency, formatDate } from '../utils/format';
+import type { AnalyticsSummary, Budget, Category, SpendingLevelItem } from '../types';
+import { formatCurrency } from '../utils/format';
 
 const palette = ['#f06a50', '#171914', '#caed62', '#b83d29', '#8a887e', '#2e6547'];
 
@@ -29,12 +29,6 @@ const levelMeta = {
   insufficient_data: { label: 'Dados insuficientes', text: 'Registe mais despesas para comparar.', Icon: CircleHelp },
 } as const;
 
-const noteMeta = {
-  info: { label: 'Informação', Icon: Info },
-  warning: { label: 'Atenção', Icon: AlertTriangle },
-  critical: { label: 'Prioridade', Icon: AlertTriangle },
-} as const;
-
 export function DashboardPage() {
   const [month, setMonth] = useState(currentMonth);
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
@@ -42,9 +36,6 @@ export function DashboardPage() {
   const [trend, setTrend] = useState<{ month: string; total: number }[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [notes, setNotes] = useState<FinancialNote[]>([]);
-  const [notesError, setNotesError] = useState('');
-  const [isGeneratingNote, setIsGeneratingNote] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -57,21 +48,15 @@ export function DashboardPage() {
   const load = useCallback(async () => {
     setLoading(true);
     setError('');
-    setNotesError('');
     try {
-      const noteRequest = notesApi.list().catch((requestError) => {
-        setNotesError(errorMessage(requestError));
-        return [];
-      });
-      const [nextSummary, nextLevels, nextTrend, nextBudgets, nextCategories, nextNotes] = await Promise.all([
-        analyticsApi.summary(month), analyticsApi.levels(month), analyticsApi.trend(6, month), budgetApi.list(), categoryApi.list(), noteRequest,
+      const [nextSummary, nextLevels, nextTrend, nextBudgets, nextCategories] = await Promise.all([
+        analyticsApi.summary(month), analyticsApi.levels(month), analyticsApi.trend(6, month), budgetApi.list(), categoryApi.list(),
       ]);
       setSummary(nextSummary);
       setLevels(nextLevels);
       setTrend(nextTrend.series);
       setBudgets(nextBudgets);
       setCategories(nextCategories);
-      setNotes(nextNotes);
     } catch (requestError) {
       setError(errorMessage(requestError));
     } finally {
@@ -124,19 +109,6 @@ export function DashboardPage() {
     finally { setSaving(false); }
   }
 
-  async function generateNote() {
-    setIsGeneratingNote(true);
-    setNotesError('');
-    try {
-      const note = await notesApi.generate();
-      setNotes((items) => [note, ...items.filter((item) => item.id !== note.id)]);
-    } catch (requestError) {
-      setNotesError(errorMessage(requestError));
-    } finally {
-      setIsGeneratingNote(false);
-    }
-  }
-
   return (
     <div className="page page--dashboard">
       {notice && <div className="toast" role="status">{notice}<button type="button" onClick={() => setNotice('')} aria-label="Fechar aviso">×</button></div>}
@@ -154,8 +126,6 @@ export function DashboardPage() {
         </div>
 
         <section className="dashboard-section" aria-labelledby="levels-title"><div className="section-heading"><div><p className="eyebrow">Sinais</p><h2 id="levels-title">Níveis de gasto</h2></div><p>{levels.length} categorias analisadas</p></div>{levels.length ? <div className="level-list">{levels.map((item) => { const meta = levelMeta[item.level]; const Icon = meta.Icon; return <article className={`level-row level-row--${item.level}`} key={item.category.id}><span className="level-row__icon" aria-hidden="true"><Icon /></span><div><h3>{item.category.icon && <span aria-hidden="true">{item.category.icon} </span>}{item.category.name}</h3><p><strong>{meta.label}</strong> — {meta.text}</p></div><span className="level-row__amount">{formatCurrency(item.currentAmount, currency)}<small>{item.basis === 'budget' && item.baselineAmount !== null ? ` de ${formatCurrency(item.baselineAmount, currency)}` : item.basis === 'history' ? ' projetado' : ''}</small></span></article>; })}</div> : <EmptyState title="Dados insuficientes" description="Quando houver histórico, avaliamos o ritmo de cada categoria." />}</section>
-
-        <section className="dashboard-section dashboard-notes" aria-labelledby="notes-title"><div className="section-heading"><div><p className="eyebrow">Leitura financeira</p><h2 id="notes-title">Notas para decidir melhor</h2></div><button className="button button--secondary button--small" type="button" onClick={() => void generateNote()} disabled={isGeneratingNote}>{isGeneratingNote ? <Spinner label="A gerar" /> : <><Sparkles aria-hidden="true" /> Gerar nota</>}</button></div>{notesError ? <ErrorState message={notesError} onRetry={() => void generateNote()} /> : notes.length ? <div className="notes-list">{notes.map((note) => { const meta = noteMeta[note.severity]; const Icon = meta.Icon; return <article className={`note-row note-row--${note.severity}`} key={note.id}><span className="note-row__icon" aria-hidden="true"><Icon /></span><div><p className="note-row__meta"><strong>{meta.label}</strong><time dateTime={note.createdAt}>{formatDate(note.createdAt)}</time></p><p>{note.content}</p></div></article>; })}</div> : <EmptyState title="Sem notas ainda" description="Gere uma nota quando quiser uma leitura breve das suas despesas." action={<button className="button button--primary button--small" type="button" onClick={() => void generateNote()} disabled={isGeneratingNote}><Sparkles aria-hidden="true" /> Gerar primeira nota</button>} />}</section>
 
         <section className="dashboard-section dashboard-budgets" aria-labelledby="budgets-title"><div className="section-heading"><div><p className="eyebrow">Limites mensais</p><h2 id="budgets-title">Orçamentos por categoria</h2></div></div><div className="budgets-layout"><form className="budget-create" onSubmit={saveBudget}><label className="field"><span>Categoria</span><select value={newCategoryId} onChange={(event) => setNewCategoryId(event.target.value)}><option value="">Escolher categoria</option>{unbudgetedCategories.map((category) => <option key={category.id} value={category.id}>{category.icon ? `${category.icon} ` : ''}{category.name}</option>)}</select></label><label className="field"><span>Limite por mês</span><input inputMode="decimal" value={newLimit} onChange={(event) => setNewLimit(event.target.value)} placeholder="0,00" /></label><button className="button button--accent" disabled={saving || !unbudgetedCategories.length} type="submit">{saving ? <Spinner label="A guardar" /> : <><Plus aria-hidden="true" /> Definir limite</>}</button></form><div className="budget-list">{budgets.length ? budgets.map((budget) => <article className="budget-row" key={budget.id}><span className="budget-row__icon" aria-hidden="true">{budget.category.icon || <Tag />}</span><h3>{budget.category.name}</h3>{editingId === budget.id ? <div className="budget-row__edit"><label className="sr-only" htmlFor={`budget-${budget.id}`}>Limite mensal de {budget.category.name}</label><input id={`budget-${budget.id}`} inputMode="decimal" value={editingLimit} onChange={(event) => setEditingLimit(event.target.value)} /><button className="button button--small button--primary" type="button" disabled={saving} onClick={() => void updateBudget(budget)}>Guardar</button></div> : <><strong>{formatCurrency(budget.monthlyLimit, currency)}</strong><div className="budget-row__actions"><button className="icon-button" type="button" aria-label={`Editar orçamento de ${budget.category.name}`} onClick={() => { setEditingId(budget.id); setEditingLimit(String(budget.monthlyLimit)); }}><Pencil /></button><button className="icon-button icon-button--danger" type="button" aria-label={`Remover orçamento de ${budget.category.name}`} disabled={saving} onClick={() => void removeBudget(budget)}><Trash2 /></button></div></>}</article>) : <EmptyState title="Sem limites definidos" description="Defina um orçamento para receber sinais mais precisos." />}</div></div></section>
       </>}

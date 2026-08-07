@@ -1,4 +1,5 @@
-import { FolderKanban, LayoutDashboard, LogOut, Plus, ReceiptText } from 'lucide-react';
+import { FolderKanban, LayoutDashboard, LogOut, Plus, ReceiptText, WifiOff } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { Brand } from '../components/Brand';
@@ -34,6 +35,14 @@ function Navigation({ mobile = false }: { mobile?: boolean }) {
 
 export function AppShell() {
   const { user, logout } = useAuth();
+  const [isOffline, setIsOffline] = useState(() => typeof navigator !== 'undefined' && !navigator.onLine);
+  useEffect(() => {
+    const online = () => setIsOffline(false);
+    const offline = () => setIsOffline(true);
+    window.addEventListener('online', online);
+    window.addEventListener('offline', offline);
+    return () => { window.removeEventListener('online', online); window.removeEventListener('offline', offline); };
+  }, []);
   const initials = user?.name
     .split(/\s+/)
     .slice(0, 2)
@@ -72,6 +81,7 @@ export function AppShell() {
       </header>
 
       <main id="main-content" className="main-content" tabIndex={-1}>
+        {isOffline && <div className="offline-banner" role="status"><WifiOff aria-hidden="true" /> Sem ligação. A mostrar os últimos dados guardados.</div>}
         <Outlet />
       </main>
       <Navigation mobile />

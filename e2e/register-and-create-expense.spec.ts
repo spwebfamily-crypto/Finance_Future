@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test';
 
+test.use({ viewport: { width: 390, height: 844 }, isMobile: true });
+
 test('permite registar uma conta e criar uma despesa com fotografia', async ({ page }) => {
   test.setTimeout(120_000);
   const runId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -15,11 +17,9 @@ test('permite registar uma conta e criar uma despesa com fotografia', async ({ p
     context.fillRect(0, 0, canvas.width, canvas.height);
     context.fillStyle = '#111111';
     context.font = '700 64px Arial';
-    context.fillText('MERCADO TESTE', 90, 130);
+    context.fillText('RECIBO DE TESTE', 90, 180);
     context.font = '48px Arial';
-    context.fillText('Data: 07/08/2026', 90, 270);
-    context.font = '700 58px Arial';
-    context.fillText('TOTAL 12,34 EUR', 90, 430);
+    context.fillText('Anexo manual', 90, 320);
     return canvas.toDataURL('image/png');
   });
   const receiptPng = Buffer.from(receiptDataUrl.split(',')[1]!, 'base64');
@@ -34,6 +34,10 @@ test('permite registar uma conta e criar uma despesa com fotografia', async ({ p
     page.getByRole('button', { name: 'Criar conta' }).click(),
   ]);
 
+  await expect(page.locator('.mobile-nav')).toBeVisible();
+  const manifest = await page.request.get('/manifest.webmanifest');
+  expect(manifest.ok()).toBeTruthy();
+
   await page.goto('/expenses/new');
   const category = page.getByLabel('Categoria');
   await expect.poll(() => category.locator('option').count()).toBeGreaterThan(1);
@@ -45,10 +49,7 @@ test('permite registar uma conta e criar uma despesa com fotografia', async ({ p
     buffer: receiptPng,
   });
 
-  await page.getByRole('button', { name: 'Ler recibo' }).click();
-  await expect(page.locator('.ocr-feedback--success')).toContainText('Leitura concluída', { timeout: 90_000 });
-  await expect(page.getByLabel('Valor')).toHaveValue('12.34');
-  await expect(page.getByLabel('Local')).toHaveValue(/MERCADO TESTE/i);
+  await expect(page.getByRole('button', { name: 'Ler recibo' })).toHaveCount(0);
 
   await page.getByLabel('Descrição').fill(description);
   await page.getByLabel('Local').fill('Lisboa');
@@ -74,7 +75,4 @@ test('permite registar uma conta e criar uma despesa com fotografia', async ({ p
   await expect(page.locator('.toast[role="status"]')).toContainText('Orçamento criado');
   await expect(page.getByText('Crítico', { exact: true }).first()).toBeVisible();
 
-  await page.getByRole('button', { name: 'Gerar nota' }).click();
-  await expect(page.locator('.note-row').first()).toContainText('merecem atenção');
-  await expect(page.locator('.note-row').first()).toContainText('Prioridade');
 });

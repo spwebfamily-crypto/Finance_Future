@@ -1,5 +1,6 @@
 import type { ApiErrorPayload, RefreshResponse } from '../types';
-import { clearSession, getAccessToken, getRefreshToken, saveSession } from './token-store';
+import { clearSession, getAccessToken, getRefreshToken, getStoredUser, saveSession } from './token-store';
+import { cacheGet, cacheSet } from './offline-cache';
 
 const API_URL = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
 
@@ -96,11 +97,20 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   const token = auth ? getAccessToken() : null;
   if (token) headers.set('Authorization', `Bearer ${token}`);
 
-  const response = await fetch(`${API_URL}${path}`, {
-    ...requestInit,
-    headers,
-    body: body == null || isFormData || typeof body === 'string' ? body : JSON.stringify(body),
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}${path}`, {
+      ...requestInit,
+      headers,
+      body: body == null || isFormData || typeof body === 'string' ? body : JSON.stringify(body),
+    });
+  } catch (error) {
+    if (auth && (requestInit.method || 'GET').toUpperCase() === 'GET') {
+      const cached = cacheGet<T>(getStoredUser(), path);
+      if (cached !== null) return cached;
+    }
+    throw error;
+  }
 
   if (response.status === 401 && auth && retryOnUnauthorized && getRefreshToken()) {
     const nextToken = await refreshAccessToken();
@@ -116,6 +126,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
 
   const payload = await parseResponse(response);
   if (!response.ok) throw buildError(payload, response.status);
+  if (auth && (requestInit.method || 'GET').toUpperCase() === 'GET') cacheSet(getStoredUser(), path, payload);
   return payload as T;
 }
 

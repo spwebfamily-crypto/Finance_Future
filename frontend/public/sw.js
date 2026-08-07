@@ -1,1 +1,43 @@
-const S='expensesnap-shell-v1';self.addEventListener('install',e=>e.waitUntil(caches.open(S).then(c=>c.addAll(['/','/index.html','/manifest.webmanifest','/icon.svg']))));self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));self.addEventListener('fetch',e=>{const r=e.request;if(r.method!=='GET'||new URL(r.url).pathname.startsWith('/api/'))return;e.respondWith(fetch(r).catch(()=>caches.match(r).then(x=>x||caches.match('/'))));});self.addEventListener('push',e=>{const d=e.data?.json()||{};e.waitUntil(self.registration.showNotification(d.title||'ExpenseSnap',{body:d.body||'Tem uma atualização financeira.',data:{url:d.url||'/dashboard'},icon:'/icon.svg'}));});self.addEventListener('notificationclick',e=>{e.notification.close();e.waitUntil(clients.openWindow(e.notification.data.url));});
+const CACHE_NAME = 'expensesnap-shell-v2';
+const SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icon.svg'];
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL)).then(() => self.skipWaiting()));
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))))
+      .then(() => self.clients.claim()),
+  );
+});
+
+self.addEventListener('fetch', (event) => {
+  const request = event.request;
+  const url = new URL(request.url);
+  if (request.method !== 'GET' || url.origin !== self.location.origin || url.pathname.startsWith('/api/') || url.pathname.startsWith('/uploads/')) return;
+
+  event.respondWith(
+    fetch(request).then((response) => {
+      if (response.ok && response.type === 'basic') {
+        const copy = response.clone();
+        void caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+      }
+      return response;
+    }).catch(() => caches.match(request).then((cached) => cached || (request.mode === 'navigate' ? caches.match('/index.html') : Response.error()))),
+  );
+});
+
+self.addEventListener('push', (event) => {
+  const data = event.data ? event.data.json() : {};
+  event.waitUntil(self.registration.showNotification(data.title || 'ExpenseSnap', {
+    body: data.body || 'Tem uma atualização financeira.',
+    data: { url: data.url || '/dashboard' },
+    icon: '/icon.svg',
+  }));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(self.clients.openWindow(event.notification.data?.url || '/dashboard'));
+});

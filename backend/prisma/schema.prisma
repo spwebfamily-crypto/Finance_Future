@@ -52,6 +52,7 @@ model Expense {
   amount          Decimal  @db.Decimal(10, 2)
   date            DateTime
   receiptImageUrl String?
+  // Legacy nullable column kept for backwards-compatible databases. The app never writes or reads it.
   ocrRawText      String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -79,6 +80,8 @@ model Budget {
   @@index([categoryId])
 }
 
+// Legacy table kept so existing installations do not lose data during this scope change.
+// No route or service accesses it; the product does not generate financial notes.
 model FinancialNote {
   id                String   @id @default(uuid())
   userId            String

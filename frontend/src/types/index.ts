@@ -125,23 +125,3 @@ export interface AnalyticsTrend {
   currency: string;
   series: TrendPoint[];
 }
-
-export interface OcrExtraction {
-  amount: string | null;
-  date: string | null;
-  merchant: string | null;
-  rawText: string;
-  confidence: number;
-  provider: 'google' | 'tesseract';
-}
-
-export interface FinancialNote {
-  id: string;
-  content: string;
-  severity: 'info' | 'warning' | 'critical';
-  relatedCategoryId: string | null;
-  relatedCategory?: Category | null;
-  createdAt: string;
-}
-export interface Household { id:string; name:string; inviteCode:string; ownerId:string; members:Array<{id:string;name:string;email:string}>; budgets:Array<{id:string;category?:Category;name?:string;monthlyLimit:number}>; }
-export interface NotificationPreferences { pushEnabled:boolean; emailEnabled:boolean; vapidPublicKey?:string | null; }
