@@ -1,51 +1,61 @@
-import { FolderKanban, LayoutDashboard, LogOut, Plus, ReceiptText, WifiOff } from 'lucide-react';
+import { FolderKanban, LayoutDashboard, LogOut, Plus, ReceiptText, TrendingUp, WifiOff } from 'lucide-react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import { NavLink, useLocation, useOutlet } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { Brand } from '../components/Brand';
-import { preloadDashboardPage, preloadExpenseFormPage } from '../routePreloads';
+import { preloadDashboardPage, preloadExpenseFormPage, preloadInvestmentsPage } from '../routePreloads';
 
 const navItems = [
   { to: '/dashboard', label: 'Visão geral', icon: LayoutDashboard, preload: preloadDashboardPage },
   { to: '/expenses', label: 'Despesas', icon: ReceiptText },
+  { to: '/investments', label: 'Investir', icon: TrendingUp, preload: preloadInvestmentsPage },
   { to: '/categories', label: 'Categorias', icon: FolderKanban },
 ];
 
 function Navigation({ mobile = false }: { mobile?: boolean }) {
+  const items = mobile
+    ? [navItems[0], navItems[1], null, navItems[2], navItems[3]]
+    : navItems;
   return (
     <nav className={mobile ? 'mobile-nav' : 'side-nav'} aria-label="Navegação principal">
-      {navItems.map(({ to, label, icon: Icon, preload }) => (
-        <NavLink
-          key={to}
-          to={to}
-          end={to === '/expenses'}
-          className={({ isActive }) => isActive ? 'nav-link nav-link--active' : 'nav-link'}
-          onPointerEnter={preload}
-          onPointerDown={preload}
-          onFocus={preload}
-        >
-          {({ isActive }) => (
-            <>
-              <Icon aria-hidden="true" />
-              <span>{label}</span>
-              {isActive && <motion.span className="nav-link__active-marker" layoutId={mobile ? 'mobile-nav-marker' : 'desktop-nav-marker'} transition={{ type: 'spring', stiffness: 420, damping: 32 }} aria-hidden="true" />}
-            </>
-          )}
-        </NavLink>
-      ))}
-      {mobile && (
-        <NavLink
-          to="/expenses/new"
-          className={({ isActive }) => isActive ? 'mobile-nav__add mobile-nav__add--active' : 'mobile-nav__add'}
-          aria-label="Nova despesa"
-          onPointerDown={preloadExpenseFormPage}
-          onFocus={preloadExpenseFormPage}
-        >
-          <Plus aria-hidden="true" />
-          <span>Novo</span>
-        </NavLink>
-      )}
+      {items.map((item) => {
+        if (!item) {
+          return (
+            <NavLink
+              key="new-expense"
+              to="/expenses/new"
+              className={({ isActive }) => isActive ? 'mobile-nav__add mobile-nav__add--active' : 'mobile-nav__add'}
+              aria-label="Nova despesa"
+              onPointerDown={preloadExpenseFormPage}
+              onFocus={preloadExpenseFormPage}
+            >
+              <Plus aria-hidden="true" />
+              <span>Novo</span>
+            </NavLink>
+          );
+        }
+        const { to, label, icon: Icon, preload } = item;
+        return (
+          <NavLink
+            key={to}
+            to={to}
+            end={to === '/expenses'}
+            className={({ isActive }) => isActive ? 'nav-link nav-link--active' : 'nav-link'}
+            onPointerEnter={preload}
+            onPointerDown={preload}
+            onFocus={preload}
+          >
+            {({ isActive }) => (
+              <>
+                <Icon aria-hidden="true" />
+                <span>{label}</span>
+                {isActive && <motion.span className="nav-link__active-marker" layoutId={mobile ? 'mobile-nav-marker' : 'desktop-nav-marker'} transition={{ type: 'spring', stiffness: 420, damping: 32 }} aria-hidden="true" />}
+              </>
+            )}
+          </NavLink>
+        );
+      })}
     </nav>
   );
 }

@@ -10,6 +10,8 @@ import type {
   AnalyticsSummary,
   SpendingLevelItem,
   AnalyticsTrend,
+  FinancialProfile,
+  FinancialProfileInput,
 } from '../types';
 import { apiRequest } from './client';
 
@@ -20,15 +22,20 @@ function unwrap<T>(payload: ApiEnvelope<T> | T): T {
   return payload as T;
 }
 
-function expenseFormData(input: ExpenseInput) {
+function expenseRequestBody(input: ExpenseInput) {
+  const fields = {
+    description: input.description.trim(),
+    location: input.location.trim(),
+    amount: input.amount,
+    date: input.date,
+    categoryId: input.categoryId,
+    ...(input.removeReceipt ? { removeReceipt: true } : {}),
+  };
+  if (!input.receipt) return fields;
+
   const data = new FormData();
-  data.set('description', input.description.trim());
-  data.set('location', input.location.trim());
-  data.set('amount', input.amount);
-  data.set('date', input.date);
-  data.set('categoryId', input.categoryId);
-  if (input.receipt) data.set('receipt', input.receipt);
-  if (input.removeReceipt) data.set('removeReceipt', 'true');
+  Object.entries(fields).forEach(([key, value]) => data.set(key, String(value)));
+  data.set('receipt', input.receipt);
   return data;
 }
 
@@ -62,14 +69,14 @@ export const expenseApi = {
     unwrap(
       await apiRequest<ApiEnvelope<Expense> | Expense>('/expenses', {
         method: 'POST',
-        body: expenseFormData(input),
+        body: expenseRequestBody(input),
       }),
     ),
   update: async (id: string, input: ExpenseInput) =>
     unwrap(
       await apiRequest<ApiEnvelope<Expense> | Expense>(`/expenses/${id}`, {
         method: 'PATCH',
-        body: expenseFormData(input),
+        body: expenseRequestBody(input),
       }),
     ),
   remove: (id: string) => apiRequest<void>(`/expenses/${id}`, { method: 'DELETE' }),
@@ -116,4 +123,15 @@ export const analyticsApi = {
     if (month) params.set('month', month);
     return unwrap(await apiRequest<ApiEnvelope<AnalyticsTrend> | AnalyticsTrend>(`/analytics/trend?${params.toString()}`));
   },
+};
+
+export const financialProfileApi = {
+  get: async () =>
+    unwrap(await apiRequest<ApiEnvelope<FinancialProfile | null> | FinancialProfile | null>('/financial-profile', { cacheResponse: false })),
+  save: async (input: FinancialProfileInput) =>
+    unwrap(await apiRequest<ApiEnvelope<FinancialProfile> | FinancialProfile>('/financial-profile', {
+      method: 'PUT',
+      body: { ...input },
+    })),
+  remove: () => apiRequest<void>('/financial-profile', { method: 'DELETE', cacheResponse: false }),
 };

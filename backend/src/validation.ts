@@ -1,8 +1,15 @@
+import {
+  FinancialExperience,
+  FinancialGoal,
+  FinancialHorizon,
+  RiskTolerance,
+} from '@prisma/client';
 import { z } from 'zod';
 
 const dateOnly = /^\d{4}-\d{2}-\d{2}$/;
 const money = /^\d{1,8}(?:[.,]\d{1,2})?$/;
 const monthKey = /^\d{4}-(0[1-9]|1[0-2])$/;
+const profileMoney = /^\d{1,10}(?:[.,]\d{1,2})?$/;
 
 const monthlyLimit = z.union([z.string(), z.number()]).transform(String).transform((value) => value.replace(',', '.')).refine(
   (value) => money.test(value) && Number(value) > 0 && Number(value) <= 99_999_999.99,
@@ -45,13 +52,17 @@ export const expenseCreateSchema = z.object({
   categoryId: z.string().uuid(),
 });
 
+const booleanFromRequest = z.union([z.boolean(), z.enum(['true', 'false'])])
+  .transform((value) => value === true || value === 'true');
+
 export const expenseUpdateSchema = z.object({
   description: expenseCreateSchema.shape.description.optional(),
   location: expenseCreateSchema.shape.location.optional(),
   amount: expenseCreateSchema.shape.amount.optional(),
   date: expenseCreateSchema.shape.date.optional(),
   categoryId: expenseCreateSchema.shape.categoryId.optional(),
-  removeReceipt: z.enum(['true', 'false']).transform((value) => value === 'true').optional(),
+  // JSON envia boolean; multipart/form-data envia texto. O contrato aceita ambos.
+  removeReceipt: booleanFromRequest.optional(),
 }).refine((value) => Object.keys(value).length > 0, 'Indique pelo menos um campo.');
 
 export const expenseFiltersSchema = z.object({
@@ -70,6 +81,31 @@ export const budgetCreateSchema = z.object({
 
 export const budgetUpdateSchema = z.object({
   monthlyLimit,
+});
+
+const financialProfileAmount = z.union([z.string(), z.number()])
+  .transform(String)
+  .transform((value) => value.replace(',', '.'))
+  .refine(
+    (value) => profileMoney.test(value) && Number(value) <= 9_999_999_999.99,
+    'Use um valor entre 0 e 9999999999,99, com no máximo duas casas decimais.',
+  );
+
+const positiveFinancialProfileAmount = financialProfileAmount.refine(
+  (value) => Number(value) > 0,
+  'O rendimento mensal líquido deve ser superior a zero.',
+);
+
+export const financialProfileUpsertSchema = z.object({
+  monthlyNetIncome: positiveFinancialProfileAmount,
+  monthlyEssentialCosts: financialProfileAmount,
+  monthlyHousingCosts: financialProfileAmount,
+  monthlyDebtPayments: financialProfileAmount,
+  currentSavings: financialProfileAmount,
+  goal: z.nativeEnum(FinancialGoal),
+  horizon: z.nativeEnum(FinancialHorizon),
+  experience: z.nativeEnum(FinancialExperience),
+  riskTolerance: z.nativeEnum(RiskTolerance),
 });
 
 export const analyticsMonthSchema = z.object({

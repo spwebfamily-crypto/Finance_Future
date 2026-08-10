@@ -11,6 +11,8 @@ ExpenseSnap é uma aplicação mobile-first para registar despesas pessoais e pe
 - Categorias com ícones Lucide, sem emojis.
 - Dashboard com total mensal, médias históricas, comparação mensal, tendência e distribuição por categoria.
 - Limites mensais por categoria e níveis determinísticos de gasto.
+- Onboarding financeiro privado com rendimento, custos, poupança, objetivo, prazo, experiência e tolerância declarada ao risco.
+- Área educativa de investimento com exemplos para estudo, riscos, fontes oficiais e comparação neutra de plataformas; não dá ordens de compra nem promete retorno.
 - PWA instalável, navegação otimizada para telefone e cache dos últimos dados quando fica sem ligação.
 
 ## Tecnologias
@@ -59,10 +61,17 @@ O frontend fica em <http://localhost:5173>, a API em <http://localhost:3000/api>
 - Publish directory: `frontend/dist`
 - Variável de ambiente: `VITE_API_URL=https://expensesnap-api.onrender.com/api`
 
+O Netlify Drop publica o `dist` já compilado e não aplica variáveis do painel. Se a URL da API mudar, ligue o site ao repositório Git ou reconstrua antes do upload manual: `$env:VITE_API_URL='https://sua-api.onrender.com/api'; npm run build -w frontend`.
+
 ### Render (backend)
 
 - Build command: `npm ci --include=dev && npm run build -w backend`
 - Start command: `npm run db:migrate -w backend && npm start -w backend`
 - Health check: `/api/health`
+- Variável recomendada no Render: `TRUST_PROXY_HOPS=2` (edge + load balancer; ajuste se a topologia mudar)
 
-O OCR local pode descarregar o modelo de idioma para o navegador. Imagens são lidas localmente pelo Tesseract.js; PDFs digitais são analisados pelo texto incorporado. PDFs digitalizados sem camada de texto continuam a poder ser anexados, mas pedem confirmação manual dos campos. O ficheiro só é enviado para o backend quando a despesa é guardada.
+Os novos comprovativos são guardados de forma privada no PostgreSQL, com limite de 10 MB por ficheiro e quotas configuráveis (`RECEIPT_QUOTA_MB_PER_USER`, 100 MB por omissão; `RECEIPT_TOTAL_QUOTA_MB`, 500 MB por omissão). `UPLOAD_DIR` serve apenas para abrir e limpar anexos legados criados antes desta migração. A migração não copia esses ficheiros antigos: descarregue-os antes do deploy e volte a anexá-los se existirem dados reais.
+
+A durabilidade de contas, despesas, perfis e comprovativos passa a depender do PostgreSQL. Não use uma base temporária como arquivo: o Render Free PostgreSQL expira, não fornece backups e deve ser substituído por um plano/base durável antes de produção. Mantenha backups verificados.
+
+O OCR local usa o worker, o motor e os modelos em português/inglês publicados com o próprio frontend. Imagens são lidas localmente pelo Tesseract.js; PDFs digitais usam a camada de texto e páginas digitalizadas recorrem ao OCR apenas quando necessário. Depois da primeira leitura, o navegador também reutiliza os modelos em cache. O ficheiro não é enviado para um serviço de IA ou CDN externo; só é enviado para o backend quando a despesa é guardada. As sugestões devem ser confirmadas antes de guardar.

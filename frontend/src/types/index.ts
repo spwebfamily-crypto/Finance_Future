@@ -126,3 +126,35 @@ export interface AnalyticsTrend {
   currency: string;
   series: TrendPoint[];
 }
+
+export type FinancialGoal =
+  | 'emergency_fund'
+  | 'debt_repayment'
+  | 'home_purchase'
+  | 'major_purchase'
+  | 'education'
+  | 'retirement'
+  | 'wealth_growth'
+  | 'other';
+
+export type FinancialHorizon = 'short_term' | 'medium_term' | 'long_term';
+export type FinancialExperience = 'none' | 'beginner' | 'intermediate' | 'advanced';
+export type RiskTolerance = 'conservative' | 'moderate' | 'aggressive';
+
+export interface FinancialProfileInput {
+  monthlyNetIncome: number;
+  monthlyEssentialCosts: number;
+  monthlyHousingCosts: number;
+  monthlyDebtPayments: number;
+  currentSavings: number;
+  goal: FinancialGoal;
+  horizon: FinancialHorizon;
+  experience: FinancialExperience;
+  riskTolerance: RiskTolerance;
+}
+
+export interface FinancialProfile extends FinancialProfileInput {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+}

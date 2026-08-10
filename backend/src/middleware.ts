@@ -80,7 +80,7 @@ export const errorHandler: ErrorRequestHandler = (error, _request, response, _ne
       response,
       isTooLarge ? 413 : 400,
       'INVALID_RECEIPT',
-      isTooLarge ? 'A fotografia não pode exceder 5 MB.' : 'Não foi possível processar a fotografia.',
+      isTooLarge ? 'O comprovativo não pode exceder 10 MB.' : 'Não foi possível processar o comprovativo.',
     );
     return;
   }

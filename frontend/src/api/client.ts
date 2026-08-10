@@ -2,7 +2,8 @@ import type { ApiErrorPayload, RefreshResponse } from '../types';
 import { clearSession, getAccessToken, getRefreshToken, getStoredUser, saveSession } from './token-store';
 import { cacheGet, cacheSet } from './offline-cache';
 
-const API_URL = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
+const DEFAULT_API_URL = import.meta.env.PROD ? 'https://expensesnap-api.onrender.com/api' : '/api';
+const API_URL = (import.meta.env.VITE_API_URL || DEFAULT_API_URL).replace(/\/$/, '');
 
 export class ApiError extends Error {
   readonly status: number;
@@ -76,12 +77,14 @@ interface RequestOptions extends Omit<RequestInit, 'body'> {
   body?: BodyInit | Record<string, unknown> | null;
   auth?: boolean;
   retryOnUnauthorized?: boolean;
+  cacheResponse?: boolean;
 }
 
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const {
     auth = true,
     retryOnUnauthorized = true,
+    cacheResponse = true,
     headers: suppliedHeaders,
     body,
     ...requestInit
@@ -105,7 +108,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
       body: body == null || isFormData || typeof body === 'string' ? body : JSON.stringify(body),
     });
   } catch (error) {
-    if (auth && (requestInit.method || 'GET').toUpperCase() === 'GET') {
+    if (auth && cacheResponse && (requestInit.method || 'GET').toUpperCase() === 'GET') {
       const cached = cacheGet<T>(getStoredUser(), path);
       if (cached !== null) return cached;
     }
@@ -121,17 +124,18 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
       body,
       auth,
       retryOnUnauthorized: false,
+      cacheResponse,
     });
   }
 
   const payload = await parseResponse(response);
   if (!response.ok) throw buildError(payload, response.status);
-  if (auth && (requestInit.method || 'GET').toUpperCase() === 'GET') cacheSet(getStoredUser(), path, payload);
+  if (auth && cacheResponse && (requestInit.method || 'GET').toUpperCase() === 'GET') cacheSet(getStoredUser(), path, payload);
   return payload as T;
 }
 
 /** Fetches a protected binary resource and refreshes the access token once if needed. */
-export async function apiBlobRequest(path: string, options: Omit<RequestOptions, 'body'> = {}): Promise<Blob> {
+export async function apiBlobRequest(path: string, options: Omit<RequestOptions, 'body' | 'cacheResponse'> = {}): Promise<Blob> {
   const { auth = true, retryOnUnauthorized = true, headers: suppliedHeaders, ...requestInit } = options;
   const headers = new Headers(suppliedHeaders);
   const token = auth ? getAccessToken() : null;

@@ -1,12 +1,12 @@
-import { useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, UserRound } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail, UserRound } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { errorMessage } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
-import { AuthFlowVisual } from '../components/AuthFlowVisual';
-import { Brand } from '../components/Brand';
+import { AuthStory } from '../components/AuthStory';
 import { Spinner } from '../components/States';
+import { preloadFinancialOnboardingPage } from '../routePreloads';
 
 export function RegisterPage() {
   const { register } = useAuth();
@@ -22,6 +22,8 @@ export function RegisterPage() {
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<{ name?: string; email?: string; password?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => preloadFinancialOnboardingPage(), []);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -40,7 +42,7 @@ export function RegisterPage() {
 
     try {
       await register(name, email, password);
-      navigate('/expenses', { replace: true });
+      navigate('/onboarding', { replace: true });
     } catch (requestError) {
       setError(errorMessage(requestError));
     } finally {
@@ -50,18 +52,7 @@ export function RegisterPage() {
 
   return (
     <main className="auth-page auth-page--register">
-      <section className="auth-story" aria-label="ExpenseSnap">
-        <Brand linked={false} />
-        <div className="auth-story__body">
-          <div className="auth-story__content">
-            <p className="eyebrow"><ShieldCheck size={14} aria-hidden="true" /> Comece pelo essencial</p>
-            <p className="auth-story__headline">Menos contas soltas. <em>Mais clareza.</em></p>
-            <p>Crie o seu arquivo pessoal de despesas — simples, visual e sempre consigo.</p>
-          </div>
-          <AuthFlowVisual />
-        </div>
-        <div className="auth-story__footer"><LockKeyhole size={16} aria-hidden="true" /> Sem publicidade. Sem ruído.</div>
-      </section>
+      <AuthStory variant="register" />
 
       <section className="auth-form-wrap">
         <motion.div
@@ -76,7 +67,6 @@ export function RegisterPage() {
               <h1>Criar conta</h1>
               <p className="form-intro">Demora menos de um minuto.</p>
             </div>
-            <span className="form-index" aria-hidden="true">02</span>
           </div>
 
           <form className="stack-form" onSubmit={handleSubmit} noValidate>

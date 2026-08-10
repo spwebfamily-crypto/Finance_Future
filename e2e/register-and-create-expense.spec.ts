@@ -30,9 +30,23 @@ test('permite registar uma conta e criar uma despesa com fotografia', async ({ p
   await page.getByLabel('Palavra-passe').fill('Teste-E2E-2026!');
 
   await Promise.all([
-    page.waitForURL(/\/expenses(?:\?.*)?$/),
+    page.waitForURL(/\/onboarding(?:\?.*)?$/),
     page.getByRole('button', { name: 'Criar conta' }).click(),
   ]);
+
+  await page.getByLabel('Rendimento líquido mensal').fill('2500');
+  await page.getByRole('button', { name: 'Continuar' }).click();
+  await page.getByLabel('Casa e habitação').fill('850');
+  await page.getByLabel('Outras despesas essenciais').fill('500');
+  await page.getByLabel('Prestações de dívidas').fill('0');
+  await page.getByLabel('Poupança disponível hoje').fill('3000');
+  await page.getByRole('button', { name: 'Continuar' }).click();
+  await page.getByRole('button', { name: 'Continuar' }).click();
+  await Promise.all([
+    page.waitForURL(/\/investments(?:\?.*)?$/),
+    page.getByRole('button', { name: 'Ver orientação educativa' }).click(),
+  ]);
+  await page.goto('/expenses');
 
   await expect(page.locator('.mobile-nav')).toBeVisible();
   const manifest = await page.request.get('/manifest.webmanifest');
@@ -43,7 +57,7 @@ test('permite registar uma conta e criar uma despesa com fotografia', async ({ p
   await expect.poll(() => category.locator('option').count()).toBeGreaterThan(1);
   await category.selectOption({ index: 1 });
 
-  await page.getByLabel('Foto do recibo').setInputFiles({
+  await page.getByLabel('Foto ou PDF do recibo').setInputFiles({
     name: 'recibo-e2e.png',
     mimeType: 'image/png',
     buffer: receiptPng,
@@ -62,7 +76,12 @@ test('permite registar uma conta e criar uma despesa com fotografia', async ({ p
   ]);
 
   await expect(page.getByText(description, { exact: true })).toBeVisible();
-  await expect(page.locator('.expense-row__receipt img')).toBeVisible();
+  await expect(page.getByLabel(`Recibo de ${description} — imagem guardada`)).toBeVisible();
+  await Promise.all([
+    page.waitForURL(/\/expenses\/[^/]+\/edit$/),
+    page.getByRole('link', { name: `Editar ${description}` }).click(),
+  ]);
+  await expect(page.locator('.receipt-preview__image-link img')).toBeVisible();
 
   await page.goto('/dashboard');
   await expect(page.getByRole('heading', { name: 'O pulso das suas despesas' })).toBeVisible();

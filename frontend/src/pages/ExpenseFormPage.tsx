@@ -5,6 +5,7 @@ import { errorMessage } from '../api/client';
 import { categoryApi, expenseApi } from '../api/resources';
 import { PageHeader } from '../components/PageHeader';
 import { AuthenticatedReceiptImage } from '../components/AuthenticatedReceiptImage';
+import { PdfReceiptPreview } from '../components/PdfReceiptPreview';
 import { ErrorState, LoadingState, Spinner } from '../components/States';
 import type { Category, ExpenseInput } from '../types';
 import { toDateInputValue, todayInputValue } from '../utils/format';
@@ -36,7 +37,9 @@ export function ExpenseFormPage() {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const readRunIdRef = useRef(0);
+  const readAbortRef = useRef<AbortController | null>(null);
   const lastAutofillRef = useRef<Partial<ExpenseInput>>({});
+  const hadStoredReceiptRef = useRef(false);
   const isEditing = Boolean(expenseId);
   const [categories, setCategories] = useState<Category[]>([]);
   const [form, setForm] = useState<ExpenseInput>(initialForm);
@@ -57,13 +60,20 @@ export function ExpenseFormPage() {
     if (!form.receipt) return null;
     return URL.createObjectURL(form.receipt);
   }, [form.receipt]);
+  const selectedReceiptIsPdf = Boolean(form.receipt && (form.receipt.type === 'application/pdf' || form.receipt.name.toLowerCase().endsWith('.pdf')));
 
   useEffect(() => () => {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
   }, [previewUrl]);
 
+  useEffect(() => () => {
+    readRunIdRef.current += 1;
+    readAbortRef.current?.abort();
+  }, []);
+
   useEffect(() => {
     let active = true;
+    hadStoredReceiptRef.current = false;
     setIsLoading(true);
     setPageError('');
 
@@ -86,6 +96,7 @@ export function ExpenseFormPage() {
           });
           setExistingReceipt(expense.receiptImageUrl || null);
           setExistingReceiptType(expense.receiptMimeType || null);
+          hadStoredReceiptRef.current = Boolean(expense.receiptImageUrl);
         }
       })
       .catch((requestError) => {
@@ -108,6 +119,9 @@ export function ExpenseFormPage() {
 
   async function readReceiptDetails(file: File) {
     const runId = ++readRunIdRef.current;
+    readAbortRef.current?.abort();
+    const controller = new AbortController();
+    readAbortRef.current = controller;
     const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
     setOcrState('reading');
     setOcrSource(isPdf ? 'pdf' : 'image');
@@ -119,7 +133,7 @@ export function ExpenseFormPage() {
         if (runId !== readRunIdRef.current) return;
         setOcrProgress(Math.round(progress * 100));
         setOcrMessage(status === 'recognizing text' ? 'A identificar os detalhes…' : status);
-      });
+      }, controller.signal);
       if (runId !== readRunIdRef.current) return;
       applyReceiptResult(result);
       setOcrSource(result.source);
@@ -130,9 +144,12 @@ export function ExpenseFormPage() {
         : 'Não foi encontrado texto legível. Confirme os dados manualmente.');
     } catch {
       if (runId !== readRunIdRef.current) return;
+      if (controller.signal.aborted) return;
       setOcrState('error');
       setOcrSource(null);
       setOcrMessage('Não foi possível ler o comprovativo. Pode preencher os campos manualmente.');
+    } finally {
+      if (readAbortRef.current === controller) readAbortRef.current = null;
     }
   }
 
@@ -199,8 +216,10 @@ export function ExpenseFormPage() {
 
   function removeReceipt() {
     readRunIdRef.current += 1;
+    readAbortRef.current?.abort();
+    readAbortRef.current = null;
     updateField('receipt', null);
-    setForm((current) => ({ ...current, receipt: null, removeReceipt: Boolean(existingReceipt) }));
+    setForm((current) => ({ ...current, receipt: null, removeReceipt: hadStoredReceiptRef.current }));
     setExistingReceipt(null);
     setExistingReceiptType(null);
     setOcrState('idle');
@@ -300,18 +319,18 @@ export function ExpenseFormPage() {
         <section className="form-section form-section--receipt" aria-labelledby="receipt-title">
           <div className="form-section__number" aria-hidden="true">02</div>
           <div className="form-section__content">
-            <div className="form-section__heading"><Camera aria-hidden="true" /><div><h2 id="receipt-title">Comprovativo</h2><p>Uma imagem ajuda a manter tudo verificável.</p></div></div>
+            <div className="form-section__heading"><Camera aria-hidden="true" /><div><h2 id="receipt-title">Comprovativo</h2><p>Uma foto ou PDF ajuda a manter tudo verificável.</p></div></div>
             {(previewUrl || existingReceipt) ? (
               <div className="receipt-preview">
                 {previewUrl
-                  ? form.receipt?.type === 'application/pdf'
-                    ? <div className="receipt-file-card"><FileText aria-hidden="true" /><strong>Documento PDF</strong><a href={previewUrl} target="_blank" rel="noreferrer">Abrir comprovativo</a></div>
-                    : <img src={previewUrl} alt="Pré-visualização do recibo" />
-                  : existingReceipt && <AuthenticatedReceiptImage receiptUrl={existingReceipt} alt="Pré-visualização do recibo" />}
+                  ? selectedReceiptIsPdf
+                    ? <PdfReceiptPreview file={form.receipt!} href={previewUrl} title={form.receipt!.name} />
+                    : <a className="receipt-preview__image-link" href={previewUrl} target="_blank" rel="noreferrer" aria-label="Abrir imagem do comprovativo"><img src={previewUrl} alt="Pré-visualização do recibo" /></a>
+                  : existingReceipt && <AuthenticatedReceiptImage receiptUrl={existingReceipt} receiptMimeType={existingReceiptType} alt="Pré-visualização do recibo" detailed />}
                 <div className="receipt-preview__details">
-                  {form.receipt?.type === 'application/pdf' || existingReceiptType === 'application/pdf' ? <FileText aria-hidden="true" /> : <FileImage aria-hidden="true" />}
+                  {selectedReceiptIsPdf || existingReceiptType === 'application/pdf' ? <FileText aria-hidden="true" /> : <FileImage aria-hidden="true" />}
                   <div><strong>{form.receipt?.name || 'Comprovativo guardado'}</strong><small>{form.receipt ? `${(form.receipt.size / 1024 / 1024).toFixed(1)} MB` : 'Ficheiro atual'}</small></div>
-                  <button type="button" className="icon-button icon-button--danger" onClick={removeReceipt} aria-label="Remover foto do recibo"><X aria-hidden="true" /></button>
+                  <button type="button" className="icon-button icon-button--danger" onClick={removeReceipt} aria-label="Remover comprovativo"><X aria-hidden="true" /></button>
                 </div>
               </div>
             ) : (
@@ -335,9 +354,9 @@ export function ExpenseFormPage() {
                   <strong>{ocrState === 'reading' ? (ocrSource === 'pdf' ? 'A ler o PDF' : 'A ler o comprovativo') : ocrState === 'done' ? 'Sugestões prontas' : 'Preenchimento local'}</strong>
                   <p>{ocrMessage || 'A leitura acontece no seu dispositivo e apenas sugere valores para confirmar.'}</p>
                   {ocrState === 'done' && ocrConfidence && <div className="receipt-ocr__confidence" aria-label="Confiança das sugestões">
-                    {form.amount && ocrConfidence.amount > 0 && <span>Valor {Math.round(ocrConfidence.amount * 100)}%</span>}
-                    {form.categoryId && ocrConfidence.category > 0 && <span>Categoria {Math.round(ocrConfidence.category * 100)}%</span>}
-                    {form.date && ocrConfidence.date > 0 && <span>Data {Math.round(ocrConfidence.date * 100)}%</span>}
+                    {form.amount === lastAutofillRef.current.amount && ocrConfidence.amount > 0 && <span>Valor {Math.round(ocrConfidence.amount * 100)}%</span>}
+                    {form.categoryId === lastAutofillRef.current.categoryId && ocrConfidence.category > 0 && <span>Categoria {Math.round(ocrConfidence.category * 100)}%</span>}
+                    {form.date === lastAutofillRef.current.date && ocrConfidence.date > 0 && <span>Data {Math.round(ocrConfidence.date * 100)}%</span>}
                   </div>}
                   {ocrState === 'reading' && <div className="receipt-ocr__progress" aria-label={`Leitura ${ocrProgress}%`}><span style={{ width: `${Math.max(4, ocrProgress)}%` }} /></div>}
                 </div>

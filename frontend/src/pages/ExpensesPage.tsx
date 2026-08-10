@@ -222,7 +222,7 @@ export function ExpensesPage() {
                 <span className="expense-row__index" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
                 <div className="expense-row__receipt">
                   {expense.receiptImageUrl
-                    ? <AuthenticatedReceiptImage receiptUrl={expense.receiptImageUrl} alt={`Recibo de ${expense.description}`} />
+                    ? <AuthenticatedReceiptImage receiptUrl={expense.receiptImageUrl} receiptMimeType={expense.receiptMimeType} alt={`Recibo de ${expense.description}`} />
                     : <Receipt aria-hidden="true" />}
                 </div>
                 <div className="expense-row__main">

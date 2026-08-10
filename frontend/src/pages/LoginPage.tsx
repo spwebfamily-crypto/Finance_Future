@@ -1,11 +1,10 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, Sparkles } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { errorMessage } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
-import { AuthFlowVisual } from '../components/AuthFlowVisual';
-import { Brand } from '../components/Brand';
+import { AuthStory } from '../components/AuthStory';
 import { Spinner } from '../components/States';
 
 export function LoginPage() {
@@ -49,18 +48,7 @@ export function LoginPage() {
 
   return (
     <main className="auth-page auth-page--login">
-      <section className="auth-story" aria-label="ExpenseSnap">
-        <Brand linked={false} />
-        <div className="auth-story__body">
-          <div className="auth-story__content">
-            <p className="eyebrow"><Sparkles size={14} aria-hidden="true" /> Contas em dia, cabeça leve</p>
-            <p className="auth-story__headline">Veja o seu dinheiro <em>sem ruído.</em></p>
-            <p>Registe cada despesa no momento certo e transforme pequenos movimentos em uma visão clara do mês.</p>
-          </div>
-          <AuthFlowVisual />
-        </div>
-        <div className="auth-story__footer"><ShieldCheck size={16} aria-hidden="true" /> Os seus registos ficam sob o seu controlo.</div>
-      </section>
+      <AuthStory variant="login" />
 
       <section className="auth-form-wrap">
         <motion.div
@@ -75,7 +63,6 @@ export function LoginPage() {
               <h1>Entrar na conta</h1>
               <p className="form-intro">Continue de onde ficou.</p>
             </div>
-            <span className="form-index" aria-hidden="true">01</span>
           </div>
 
           <form className="stack-form" onSubmit={handleSubmit} noValidate>

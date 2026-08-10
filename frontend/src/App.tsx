@@ -9,7 +9,7 @@ import { NotFoundPage } from './pages/NotFoundPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { LoadingState } from './components/States';
 import { RouteTransitionOutlet } from './components/RouteTransitionOutlet';
-import { loadDashboardPage, loadExpenseFormPage } from './routePreloads';
+import { loadDashboardPage, loadExpenseFormPage, loadFinancialOnboardingPage, loadInvestmentsPage } from './routePreloads';
 
 const DashboardPage = lazy(() => loadDashboardPage().then((module) => ({
   default: module.DashboardPage,
@@ -17,6 +17,14 @@ const DashboardPage = lazy(() => loadDashboardPage().then((module) => ({
 
 const ExpenseFormPage = lazy(() => loadExpenseFormPage().then((module) => ({
   default: module.ExpenseFormPage,
+})));
+
+const FinancialOnboardingPage = lazy(() => loadFinancialOnboardingPage().then((module) => ({
+  default: module.FinancialOnboardingPage,
+})));
+
+const InvestmentsPage = lazy(() => loadInvestmentsPage().then((module) => ({
+  default: module.InvestmentsPage,
 })));
 
 const routeFallback = <div className="page"><LoadingState label="A abrir esta página" /></div>;
@@ -32,12 +40,14 @@ export default function App() {
       </Route>
 
       <Route element={<ProtectedRoute />}>
+        <Route path="/onboarding" element={<Suspense fallback={routeFallback}><FinancialOnboardingPage /></Suspense>} />
         <Route element={<AppShell />}>
           <Route path="/dashboard" element={<Suspense fallback={routeFallback}><DashboardPage /></Suspense>} />
           <Route path="/expenses" element={<ExpensesPage />} />
           <Route path="/expenses/new" element={<Suspense fallback={routeFallback}><ExpenseFormPage /></Suspense>} />
           <Route path="/expenses/:expenseId/edit" element={<Suspense fallback={routeFallback}><ExpenseFormPage /></Suspense>} />
           <Route path="/categories" element={<CategoriesPage />} />
+          <Route path="/investments" element={<Suspense fallback={routeFallback}><InvestmentsPage /></Suspense>} />
         </Route>
       </Route>
 
