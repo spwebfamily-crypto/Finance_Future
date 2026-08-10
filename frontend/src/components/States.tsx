@@ -1,15 +1,34 @@
 import { AlertCircle, Inbox, RotateCcw } from 'lucide-react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { Brand } from './Brand';
 
 export function Spinner({ label = 'A carregar' }: { label?: string }) {
   return <span className="spinner" role="status"><span aria-hidden="true" />{label}</span>;
 }
 
 export function FullPageLoader({ label }: { label: string }) {
+  const reduceMotion = useReducedMotion();
+
   return (
-    <main className="full-page-loader">
-      <div className="loader-ledger" aria-hidden="true"><span /><span /><span /></div>
-      <Spinner label={label} />
-    </main>
+    <motion.div
+      className="full-page-loader"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+      initial={false}
+      animate={{ opacity: 1 }}
+      exit={reduceMotion ? { opacity: 0, transition: { duration: 0 } } : { opacity: 0, transition: { duration: 0.08, ease: 'easeOut' } }}
+    >
+      <Brand linked={false} phase="loading" />
+      <div className="loader-progress" aria-hidden="true">
+        <motion.span
+          initial={reduceMotion ? false : { x: '-100%' }}
+          animate={reduceMotion ? { x: '0%' } : { x: ['-120%', '340%'] }}
+          transition={reduceMotion ? { duration: 0 } : { duration: 0.85, repeat: Infinity, ease: 'easeInOut' }}
+        />
+      </div>
+      <span className="full-page-loader__label">{label}</span>
+    </motion.div>
   );
 }
 

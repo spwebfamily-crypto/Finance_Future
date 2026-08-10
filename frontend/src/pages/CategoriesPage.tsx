@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Check, Edit3, FolderPlus, LockKeyhole, Plus, Trash2, X } from 'lucide-react';
 import { categoryApi } from '../api/resources';
 import { errorMessage } from '../api/client';
@@ -6,6 +7,7 @@ import { CategoryIcon, CATEGORY_ICON_OPTIONS, categoryIconName } from '../compon
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { PageHeader } from '../components/PageHeader';
 import { EmptyState, ErrorState, LoadingState, Spinner } from '../components/States';
+import { NoticeToast } from '../components/NoticeToast';
 import type { Category } from '../types';
 
 function IconPicker({ value, onChange, label }: { value: string; onChange: (value: string) => void; label: string }) {
@@ -30,6 +32,7 @@ function IconPicker({ value, onChange, label }: { value: string; onChange: (valu
 }
 
 export function CategoriesPage() {
+  const reduceMotion = useReducedMotion();
   const [categories, setCategories] = useState<Category[]>([]);
   const [name, setName] = useState('');
   const [icon, setIcon] = useState('sparkles');
@@ -121,11 +124,11 @@ export function CategoriesPage() {
 
   return (
     <div className="page page--categories">
-      {notice && <div className="toast" role="status">{notice}<button type="button" onClick={() => setNotice('')} aria-label="Fechar aviso"><X aria-hidden="true" /></button></div>}
+      <NoticeToast message={notice} onClose={() => setNotice('')} />
       <PageHeader
-        eyebrow="Organização / Categorias"
-        title="Uma pasta para cada gasto"
-        description="Use as categorias base ou crie as suas próprias regras de arquivo."
+        eyebrow="Organização"
+        title="Categorias"
+        description="Agrupe os gastos de forma simples e reconhecível."
       />
 
       <div className="categories-layout">
@@ -147,10 +150,19 @@ export function CategoriesPage() {
           {isLoading ? <LoadingState label="A carregar categorias" /> : error && categories.length === 0 ? <ErrorState message={error} onRetry={() => void loadCategories()} /> : categories.length === 0 ? <EmptyState title="Sem categorias" description="Crie uma categoria para começar a organizar as suas despesas." /> : (
             <div className="category-list">
               {error && <div className="form-alert" role="alert">{error}</div>}
-              {categories.map((category, index) => {
-                const isEditing = editingId === category.id;
-                return (
-                  <article className={`category-row ${isEditing ? 'category-row--editing' : ''}`} key={category.id}>
+              <AnimatePresence initial={false} mode="popLayout">
+                {categories.map((category, index) => {
+                  const isEditing = editingId === category.id;
+                  return (
+                  <motion.article
+                    className={`category-row ${isEditing ? 'category-row--editing' : ''}`}
+                    key={category.id}
+                    layout="position"
+                    initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={reduceMotion ? undefined : { opacity: 0, scale: 0.985 }}
+                    transition={reduceMotion ? { duration: 0 } : { duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                  >
                     <span className="category-row__index" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
                     {isEditing ? (
                       <div className="category-row__edit-fields">
@@ -178,9 +190,10 @@ export function CategoriesPage() {
                         </>
                       )}
                     </div>
-                  </article>
-                );
-              })}
+                  </motion.article>
+                  );
+                })}
+              </AnimatePresence>
             </div>
           )}
         </section>

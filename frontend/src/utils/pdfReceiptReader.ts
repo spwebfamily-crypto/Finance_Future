@@ -1,4 +1,3 @@
-import Tesseract from 'tesseract.js';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
 const MAX_TEXT_PAGES = 20;
@@ -91,6 +90,8 @@ export async function readPdfReceipt(
 
     const ocrPages: string[] = [];
     const pagesToOcr = Math.min(pdfDocument.numPages, MAX_OCR_PAGES);
+    onProgress?.(0.34, 'A preparar o OCR local…');
+    const { default: Tesseract } = await import('tesseract.js');
     const worker = await Tesseract.createWorker('por+eng', Tesseract.OEM.LSTM_ONLY);
     try {
       for (let pageNumber = 1; pageNumber <= pagesToOcr; pageNumber += 1) {

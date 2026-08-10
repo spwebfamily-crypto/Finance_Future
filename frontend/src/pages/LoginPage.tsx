@@ -65,9 +65,9 @@ export function LoginPage() {
       <section className="auth-form-wrap">
         <motion.div
           className="auth-form-panel"
-          initial={reduceMotion ? false : { opacity: 0, y: 18 }}
+          initial={reduceMotion ? false : { opacity: 0, y: 8 }}
           animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: reduceMotion ? 0 : 0.22, ease: [0.22, 1, 0.36, 1] }}
         >
           <div className="auth-form-heading">
             <div>

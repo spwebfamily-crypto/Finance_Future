@@ -1,12 +1,13 @@
 import { FolderKanban, LayoutDashboard, LogOut, Plus, ReceiptText, WifiOff } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { useEffect, useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { useEffect, useRef, useState } from 'react';
+import { NavLink, useLocation, useOutlet } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { Brand } from '../components/Brand';
+import { preloadDashboardPage, preloadExpenseFormPage } from '../routePreloads';
 
 const navItems = [
-  { to: '/dashboard', label: 'Visão geral', icon: LayoutDashboard },
+  { to: '/dashboard', label: 'Visão geral', icon: LayoutDashboard, preload: preloadDashboardPage },
   { to: '/expenses', label: 'Despesas', icon: ReceiptText },
   { to: '/categories', label: 'Categorias', icon: FolderKanban },
 ];
@@ -14,8 +15,16 @@ const navItems = [
 function Navigation({ mobile = false }: { mobile?: boolean }) {
   return (
     <nav className={mobile ? 'mobile-nav' : 'side-nav'} aria-label="Navegação principal">
-      {navItems.map(({ to, label, icon: Icon }) => (
-        <NavLink key={to} to={to} end={to === '/expenses'} className={({ isActive }) => isActive ? 'nav-link nav-link--active' : 'nav-link'}>
+      {navItems.map(({ to, label, icon: Icon, preload }) => (
+        <NavLink
+          key={to}
+          to={to}
+          end={to === '/expenses'}
+          className={({ isActive }) => isActive ? 'nav-link nav-link--active' : 'nav-link'}
+          onPointerEnter={preload}
+          onPointerDown={preload}
+          onFocus={preload}
+        >
           {({ isActive }) => (
             <>
               <Icon aria-hidden="true" />
@@ -26,7 +35,13 @@ function Navigation({ mobile = false }: { mobile?: boolean }) {
         </NavLink>
       ))}
       {mobile && (
-        <NavLink to="/expenses/new" className={({ isActive }) => isActive ? 'mobile-nav__add mobile-nav__add--active' : 'mobile-nav__add'} aria-label="Nova despesa">
+        <NavLink
+          to="/expenses/new"
+          className={({ isActive }) => isActive ? 'mobile-nav__add mobile-nav__add--active' : 'mobile-nav__add'}
+          aria-label="Nova despesa"
+          onPointerDown={preloadExpenseFormPage}
+          onFocus={preloadExpenseFormPage}
+        >
           <Plus aria-hidden="true" />
           <span>Novo</span>
         </NavLink>
@@ -37,6 +52,11 @@ function Navigation({ mobile = false }: { mobile?: boolean }) {
 
 export function AppShell() {
   const { user, logout } = useAuth();
+  const location = useLocation();
+  const outlet = useOutlet();
+  const reduceMotion = useReducedMotion();
+  const logoutTimerRef = useRef<number | null>(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isOffline, setIsOffline] = useState(() => typeof navigator !== 'undefined' && !navigator.onLine);
   useEffect(() => {
     const online = () => setIsOffline(false);
@@ -45,6 +65,20 @@ export function AppShell() {
     window.addEventListener('offline', offline);
     return () => { window.removeEventListener('online', online); window.removeEventListener('offline', offline); };
   }, []);
+  useEffect(() => () => {
+    if (logoutTimerRef.current !== null) window.clearTimeout(logoutTimerRef.current);
+  }, []);
+
+  function handleLogout() {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    if (reduceMotion) {
+      logout();
+      return;
+    }
+    logoutTimerRef.current = window.setTimeout(logout, 90);
+  }
+
   const initials = user?.name
     .split(/\s+/)
     .slice(0, 2)
@@ -56,10 +90,15 @@ export function AppShell() {
     <div className="app-shell">
       <a className="skip-link" href="#main-content">Saltar para o conteúdo</a>
       <aside className="sidebar">
-        <Brand />
-        <div className="sidebar__rule"><span>01—</span></div>
+        <Brand phase={isLoggingOut ? 'exit' : 'idle'} />
         <Navigation />
-        <NavLink className="button button--accent sidebar__add" to="/expenses/new">
+        <NavLink
+          className="button button--accent sidebar__add"
+          to="/expenses/new"
+          onPointerEnter={preloadExpenseFormPage}
+          onPointerDown={preloadExpenseFormPage}
+          onFocus={preloadExpenseFormPage}
+        >
           <Plus aria-hidden="true" /> Nova despesa
         </NavLink>
         <div className="account-card">
@@ -68,23 +107,51 @@ export function AppShell() {
             <strong>{user?.name}</strong>
             <small>{user?.email}</small>
           </span>
-          <button className="icon-button" type="button" onClick={logout} aria-label="Terminar sessão" title="Terminar sessão">
+          <motion.button
+            className="icon-button"
+            type="button"
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            aria-busy={isLoggingOut}
+            aria-label={isLoggingOut ? 'A terminar sessão' : 'Terminar sessão'}
+            title="Terminar sessão"
+            whileTap={reduceMotion ? undefined : { scale: 0.94 }}
+          >
             <LogOut aria-hidden="true" />
-          </button>
+          </motion.button>
         </div>
       </aside>
 
       <header className="mobile-header">
-        <Brand compact />
-        <button className="mobile-account" type="button" onClick={logout} aria-label="Terminar sessão">
+        <Brand compact phase={isLoggingOut ? 'exit' : 'idle'} />
+        <motion.button
+          className="mobile-account"
+          type="button"
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+          aria-busy={isLoggingOut}
+          aria-label={isLoggingOut ? 'A terminar sessão' : 'Terminar sessão'}
+          whileTap={reduceMotion ? undefined : { scale: 0.96 }}
+        >
           <span aria-hidden="true">{initials}</span>
           <LogOut aria-hidden="true" />
-        </button>
+        </motion.button>
       </header>
 
       <main id="main-content" className="main-content" tabIndex={-1}>
         {isOffline && <div className="offline-banner" role="status"><WifiOff aria-hidden="true" /> Sem ligação. A mostrar os últimos dados guardados.</div>}
-        <Outlet />
+        <AnimatePresence mode="popLayout" initial={false}>
+          <motion.div
+            className="route-stage"
+            key={location.pathname}
+            initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reduceMotion ? undefined : { opacity: 0, y: -3, transition: { duration: 0.09, ease: 'easeOut' } }}
+            transition={{ duration: reduceMotion ? 0 : 0.16, ease: [0.22, 1, 0.36, 1] }}
+          >
+            {outlet}
+          </motion.div>
+        </AnimatePresence>
       </main>
       <Navigation mobile />
     </div>

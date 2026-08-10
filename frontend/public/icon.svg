@@ -1,1 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><rect width="128" height="128" rx="28" fill="#f06a50"/><path d="M27 96V61h19v35m18 0V37h19v59m18 0V20h19v76" fill="#171914"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="ExpenseSnap">
+  <rect width="128" height="128" rx="28" fill="#c9f277"/>
+  <g fill="none" stroke="#0b120e" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M39 22H29a7 7 0 0 0-7 7v10M89 22h10a7 7 0 0 1 7 7v10M22 89v10a7 7 0 0 0 7 7h10M106 89v10a7 7 0 0 1-7 7H89"/>
+    <path d="M45 91V44a8 8 0 0 1 8-8h22a8 8 0 0 1 8 8v47l-9-5-10 6-10-6z"/>
+  </g>
+  <path d="M64 52a14 14 0 1 0 14 14H64Z" fill="#0b120e"/>
+</svg>

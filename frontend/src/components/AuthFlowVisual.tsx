@@ -19,8 +19,9 @@ export function AuthFlowVisual() {
           stroke="currentColor"
           strokeWidth="1.5"
           strokeDasharray="0.16 0.08"
-          animate={reduceMotion ? undefined : { strokeDashoffset: [0, -0.48] }}
-          transition={{ duration: 4, ease: 'linear', repeat: Infinity }}
+          initial={reduceMotion ? false : { opacity: 0, strokeDashoffset: 0.16 }}
+          animate={reduceMotion ? undefined : { opacity: 1, strokeDashoffset: 0 }}
+          transition={{ duration: reduceMotion ? 0 : 0.38, ease: [0.22, 1, 0.36, 1] }}
         />
         <motion.path
           d="M 90 176 C 160 176 160 110 210 110 C 260 110 260 44 330 44"
@@ -28,8 +29,9 @@ export function AuthFlowVisual() {
           stroke="currentColor"
           strokeWidth="1.5"
           strokeDasharray="0.16 0.08"
-          animate={reduceMotion ? undefined : { strokeDashoffset: [0, 0.48] }}
-          transition={{ duration: 4.8, ease: 'linear', repeat: Infinity }}
+          initial={reduceMotion ? false : { opacity: 0, strokeDashoffset: -0.16 }}
+          animate={reduceMotion ? undefined : { opacity: 1, strokeDashoffset: 0 }}
+          transition={{ delay: reduceMotion ? 0 : 0.03, duration: reduceMotion ? 0 : 0.38, ease: [0.22, 1, 0.36, 1] }}
         />
       </svg>
       <div className="auth-flow__nodes">
@@ -39,7 +41,7 @@ export function AuthFlowVisual() {
             key={label}
             initial={reduceMotion ? false : { opacity: 0, y: 12 }}
             animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.12, duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ delay: reduceMotion ? 0 : index * 0.045, duration: reduceMotion ? 0 : 0.24, ease: [0.22, 1, 0.36, 1] }}
           >
             <span className="auth-flow__icon"><Icon size={19} strokeWidth={1.8} /></span>
             <span>{label}</span>

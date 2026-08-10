@@ -1,4 +1,3 @@
-import Tesseract from 'tesseract.js';
 import type { Category } from '../types';
 
 export interface ReceiptOcrResult {
@@ -204,6 +203,8 @@ export async function readReceiptFile(
     return { ...parseReceiptText(pdf.text, categories), rawText: pdf.text, source: 'pdf' as const, pdf: { pageCount: pdf.pageCount, usedOcr: pdf.usedOcr } };
   }
 
+  onProgress?.(0.01, 'A preparar a leitura local…');
+  const { default: Tesseract } = await import('tesseract.js');
   const worker = await Tesseract.createWorker('por+eng', Tesseract.OEM.LSTM_ONLY, {
     logger: ({ progress, status }) => onProgress?.(progress, status),
   });
