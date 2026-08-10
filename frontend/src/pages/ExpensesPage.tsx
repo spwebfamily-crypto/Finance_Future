@@ -154,11 +154,11 @@ export function ExpensesPage() {
           {filtersOpen && (
             <motion.div
               key="expense-filters"
-              initial={reduceMotion ? false : { height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={reduceMotion ? undefined : { height: 0, opacity: 0 }}
-              transition={reduceMotion ? { duration: 0 } : { duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-              style={{ minWidth: 0, overflow: 'hidden' }}
+              initial={reduceMotion ? false : { opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={reduceMotion ? undefined : { opacity: 0, y: -4 }}
+              transition={reduceMotion ? { duration: 0 } : { duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
+              style={{ minWidth: 0 }}
             >
               <form id="expense-filters" className="filter-form" onSubmit={applyFilters}>
                 <label className="field field--compact">

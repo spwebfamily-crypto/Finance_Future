@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent, type FormEvent } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowLeft, CalendarDays, Camera, Check, FileImage, FileText, MapPin, ReceiptText, ScanText, Tag, Upload, X } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { errorMessage } from '../api/client';
@@ -35,6 +36,7 @@ const initialForm = (): ExpenseInput => ({
 export function ExpenseFormPage() {
   const { expenseId } = useParams();
   const navigate = useNavigate();
+  const reduceMotion = useReducedMotion();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const readRunIdRef = useRef(0);
   const readAbortRef = useRef<AbortController | null>(null);
@@ -358,7 +360,16 @@ export function ExpenseFormPage() {
                     {form.categoryId === lastAutofillRef.current.categoryId && ocrConfidence.category > 0 && <span>Categoria {Math.round(ocrConfidence.category * 100)}%</span>}
                     {form.date === lastAutofillRef.current.date && ocrConfidence.date > 0 && <span>Data {Math.round(ocrConfidence.date * 100)}%</span>}
                   </div>}
-                  {ocrState === 'reading' && <div className="receipt-ocr__progress" aria-label={`Leitura ${ocrProgress}%`}><span style={{ width: `${Math.max(4, ocrProgress)}%` }} /></div>}
+                  {ocrState === 'reading' && (
+                    <div className="receipt-ocr__progress" aria-label={`Leitura ${ocrProgress}%`}>
+                      <motion.span
+                        initial={false}
+                        animate={{ scaleX: Math.max(4, ocrProgress) / 100 }}
+                        transition={reduceMotion ? { duration: 0 } : { duration: 0.22, ease: 'easeOut' }}
+                        style={{ width: '100%', originX: 0 }}
+                      />
+                    </div>
+                  )}
                 </div>
                 {(ocrState === 'error' || ocrState === 'done') && <button className="button button--secondary button--small" type="button" onClick={() => void readReceiptDetails(form.receipt!)}>{ocrState === 'error' ? 'Tentar novamente' : 'Ler de novo'}</button>}
               </div>

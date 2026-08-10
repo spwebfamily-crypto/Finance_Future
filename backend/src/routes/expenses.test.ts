@@ -127,6 +127,9 @@ describe('expense receipt storage', () => {
     expect(response.status).toBe(201);
     expect(body.data.receiptImageUrl).toBe(`/api/expenses/${expenseId}/receipt`);
     expect(repositories.queryRaw).toHaveBeenCalledTimes(2);
+    for (const [query] of repositories.queryRaw.mock.calls) {
+      expect(Array.from(query as TemplateStringsArray).join('?')).toContain('::text AS lock_result');
+    }
     expect(repositories.expenseCreate).toHaveBeenCalledOnce();
     const createCall = repositories.expenseCreate.mock.calls[0][0];
     expect(createCall.data.receiptImageUrl).toBeNull();

@@ -125,7 +125,6 @@ export function AppShell() {
             aria-busy={isLoggingOut}
             aria-label={isLoggingOut ? 'A terminar sessão' : 'Terminar sessão'}
             title="Terminar sessão"
-            whileTap={reduceMotion ? undefined : { scale: 0.94 }}
           >
             <LogOut aria-hidden="true" />
           </motion.button>

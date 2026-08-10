@@ -72,7 +72,14 @@ export function RegisterPage() {
           <form className="stack-form" onSubmit={handleSubmit} noValidate>
             <AnimatePresence initial={false}>
               {error && (
-                <motion.div className="form-alert" role="alert" initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}>
+                <motion.div
+                  className="form-alert"
+                  role="alert"
+                  initial={reduceMotion ? false : { opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={reduceMotion ? undefined : { opacity: 0, y: -6 }}
+                  transition={{ duration: reduceMotion ? 0 : 0.16, ease: 'easeOut' }}
+                >
                   {error}
                 </motion.div>
               )}
@@ -98,16 +105,21 @@ export function RegisterPage() {
               <span className="field__control field__control--password">
                 <LockKeyhole aria-hidden="true" />
                 <input ref={passwordRef} type={showPassword ? 'text' : 'password'} name="password" autoComplete="new-password" minLength={8} required value={password} onChange={(event) => { setPassword(event.target.value); setFieldErrors((current) => ({ ...current, password: undefined })); }} placeholder="Mínimo de 8 caracteres" aria-invalid={Boolean(fieldErrors.password)} aria-describedby={fieldErrors.password ? 'register-password-error password-help' : 'password-help'} />
-                <button className="field__action" type="button" onClick={() => setShowPassword((current) => !current)} aria-label={showPassword ? 'Ocultar palavra-passe' : 'Mostrar palavra-passe'}>
+                <button
+                  className="field__action"
+                  type="button"
+                  onClick={() => setShowPassword((current) => !current)}
+                  aria-label={showPassword ? 'Ocultar palavra-passe' : 'Mostrar palavra-passe'}
+                >
                   {showPassword ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
                 </button>
               </span>
               {fieldErrors.password && <small className="field__error" id="register-password-error">{fieldErrors.password}</small>}
               <small id="password-help">Use 8 ou mais caracteres.</small>
             </label>
-            <motion.button className="button button--primary button--wide" type="submit" disabled={isSubmitting} whileHover={reduceMotion ? undefined : { y: -2 }} whileTap={reduceMotion ? undefined : { scale: 0.985 }}>
+            <button className="button button--primary button--wide" type="submit" disabled={isSubmitting}>
               {isSubmitting ? <Spinner label="A criar conta" /> : <>Criar conta <ArrowRight aria-hidden="true" /></>}
-            </motion.button>
+            </button>
           </form>
 
           <p className="auth-switch">Já tem conta? <Link to="/login">Entrar <ArrowRight size={14} aria-hidden="true" /></Link></p>

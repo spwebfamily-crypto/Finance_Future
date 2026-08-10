@@ -68,7 +68,14 @@ export function LoginPage() {
           <form className="stack-form" onSubmit={handleSubmit} noValidate>
             <AnimatePresence initial={false}>
               {error && (
-                <motion.div className="form-alert" role="alert" initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}>
+                <motion.div
+                  className="form-alert"
+                  role="alert"
+                  initial={reduceMotion ? false : { opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={reduceMotion ? undefined : { opacity: 0, y: -6 }}
+                  transition={{ duration: reduceMotion ? 0 : 0.16, ease: 'easeOut' }}
+                >
                   {error}
                 </motion.div>
               )}
@@ -110,15 +117,20 @@ export function LoginPage() {
                   aria-invalid={Boolean(fieldErrors.password)}
                   aria-describedby={fieldErrors.password ? 'login-password-error' : undefined}
                 />
-                <button className="field__action" type="button" onClick={() => setShowPassword((current) => !current)} aria-label={showPassword ? 'Ocultar palavra-passe' : 'Mostrar palavra-passe'}>
+                <button
+                  className="field__action"
+                  type="button"
+                  onClick={() => setShowPassword((current) => !current)}
+                  aria-label={showPassword ? 'Ocultar palavra-passe' : 'Mostrar palavra-passe'}
+                >
                   {showPassword ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
                 </button>
               </span>
               {fieldErrors.password && <small className="field__error" id="login-password-error">{fieldErrors.password}</small>}
             </label>
-            <motion.button className="button button--primary button--wide" type="submit" disabled={isSubmitting} whileHover={reduceMotion ? undefined : { y: -2 }} whileTap={reduceMotion ? undefined : { scale: 0.985 }}>
+            <button className="button button--primary button--wide" type="submit" disabled={isSubmitting}>
               {isSubmitting ? <Spinner label="A entrar" /> : <>Entrar <ArrowRight aria-hidden="true" /></>}
-            </motion.button>
+            </button>
           </form>
 
           <p className="auth-switch">Ainda não tem conta? <Link to="/register">Criar conta <ArrowRight size={14} aria-hidden="true" /></Link></p>

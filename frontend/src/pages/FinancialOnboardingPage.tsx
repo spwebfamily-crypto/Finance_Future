@@ -337,7 +337,12 @@ export function FinancialOnboardingPage() {
           <span>{existingProfile ? 'Atualizar perfil' : 'Perfil financeiro'}</span>
         </div>
         <div className="onboarding-progress" role="progressbar" aria-valuemin={1} aria-valuemax={4} aria-valuenow={step + 1} aria-label={`Etapa ${step + 1} de 4`}>
-          <motion.span animate={{ width: `${((step + 1) / 4) * 100}%` }} transition={transition} />
+          <motion.span
+            initial={false}
+            animate={{ scaleX: (step + 1) / 4 }}
+            transition={transition}
+            style={{ width: '100%', originX: 0 }}
+          />
         </div>
 
         <AnimatePresence mode="popLayout" initial={false}>
@@ -432,8 +437,8 @@ export function FinancialOnboardingPage() {
         <div className="onboarding-actions">
           <button className="button button--secondary" type="button" onClick={() => { setError(''); setInvalidFields({}); setStep((current) => Math.max(0, current - 1)); }} disabled={step === 0 || isSaving}><ArrowLeft aria-hidden="true" /> Voltar</button>
           {step < 3
-            ? <motion.button className="button button--primary" type="button" onClick={continueToNextStep} whileTap={reduceMotion ? undefined : { scale: 0.985 }}>Continuar <ArrowRight aria-hidden="true" /></motion.button>
-            : <motion.button className="button button--primary" type="button" onClick={() => void saveProfile()} disabled={isSaving} whileTap={reduceMotion ? undefined : { scale: 0.985 }}>{isSaving ? <Spinner label="A guardar" /> : <><Check aria-hidden="true" /> Ver orientação educativa</>}</motion.button>}
+            ? <button className="button button--primary" type="button" onClick={continueToNextStep}>Continuar <ArrowRight aria-hidden="true" /></button>
+            : <button className="button button--primary" type="button" onClick={() => void saveProfile()} disabled={isSaving}>{isSaving ? <Spinner label="A guardar" /> : <><Check aria-hidden="true" /> Ver orientação educativa</>}</button>}
         </div>
         {existingProfile && (
           <button className="onboarding-delete-profile" type="button" onClick={() => setShowDeleteConfirm(true)} disabled={isSaving || isDeleting}>
@@ -455,8 +460,18 @@ function MoneyInput({ field, label, value, onChange, icon: Icon, inputRef, inval
 }
 
 function ChoiceButton({ selected, label, copy, icon: Icon, onClick }: { selected: boolean; label: string; copy: string; icon?: typeof Target; onClick: () => void }) {
+  const reduceMotion = useReducedMotion();
+
   return (
-    <motion.button className={`choice-button ${selected ? 'choice-button--selected' : ''}`} type="button" aria-pressed={selected} onClick={onClick} whileTap={{ scale: 0.985 }}>
+    <motion.button
+      className={`choice-button ${selected ? 'choice-button--selected' : ''}`}
+      type="button"
+      aria-pressed={selected}
+      onClick={onClick}
+      whileHover={reduceMotion ? undefined : { y: -1 }}
+      whileTap={reduceMotion ? undefined : { scale: 0.985 }}
+      transition={{ duration: reduceMotion ? 0 : 0.12, ease: 'easeOut' }}
+    >
       {Icon && <span className="choice-button__icon"><Icon aria-hidden="true" /></span>}
       <span><strong>{label}</strong><small>{copy}</small></span>
       <span className="choice-button__check" aria-hidden="true">{selected && <Check />}</span>

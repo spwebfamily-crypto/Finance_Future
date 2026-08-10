@@ -248,8 +248,10 @@ function setPrivateReceiptHeaders(response: Response, fileName?: string | null) 
 
 async function lockReceiptStorage(transaction: Prisma.TransactionClient, userId: string) {
   // A ordem global -> utilizador evita corridas nas duas quotas e deadlocks.
-  await transaction.$queryRaw`SELECT pg_advisory_xact_lock(8608102026::bigint)`;
-  await transaction.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${userId}, 0::bigint))`;
+  // pg_advisory_xact_lock devolve o tipo PostgreSQL `void`, que o Prisma não
+  // consegue desserializar. O cast mantém a aquisição do lock e devolve texto.
+  await transaction.$queryRaw`SELECT pg_advisory_xact_lock(8608102026::bigint)::text AS lock_result`;
+  await transaction.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${userId}, 0::bigint))::text AS lock_result`;
 }
 
 async function assertReceiptQuota(
