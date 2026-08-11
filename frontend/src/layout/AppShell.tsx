@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { NavLink, useLocation, useOutlet } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { Brand } from '../components/Brand';
+import { ThemeToggle } from '../components/ThemeToggle';
 import { preloadDashboardPage, preloadExpenseFormPage, preloadInvestmentsPage } from '../routePreloads';
 
 const navItems = [
@@ -111,6 +112,7 @@ export function AppShell() {
         >
           <Plus aria-hidden="true" /> Nova despesa
         </NavLink>
+        <ThemeToggle />
         <div className="account-card">
           <span className="account-card__avatar" aria-hidden="true">{initials}</span>
           <span className="account-card__identity">
@@ -133,18 +135,21 @@ export function AppShell() {
 
       <header className="mobile-header">
         <Brand compact phase={isLoggingOut ? 'exit' : 'idle'} />
-        <motion.button
-          className="mobile-account"
-          type="button"
-          onClick={handleLogout}
-          disabled={isLoggingOut}
-          aria-busy={isLoggingOut}
-          aria-label={isLoggingOut ? 'A terminar sessão' : 'Terminar sessão'}
-          whileTap={reduceMotion ? undefined : { scale: 0.96 }}
-        >
-          <span aria-hidden="true">{initials}</span>
-          <LogOut aria-hidden="true" />
-        </motion.button>
+        <div className="mobile-header__actions">
+          <ThemeToggle compact />
+          <motion.button
+            className="mobile-account"
+            type="button"
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            aria-busy={isLoggingOut}
+            aria-label={isLoggingOut ? 'A terminar sessão' : 'Terminar sessão'}
+            whileTap={reduceMotion ? undefined : { scale: 0.96 }}
+          >
+            <span aria-hidden="true">{initials}</span>
+            <LogOut aria-hidden="true" />
+          </motion.button>
+        </div>
       </header>
 
       <main id="main-content" className="main-content" tabIndex={-1}>
