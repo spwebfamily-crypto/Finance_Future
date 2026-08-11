@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useReducedMotion } from 'framer-motion';
-import { AlertTriangle, ArrowDownRight, ArrowUpRight, CheckCircle2, CircleHelp, Pencil, Plus, ShieldCheck, Trash2 } from 'lucide-react';
+import { AlertTriangle, ArrowDownRight, ArrowUpRight, CalendarClock, CheckCircle2, CircleHelp, Landmark, Pencil, Plus, ReceiptText, ShieldCheck, Trash2 } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Link } from 'react-router-dom';
 import { analyticsApi, budgetApi, categoryApi } from '../api/resources';
 import { errorMessage } from '../api/client';
 import { EmptyState, ErrorState, LoadingState, Spinner } from '../components/States';
@@ -150,6 +151,12 @@ export function DashboardPage() {
       <PageHeader eyebrow={`Visão geral / ${selectedMonth.replace('-', '.')}`} title="O seu mês, num relance" description="Totais, tendências e limites sem distrações." action={<label className="month-picker"><span>Mês em análise</span><input aria-label="Mês em análise" type="month" value={month} onChange={(event) => setMonth(event.target.value)} /></label>} />
       {loading ? <LoadingState label="A preparar a sua visão geral" /> : error && !summary ? <ErrorState message={error} onRetry={() => void load()} /> : !summary ? <EmptyState title="Ainda sem resumo" description="Adicione despesas para começar a ver a análise mensal." /> : <>
         {error && <div className="form-alert" role="alert">{error}</div>}
+        <section className="dashboard-shortcuts" aria-label="Ações principais">
+          <Link className="dashboard-shortcut dashboard-shortcut--primary" to="/expenses/new"><span><Plus aria-hidden="true" /></span><div><strong>Registar despesa</strong><small>Adicionar um movimento em poucos passos.</small></div></Link>
+          <Link className="dashboard-shortcut" to="/expenses"><span><ReceiptText aria-hidden="true" /></span><div><strong>Rever movimentos</strong><small>Pesquisar, editar, importar ou exportar.</small></div></Link>
+          <Link className="dashboard-shortcut" to="/planning"><span><CalendarClock aria-hidden="true" /></span><div><strong>Preparar o mês</strong><small>Ver vencimentos, metas e alertas.</small></div></Link>
+          <Link className="dashboard-shortcut dashboard-shortcut--account" to="/accounts"><span><Landmark aria-hidden="true" /></span><div><strong>Ver contas</strong><small>Conferir o saldo e transferir dinheiro.</small></div></Link>
+        </section>
         <section className="dashboard-total" aria-labelledby="total-title">
           <div><p className="eyebrow">Total em {monthLabel(selectedMonth)}</p><h2 id="total-title">{formatCurrency(summary.total, currency)}</h2></div>
           <div className={`dashboard-total__compare ${summary.changeAmount > 0 ? 'is-up' : 'is-down'}`}><span>{summary.changeAmount > 0 ? <ArrowUpRight aria-hidden="true" /> : <ArrowDownRight aria-hidden="true" />}{summary.changePercent === null ? 'Sem comparação' : `${Math.abs(summary.changePercent).toFixed(1)}%`}</span><p>{summary.changeAmount === 0 ? 'Igual ao mês anterior' : `${formatCurrency(Math.abs(summary.changeAmount), currency)} face ao mês anterior`}</p></div>

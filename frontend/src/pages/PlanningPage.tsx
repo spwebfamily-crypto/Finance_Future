@@ -164,8 +164,8 @@ export function PlanningPage() {
     if (overdueGoals.length) items.push(`${overdueGoals.length} ${overdueGoals.length === 1 ? 'meta está' : 'metas estão'} fora do prazo.`);
     if (urgentPayments.length) items.push(`${urgentPayments.length} ${urgentPayments.length === 1 ? 'pagamento vence' : 'pagamentos vencem'} nos próximos 3 dias.`);
     if (monthlyIncome > 0 && monthlyAvailable < 0) items.push('As despesas deste mês já superam os rendimentos registados.');
-    if (urgentIncome.length) items.push(`${urgentIncome.length} rendimento${urgentIncome.length === 1 ? '' : 's'} previsto${urgentIncome.length === 1 ? '' : 's'} para os proximos 3 dias.`);
-    if (urgentDebts.length) items.push(`${urgentDebts.length} prestacao${urgentDebts.length === 1 ? '' : 'oes'} de divida vence nos proximos 3 dias.`);
+    if (urgentIncome.length) items.push(`${urgentIncome.length} rendimento${urgentIncome.length === 1 ? '' : 's'} previsto${urgentIncome.length === 1 ? '' : 's'} para os próximos 3 dias.`);
+    if (urgentDebts.length) items.push(`${urgentDebts.length} ${urgentDebts.length === 1 ? 'prestação de dívida vence' : 'prestações de dívidas vencem'} nos próximos 3 dias.`);
     return items;
   }, [debts, goals, monthlyAvailable, monthlyIncome, upcoming, upcomingIncomes]);
 
@@ -280,7 +280,7 @@ export function PlanningPage() {
       setDebts((items) => [...items, created]);
       setDebtBalances((items) => ({ ...items, [created.id]: String(created.currentBalance) }));
       setDebtForm(initialDebt);
-      setNotice('Divida adicionada ao plano.');
+      setNotice('Dívida adicionada ao plano.');
     } catch (requestError) { setError(errorMessage(requestError)); }
     finally { setIsSaving(false); }
   }
@@ -293,19 +293,19 @@ export function PlanningPage() {
       const updated = await debtApi.update(debt.id, { currentBalance });
       setDebts((items) => items.map((item) => item.id === updated.id ? updated : item));
       setDebtBalances((items) => ({ ...items, [updated.id]: String(updated.currentBalance) }));
-      setNotice('Saldo da divida atualizado.');
+      setNotice('Saldo da dívida atualizado.');
     } catch (requestError) { setError(errorMessage(requestError)); }
     finally { setIsSaving(false); }
   }
 
   async function enableNotifications() {
     if (typeof Notification === 'undefined') {
-      setNotice('Este navegador nao suporta notificacoes.');
+      setNotice('Este navegador não suporta notificações.');
       return;
     }
     const permission = await Notification.requestPermission();
     setNotificationPermission(permission);
-    setNotice(permission === 'granted' ? 'Alertas do navegador ativados.' : 'Pode continuar a ver todos os alertas nesta pagina.');
+      setNotice(permission === 'granted' ? 'Alertas do navegador ativados.' : 'Pode continuar a ver todos os alertas nesta página.');
   }
 
   async function saveGoalProgress(goal: SavingsGoal) {
@@ -395,19 +395,22 @@ export function PlanningPage() {
       {alerts.length > 0 && <section className="planning-alerts" aria-label="Alertas do plano"><AlertTriangle aria-hidden="true" /><div><strong>Vale a pena olhar para isto</strong>{alerts.map((alert) => <p key={alert}>{alert}</p>)}</div></section>}
 
       <section className="planning-calendar" aria-labelledby="calendar-title">
-        <div className="section-heading"><div><p className="eyebrow">Proximos 45 dias</p><h2 id="calendar-title">Calendario financeiro</h2></div><CalendarDays aria-hidden="true" /></div>
-        {calendarItems.length ? <ol className="planning-calendar__list">{calendarItems.slice(0, 10).map((item) => <li className={`planning-calendar__item planning-calendar__item--${item.kind}`} key={item.id}><time dateTime={dateOnly(item.date)}><b>{dateOnly(item.date).slice(8)}</b><span>{new Intl.DateTimeFormat('pt-PT', { month: 'short' }).format(new Date(item.date)).replace('.', '')}</span></time><div><strong>{item.title}</strong><small>{item.detail}</small></div>{item.amount !== undefined && <b className={item.kind === 'income' ? 'calendar-amount calendar-amount--income' : 'calendar-amount'}>{item.kind === 'income' ? '+' : '-'}{formatCurrency(item.amount, currency)}</b>}</li>)}</ol> : <p className="planning-calendar__empty">Adicione recorrencias, dividas ou metas com prazo para ver o seu calendario financeiro.</p>}
+        <div className="section-heading"><div><p className="eyebrow">Próximos 45 dias</p><h2 id="calendar-title">Calendário financeiro</h2></div><CalendarDays aria-hidden="true" /></div>
+        {calendarItems.length ? <ol className="planning-calendar__list">{calendarItems.slice(0, 10).map((item) => <li className={`planning-calendar__item planning-calendar__item--${item.kind}`} key={item.id}><time dateTime={dateOnly(item.date)}><b>{dateOnly(item.date).slice(8)}</b><span>{new Intl.DateTimeFormat('pt-PT', { month: 'short' }).format(new Date(item.date)).replace('.', '')}</span></time><div><strong>{item.title}</strong><small>{item.detail}</small></div>{item.amount !== undefined && <b className={item.kind === 'income' ? 'calendar-amount calendar-amount--income' : 'calendar-amount'}>{item.kind === 'income' ? '+' : '-'}{formatCurrency(item.amount, currency)}</b>}</li>)}</ol> : <p className="planning-calendar__empty">Adicione recorrências, dívidas ou metas com prazo para ver o seu calendário financeiro.</p>}
       </section>
 
       <div className="planning-grid">
         <section className="planning-panel planning-panel--goals" aria-labelledby="goals-title">
           <div className="section-heading"><div><p className="eyebrow">Poupança</p><h2 id="goals-title">Metas</h2></div><Target aria-hidden="true" /></div>
+          <details className="planning-disclosure" open={goals.length === 0}>
+            <summary><span>Adicionar meta</span><small>Definir um valor e, se quiser, uma data.</small></summary>
           <form className="planning-form" onSubmit={createGoal}>
             <label className="field"><span>Nome da meta</span><input value={goalForm.name} onChange={(event) => setGoalForm((form) => ({ ...form, name: event.target.value }))} placeholder="Ex.: Fundo de emergência" maxLength={100} /></label>
             <div className="planning-form__split"><label className="field"><span>Objetivo</span><input inputMode="decimal" value={goalForm.targetAmount} onChange={(event) => setGoalForm((form) => ({ ...form, targetAmount: event.target.value }))} placeholder="3 000" /></label><label className="field"><span>Já poupado</span><input inputMode="decimal" value={goalForm.currentAmount} onChange={(event) => setGoalForm((form) => ({ ...form, currentAmount: event.target.value }))} placeholder="0" /></label></div>
             <label className="field"><span>Data-alvo <em>opcional</em></span><input type="date" value={goalForm.targetDate} onChange={(event) => setGoalForm((form) => ({ ...form, targetDate: event.target.value }))} /></label>
             <button className="button button--accent" type="submit" disabled={isSaving}>{isSaving ? <Spinner label="A guardar" /> : <><Plus aria-hidden="true" /> Criar meta</>}</button>
           </form>
+          </details>
           <div className="planning-list">
             {goals.length ? goals.map((goal) => {
               const ratio = Math.min(100, (goal.currentAmount / goal.targetAmount) * 100);
@@ -419,6 +422,8 @@ export function PlanningPage() {
 
         <section className="planning-panel" aria-labelledby="income-title">
           <div className="section-heading"><div><p className="eyebrow">Entradas</p><h2 id="income-title">Rendimentos</h2></div><CircleDollarSign aria-hidden="true" /></div>
+          <details className="planning-disclosure" open={incomes.length === 0}>
+            <summary><span>Registar rendimento</span><small>Adicionar uma entrada recebida.</small></summary>
           <form className="planning-form" onSubmit={createIncome}>
             <label className="field"><span>Conta <em>opcional</em></span><select value={incomeForm.accountId} onChange={(event) => setIncomeForm((form) => ({ ...form, accountId: event.target.value }))}><option value="">Sem conta associada</option>{accounts.map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}</select></label>
             <label className="field"><span>Descrição</span><input value={incomeForm.description} onChange={(event) => setIncomeForm((form) => ({ ...form, description: event.target.value }))} placeholder="Ex.: Salário" maxLength={160} /></label>
@@ -426,21 +431,25 @@ export function PlanningPage() {
             <label className="field"><span>Origem <em>opcional</em></span><input value={incomeForm.source} onChange={(event) => setIncomeForm((form) => ({ ...form, source: event.target.value }))} placeholder="Ex.: Empresa" maxLength={120} /></label>
             <button className="button button--primary" type="submit" disabled={isSaving}>{isSaving ? <Spinner label="A guardar" /> : <><Plus aria-hidden="true" /> Registar rendimento</>}</button>
           </form>
+          </details>
           <div className="planning-list planning-list--compact">
             {incomes.length ? incomes.slice(0, 6).map((income) => <article className="planning-row" key={income.id}><span className="planning-row__icon"><CircleDollarSign aria-hidden="true" /></span><div><h3>{income.description}</h3><p>{income.source || formatDate(income.date)}{income.source ? ` · ${formatDate(income.date)}` : ''}</p></div><strong>{formatCurrency(income.amount, currency)}</strong><button className="icon-button icon-button--danger" type="button" aria-label={`Remover rendimento ${income.description}`} onClick={() => setDeleteTarget({ type: 'income', id: income.id, label: income.description })}><Trash2 aria-hidden="true" /></button></article>) : <EmptyState title="Sem rendimentos registados" description="Registe entradas para calcular o valor disponível deste mês." />}
           </div>
           <div className="planning-subsection">
-            <div className="section-heading section-heading--compact"><div><p className="eyebrow">Previsivel</p><h3>Rendimentos recorrentes</h3></div><Repeat2 aria-hidden="true" /></div>
+            <div className="section-heading section-heading--compact"><div><p className="eyebrow">Previsível</p><h3>Rendimentos recorrentes</h3></div><Repeat2 aria-hidden="true" /></div>
+            <details className="planning-disclosure planning-disclosure--subtle" open={recurringIncomes.length === 0}>
+              <summary><span>Agendar rendimento recorrente</span><small>Salário, bolsa ou rendimento mensal.</small></summary>
             <form className="planning-form planning-form--recurring-income" onSubmit={createRecurringIncome}>
-              <label className="field"><span>Descricao</span><input value={recurringIncomeForm.description} onChange={(event) => setRecurringIncomeForm((form) => ({ ...form, description: event.target.value }))} placeholder="Ex.: Salario" maxLength={160} /></label>
+              <label className="field"><span>Descrição</span><input value={recurringIncomeForm.description} onChange={(event) => setRecurringIncomeForm((form) => ({ ...form, description: event.target.value }))} placeholder="Ex.: Salário" maxLength={160} /></label>
               <label className="field"><span>Origem <em>opcional</em></span><input value={recurringIncomeForm.source} onChange={(event) => setRecurringIncomeForm((form) => ({ ...form, source: event.target.value }))} placeholder="Ex.: Empresa" maxLength={120} /></label>
               <label className="field"><span>Valor</span><input inputMode="decimal" value={recurringIncomeForm.amount} onChange={(event) => setRecurringIncomeForm((form) => ({ ...form, amount: event.target.value }))} placeholder="0,00" /></label>
               <label className="field"><span>Dia</span><input inputMode="numeric" min="1" max="31" value={recurringIncomeForm.dayOfMonth} onChange={(event) => setRecurringIncomeForm((form) => ({ ...form, dayOfMonth: event.target.value }))} placeholder="Ex.: 25" /></label>
               <label className="field"><span>Conta <em>opcional</em></span><select value={recurringIncomeForm.accountId} onChange={(event) => setRecurringIncomeForm((form) => ({ ...form, accountId: event.target.value }))}><option value="">Sem conta associada</option>{accounts.map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}</select></label>
               <button className="button button--secondary" type="submit" disabled={isSaving}>{isSaving ? <Spinner label="A guardar" /> : <><Plus aria-hidden="true" /> Agendar</>}</button>
             </form>
+              </details>
             <div className="planning-list planning-list--compact">
-              {recurringIncomes.length ? recurringIncomes.map((item) => <article className={`planning-row planning-row--income ${item.isActive ? '' : 'planning-row--paused'}`} key={item.id}><span className="planning-row__icon"><CircleDollarSign aria-hidden="true" /></span><div><h3>{item.description}</h3><p>{item.source || 'Rendimento mensal'} · {item.account?.name || 'Sem conta'}</p><small>{item.isActive ? `${dueCopy(daysUntil(item.nextDueDate))} · ${formatDate(item.nextDueDate)}` : 'Em pausa'}</small></div><strong>{formatCurrency(item.amount, currency)}</strong><div className="recurring-card__actions">{item.isActive && <button className="button button--primary button--small" type="button" disabled={isSaving} onClick={() => void recordRecurringIncome(item)}>Recebido</button>}<button className="icon-button" type="button" disabled={isSaving} aria-label={item.isActive ? `Pausar ${item.description}` : `Reativar ${item.description}`} onClick={() => void toggleRecurringIncome(item)}>{item.isActive ? <Pause aria-hidden="true" /> : <Play aria-hidden="true" />}</button><button className="icon-button icon-button--danger" type="button" disabled={isSaving} aria-label={`Remover ${item.description}`} onClick={() => setDeleteTarget({ type: 'recurringIncome', id: item.id, label: item.description })}><Trash2 aria-hidden="true" /></button></div></article>) : <p className="planning-subsection__empty">Agende salario, bolsa ou rendas recebidas e confirme cada entrada quando a receber.</p>}
+              {recurringIncomes.length ? recurringIncomes.map((item) => <article className={`planning-row planning-row--income ${item.isActive ? '' : 'planning-row--paused'}`} key={item.id}><span className="planning-row__icon"><CircleDollarSign aria-hidden="true" /></span><div><h3>{item.description}</h3><p>{item.source || 'Rendimento mensal'} · {item.account?.name || 'Sem conta'}</p><small>{item.isActive ? `${dueCopy(daysUntil(item.nextDueDate))} · ${formatDate(item.nextDueDate)}` : 'Em pausa'}</small></div><strong>{formatCurrency(item.amount, currency)}</strong><div className="recurring-card__actions">{item.isActive && <button className="button button--primary button--small" type="button" disabled={isSaving} onClick={() => void recordRecurringIncome(item)}>Recebido</button>}<button className="icon-button" type="button" disabled={isSaving} aria-label={item.isActive ? `Pausar ${item.description}` : `Reativar ${item.description}`} onClick={() => void toggleRecurringIncome(item)}>{item.isActive ? <Pause aria-hidden="true" /> : <Play aria-hidden="true" />}</button><button className="icon-button icon-button--danger" type="button" disabled={isSaving} aria-label={`Remover ${item.description}`} onClick={() => setDeleteTarget({ type: 'recurringIncome', id: item.id, label: item.description })}><Trash2 aria-hidden="true" /></button></div></article>) : <p className="planning-subsection__empty">Agende salário, bolsa ou rendas recebidas e confirme cada entrada quando a receber.</p>}
             </div>
           </div>
         </section>
@@ -448,6 +457,8 @@ export function PlanningPage() {
 
       <section className="planning-panel planning-panel--recurring" aria-labelledby="recurring-title">
         <div className="section-heading"><div><p className="eyebrow">Compromissos</p><h2 id="recurring-title">Despesas recorrentes</h2></div><Repeat2 aria-hidden="true" /></div>
+        <details className="planning-disclosure" open={recurring.length === 0}>
+          <summary><span>Agendar despesa recorrente</span><small>Renda, seguro, subscrição ou outro pagamento mensal.</small></summary>
         <form className="planning-form planning-form--recurring" onSubmit={createRecurring}>
           <label className="field"><span>Conta <em>opcional</em></span><select value={recurringForm.accountId} onChange={(event) => setRecurringForm((form) => ({ ...form, accountId: event.target.value }))}><option value="">Sem conta associada</option>{accounts.map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}</select></label>
           <label className="field"><span>Descrição</span><input value={recurringForm.description} onChange={(event) => setRecurringForm((form) => ({ ...form, description: event.target.value }))} placeholder="Ex.: Renda" maxLength={160} /></label>
@@ -457,23 +468,27 @@ export function PlanningPage() {
           <label className="field"><span>Dia do mês</span><input inputMode="numeric" value={recurringForm.dayOfMonth} onChange={(event) => setRecurringForm((form) => ({ ...form, dayOfMonth: event.target.value }))} placeholder="Ex.: 1" min="1" max="31" /></label>
           <button className="button button--accent" type="submit" disabled={isSaving || !categories.length}>{isSaving ? <Spinner label="A guardar" /> : <><Plus aria-hidden="true" /> Agendar</>}</button>
         </form>
+        </details>
         <div className="recurring-layout"><div className="planning-list">{recurring.length ? recurring.map((item) => <article className={`recurring-card ${item.isActive ? '' : 'recurring-card--paused'}`} key={item.id}><span className="recurring-card__icon"><CategoryIcon icon={item.category.icon} categoryName={item.category.name} /></span><div><h3>{item.description}</h3><p>{item.category.name} · {item.location}</p><small><CalendarClock aria-hidden="true" /> {item.isActive ? `${dueCopy(daysUntil(item.nextDueDate))} · ${formatDate(item.nextDueDate)}` : 'Em pausa'}</small></div><strong>{formatCurrency(item.amount, currency)}</strong><div className="recurring-card__actions">{item.isActive && <button className="button button--primary button--small" type="button" disabled={isSaving} onClick={() => void recordRecurring(item)}>Marcar paga</button>}<button className="icon-button" type="button" disabled={isSaving} aria-label={item.isActive ? `Pausar ${item.description}` : `Reativar ${item.description}`} onClick={() => void toggleRecurring(item)}>{item.isActive ? <Pause aria-hidden="true" /> : <Play aria-hidden="true" />}</button><button className="icon-button icon-button--danger" type="button" disabled={isSaving} aria-label={`Remover ${item.description}`} onClick={() => setDeleteTarget({ type: 'recurring', id: item.id, label: item.description })}><Trash2 aria-hidden="true" /></button></div></article>) : <EmptyState title="Sem despesas recorrentes" description="Agende renda, seguros ou subscrições para antecipar os próximos vencimentos." />}</div><aside className="upcoming-card"><p className="eyebrow">Próximos vencimentos</p><h3>O que se aproxima</h3>{upcoming.length ? <ol>{upcoming.slice(0, 5).map((item) => <li key={item.id}><span>{dateOnly(item.nextDueDate).slice(8)}</span><div><strong>{item.description}</strong><small>{dueCopy(item.days)}</small></div><b>{formatCurrency(item.amount, currency)}</b></li>)}</ol> : <p>Quando criar recorrências ativas, os vencimentos aparecem aqui.</p>}</aside></div>
       </section>
 
       <ConfirmDialog open={Boolean(deleteTarget)} title="Remover este registo?" description={deleteTarget ? `“${deleteTarget.label}” será removido permanentemente.` : ''} confirmLabel="Remover" busy={isSaving} onCancel={() => setDeleteTarget(null)} onConfirm={() => void confirmDelete()} />
       <section className="planning-panel planning-debts" aria-labelledby="debts-title">
-        <div className="section-heading"><div><p className="eyebrow">Compromissos de longo prazo</p><h2 id="debts-title">Dividas</h2></div><CreditCard aria-hidden="true" /></div>
+        <div className="section-heading"><div><p className="eyebrow">Compromissos de longo prazo</p><h2 id="debts-title">Dívidas</h2></div><CreditCard aria-hidden="true" /></div>
+        <details className="planning-disclosure" open={debts.length === 0}>
+          <summary><span>Adicionar dívida</span><small>Registe o saldo, a prestação e o próximo vencimento.</small></summary>
         <form className="planning-form planning-form--debt" onSubmit={createDebt}>
-          <label className="field"><span>Nome</span><input value={debtForm.name} onChange={(event) => setDebtForm((form) => ({ ...form, name: event.target.value }))} placeholder="Ex.: Cartao de credito" maxLength={100} /></label>
+          <label className="field"><span>Nome</span><input value={debtForm.name} onChange={(event) => setDebtForm((form) => ({ ...form, name: event.target.value }))} placeholder="Ex.: Cartão de crédito" maxLength={100} /></label>
           <label className="field"><span>Credor</span><input value={debtForm.lender} onChange={(event) => setDebtForm((form) => ({ ...form, lender: event.target.value }))} placeholder="Ex.: Banco" maxLength={100} /></label>
           <label className="field"><span>Saldo atual</span><input inputMode="decimal" value={debtForm.currentBalance} onChange={(event) => setDebtForm((form) => ({ ...form, currentBalance: event.target.value }))} placeholder="0,00" /></label>
           <label className="field"><span>Juro anual (%)</span><input inputMode="decimal" value={debtForm.annualInterestRate} onChange={(event) => setDebtForm((form) => ({ ...form, annualInterestRate: event.target.value }))} placeholder="0" /></label>
-          <label className="field"><span>Prestacao mensal</span><input inputMode="decimal" value={debtForm.monthlyPayment} onChange={(event) => setDebtForm((form) => ({ ...form, monthlyPayment: event.target.value }))} placeholder="0,00" /></label>
-          <label className="field"><span>Proximo vencimento <em>opcional</em></span><input type="date" value={debtForm.nextPaymentDate} onChange={(event) => setDebtForm((form) => ({ ...form, nextPaymentDate: event.target.value }))} /></label>
-          <button className="button button--accent" type="submit" disabled={isSaving}>{isSaving ? <Spinner label="A guardar" /> : <><Plus aria-hidden="true" /> Adicionar divida</>}</button>
+          <label className="field"><span>Prestação mensal</span><input inputMode="decimal" value={debtForm.monthlyPayment} onChange={(event) => setDebtForm((form) => ({ ...form, monthlyPayment: event.target.value }))} placeholder="0,00" /></label>
+          <label className="field"><span>Próximo vencimento <em>opcional</em></span><input type="date" value={debtForm.nextPaymentDate} onChange={(event) => setDebtForm((form) => ({ ...form, nextPaymentDate: event.target.value }))} /></label>
+          <button className="button button--accent" type="submit" disabled={isSaving}>{isSaving ? <Spinner label="A guardar" /> : <><Plus aria-hidden="true" /> Adicionar dívida</>}</button>
         </form>
+        </details>
         <div className="debt-grid">
-          {debts.length ? debts.map((debt) => <article className="debt-card" key={debt.id}><div className="debt-card__header"><div><h3>{debt.name}</h3><p>{debt.lender}</p></div><button className="icon-button icon-button--danger" type="button" aria-label={`Remover ${debt.name}`} disabled={isSaving} onClick={() => setDeleteTarget({ type: 'debt', id: debt.id, label: debt.name })}><Trash2 aria-hidden="true" /></button></div><div className="debt-card__metrics"><span><small>Saldo</small><strong>{formatCurrency(debt.currentBalance, currency)}</strong></span><span><small>Juro anual</small><strong>{debt.annualInterestRate}%</strong></span><span><small>Prestacao</small><strong>{formatCurrency(debt.monthlyPayment, currency)}</strong></span></div><p className="debt-card__due">{debt.nextPaymentDate ? `${dueCopy(daysUntil(debt.nextPaymentDate))} · ${formatDate(debt.nextPaymentDate)}` : 'Sem data de vencimento'}</p><div className="goal-card__update"><label><span className="sr-only">Novo saldo de {debt.name}</span><input inputMode="decimal" value={debtBalances[debt.id] || ''} onChange={(event) => setDebtBalances((items) => ({ ...items, [debt.id]: event.target.value }))} /></label><button className="button button--secondary button--small" type="button" disabled={isSaving} onClick={() => void saveDebtBalance(debt)}>Atualizar saldo</button></div></article>) : <EmptyState title="Sem dividas registadas" description="Adicione emprestimos, cartoes ou financiamentos para antecipar as prestacoes." />}
+          {debts.length ? debts.map((debt) => <article className="debt-card" key={debt.id}><div className="debt-card__header"><div><h3>{debt.name}</h3><p>{debt.lender}</p></div><button className="icon-button icon-button--danger" type="button" aria-label={`Remover ${debt.name}`} disabled={isSaving} onClick={() => setDeleteTarget({ type: 'debt', id: debt.id, label: debt.name })}><Trash2 aria-hidden="true" /></button></div><div className="debt-card__metrics"><span><small>Saldo</small><strong>{formatCurrency(debt.currentBalance, currency)}</strong></span><span><small>Juro anual</small><strong>{debt.annualInterestRate}%</strong></span><span><small>Prestação</small><strong>{formatCurrency(debt.monthlyPayment, currency)}</strong></span></div><p className="debt-card__due">{debt.nextPaymentDate ? `${dueCopy(daysUntil(debt.nextPaymentDate))} · ${formatDate(debt.nextPaymentDate)}` : 'Sem data de vencimento'}</p><div className="goal-card__update"><label><span className="sr-only">Novo saldo de {debt.name}</span><input inputMode="decimal" value={debtBalances[debt.id] || ''} onChange={(event) => setDebtBalances((items) => ({ ...items, [debt.id]: event.target.value }))} /></label><button className="button button--secondary button--small" type="button" disabled={isSaving} onClick={() => void saveDebtBalance(debt)}>Atualizar saldo</button></div></article>) : <EmptyState title="Sem dívidas registadas" description="Adicione empréstimos, cartões ou financiamentos para antecipar as prestações." />}
         </div>
       </section>
     </div>

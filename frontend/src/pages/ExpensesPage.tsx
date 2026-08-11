@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { CalendarDays, ChevronDown, Download, Edit3, MapPin, Plus, Receipt, Search, SlidersHorizontal, Trash2 } from 'lucide-react';
+import { CalendarDays, ChevronDown, Download, Edit3, FolderKanban, Landmark, MapPin, Plus, Receipt, Search, SlidersHorizontal, Trash2 } from 'lucide-react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { errorMessage } from '../api/client';
 import { accountApi, categoryApi, expenseApi } from '../api/resources';
@@ -214,15 +214,18 @@ export function ExpensesPage() {
         title="Despesas"
         description="Todos os movimentos, organizados num só lugar."
         action={(
-          <Link
-            className="button button--primary"
-            to="/expenses/new"
-            onPointerEnter={preloadExpenseFormPage}
-            onPointerDown={preloadExpenseFormPage}
-            onFocus={preloadExpenseFormPage}
-          >
-            <Plus aria-hidden="true" /> Nova despesa
-          </Link>
+          <div className="page-actions">
+            <Link className="button button--secondary" to="/categories"><FolderKanban aria-hidden="true" /> Categorias</Link>
+            <Link
+              className="button button--primary"
+              to="/expenses/new"
+              onPointerEnter={preloadExpenseFormPage}
+              onPointerDown={preloadExpenseFormPage}
+              onFocus={preloadExpenseFormPage}
+            >
+              <Plus aria-hidden="true" /> Registar despesa
+            </Link>
+          </div>
         )}
       />
 
@@ -288,6 +291,10 @@ export function ExpensesPage() {
           <input value={searchTerm} onChange={(event) => updateClientFilter('search', event.target.value)} placeholder="Pesquisar por descrição, local ou categoria" type="search" />
           {searchTerm && <button type="button" onClick={() => updateClientFilter('search', '')} aria-label="Limpar pesquisa">Limpar</button>}
         </label>
+      </section>
+
+      <div className="expense-import-row">
+        <span>Tem um extrato bancário?</span>
         <CsvExpenseImport
           categories={categories}
           accounts={accounts}
@@ -296,7 +303,7 @@ export function ExpensesPage() {
             void loadData();
           }}
         />
-      </section>
+      </div>
 
       <section className="expense-section" aria-labelledby="expense-list-title">
         <div className="section-heading">
@@ -352,6 +359,7 @@ export function ExpensesPage() {
                   <div className="expense-row__meta">
                     <span><MapPin aria-hidden="true" /> {expense.location}</span>
                     <span><CalendarDays aria-hidden="true" /> {formatDate(expense.date)}</span>
+                    {expense.account && <span><Landmark aria-hidden="true" /> {expense.account.name}</span>}
                   </div>
                 </div>
                 <p className="expense-row__amount">{formatCurrency(expense.amount, user?.currency)}</p>

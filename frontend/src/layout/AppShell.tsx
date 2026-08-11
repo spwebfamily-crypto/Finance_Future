@@ -1,4 +1,4 @@
-import { CalendarClock, FolderKanban, Landmark, LayoutDashboard, LogOut, Plus, ReceiptText, TrendingUp, WifiOff } from 'lucide-react';
+import { CalendarClock, Landmark, LayoutDashboard, LogOut, Plus, ReceiptText, TrendingUp, WifiOff } from 'lucide-react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import { NavLink, useLocation, useOutlet } from 'react-router-dom';
@@ -8,17 +8,16 @@ import { ThemeToggle } from '../components/ThemeToggle';
 import { preloadAccountsPage, preloadDashboardPage, preloadExpenseFormPage, preloadInvestmentsPage, preloadPlanningPage } from '../routePreloads';
 
 const navItems = [
-  { to: '/dashboard', label: 'Visão geral', icon: LayoutDashboard, preload: preloadDashboardPage },
-  { to: '/expenses', label: 'Despesas', icon: ReceiptText },
-  { to: '/planning', label: 'Plano', icon: CalendarClock, preload: preloadPlanningPage },
+  { to: '/dashboard', label: 'Hoje', icon: LayoutDashboard, preload: preloadDashboardPage },
+  { to: '/expenses', label: 'Movimentos', icon: ReceiptText },
   { to: '/accounts', label: 'Contas', icon: Landmark, preload: preloadAccountsPage },
+  { to: '/planning', label: 'Plano', icon: CalendarClock, preload: preloadPlanningPage },
   { to: '/investments', label: 'Investir', icon: TrendingUp, preload: preloadInvestmentsPage },
-  { to: '/categories', label: 'Categorias', icon: FolderKanban },
 ];
 
 function Navigation({ mobile = false }: { mobile?: boolean }) {
   const items = mobile
-    ? [navItems[0], navItems[1], null, navItems[2], navItems[4], navItems[5]]
+    ? [navItems[0], navItems[1], null, navItems[2], navItems[3], navItems[4]]
     : navItems;
   return (
     <nav className={mobile ? 'mobile-nav' : 'side-nav'} aria-label="Navegação principal">
@@ -112,7 +111,7 @@ export function AppShell() {
           onPointerDown={preloadExpenseFormPage}
           onFocus={preloadExpenseFormPage}
         >
-          <Plus aria-hidden="true" /> Nova despesa
+          <Plus aria-hidden="true" /> Registar despesa
         </NavLink>
         <ThemeToggle />
         <div className="account-card">

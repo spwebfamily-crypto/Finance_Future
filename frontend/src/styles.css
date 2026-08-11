@@ -3799,6 +3799,187 @@ h3 {
   border-color: #f0c9c2;
 }
 
+.page-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.dashboard-shortcuts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.dashboard-shortcut {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.625rem;
+  align-items: center;
+  padding: 0.875rem;
+  color: var(--ink);
+  background: var(--surface);
+  border: 0.0625rem solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  text-decoration: none;
+  transition: transform 160ms var(--ease-out), border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+.dashboard-shortcut:hover {
+  color: var(--ink-strong);
+  background: var(--surface-soft);
+  border-color: var(--line-strong);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-0.125rem);
+}
+
+.dashboard-shortcut > span {
+  display: grid;
+  width: 2.375rem;
+  height: 2.375rem;
+  place-items: center;
+  color: var(--brand);
+  background: var(--brand-soft);
+  border-radius: var(--radius-md);
+}
+
+.dashboard-shortcut > span svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.dashboard-shortcut strong,
+.dashboard-shortcut small {
+  display: block;
+}
+
+.dashboard-shortcut strong {
+  color: var(--ink-strong);
+  font-size: 0.8125rem;
+}
+
+.dashboard-shortcut small {
+  margin-top: 0.125rem;
+  color: var(--muted);
+  font-size: 0.6875rem;
+  line-height: 1.35;
+}
+
+.dashboard-shortcut--primary {
+  color: #10271b;
+  background: linear-gradient(135deg, var(--accent), #daf89d);
+  border-color: transparent;
+}
+
+.dashboard-shortcut--primary > span {
+  color: #e8fff1;
+  background: var(--brand-dark);
+}
+
+.dashboard-shortcut--primary strong,
+.dashboard-shortcut--primary small {
+  color: #10271b;
+}
+
+.dashboard-shortcut--account > span {
+  color: #76510a;
+  background: #f5dda0;
+}
+
+.expense-import-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.625rem;
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  background: var(--surface-soft);
+  border: 0.0625rem solid var(--line);
+  border-radius: var(--radius-lg);
+}
+
+.expense-import-row > span {
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.expense-import-row > .csv-import {
+  flex: 1 0 100%;
+}
+
+.planning-disclosure {
+  margin: 0.875rem 0 1rem;
+  overflow: hidden;
+  background: var(--surface-soft);
+  border: 0.0625rem solid var(--line);
+  border-radius: var(--radius-lg);
+}
+
+.planning-disclosure summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.875rem 1rem;
+  color: var(--ink-strong);
+  cursor: pointer;
+  list-style: none;
+}
+
+.planning-disclosure summary::-webkit-details-marker {
+  display: none;
+}
+
+.planning-disclosure summary::after {
+  width: 0.625rem;
+  height: 0.625rem;
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  border-right: 0.125rem solid var(--brand);
+  border-bottom: 0.125rem solid var(--brand);
+  content: '';
+  transform: rotate(45deg) translateY(-0.1875rem);
+  transition: transform 160ms var(--ease-out);
+}
+
+.planning-disclosure[open] summary {
+  border-bottom: 0.0625rem solid var(--line);
+}
+
+.planning-disclosure[open] summary::after {
+  transform: rotate(225deg) translateY(-0.0625rem);
+}
+
+.planning-disclosure summary span {
+  font-size: 0.8125rem;
+  font-weight: 750;
+}
+
+.planning-disclosure summary small {
+  color: var(--muted);
+  font-size: 0.6875rem;
+}
+
+.planning-disclosure__hint {
+  margin: 0;
+  padding: 0.75rem 1rem 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.planning-disclosure .planning-form {
+  margin: 0.875rem;
+  background: var(--surface);
+}
+
+.planning-disclosure--subtle {
+  margin-bottom: 0.75rem;
+}
+
 .planning-overview {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -4725,6 +4906,10 @@ h3 {
     padding-inline: 2rem;
   }
 
+  .dashboard-shortcuts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .filter-form {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -4999,7 +5184,38 @@ h3 {
   }
 
   .page--expenses .page-header__action {
-    display: none;
+    display: block;
+  }
+
+  .page-actions {
+    width: 100%;
+  }
+
+  .page-actions .button {
+    flex: 1 1 0;
+  }
+
+  .dashboard-shortcuts {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.625rem;
+    margin-bottom: 1rem;
+  }
+
+  .dashboard-shortcut {
+    min-height: 4.25rem;
+  }
+
+  .expense-import-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .expense-import-row > .button {
+    width: 100%;
+  }
+
+  .planning-disclosure summary {
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 
   .month-picker input {
