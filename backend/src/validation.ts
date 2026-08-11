@@ -1,4 +1,5 @@
 import {
+  AccountType,
   FinancialExperience,
   FinancialGoal,
   FinancialHorizon,
@@ -50,6 +51,7 @@ export const expenseCreateSchema = z.object({
   ),
   date: z.string().regex(dateOnly, 'Use uma data no formato YYYY-MM-DD.').transform((value) => new Date(`${value}T00:00:00.000Z`)),
   categoryId: z.string().uuid(),
+  accountId: z.union([z.string().uuid(), z.literal(''), z.null()]).transform((value) => value || null).optional(),
 });
 
 const booleanFromRequest = z.union([z.boolean(), z.enum(['true', 'false'])])
@@ -61,9 +63,14 @@ export const expenseUpdateSchema = z.object({
   amount: expenseCreateSchema.shape.amount.optional(),
   date: expenseCreateSchema.shape.date.optional(),
   categoryId: expenseCreateSchema.shape.categoryId.optional(),
+  accountId: expenseCreateSchema.shape.accountId.optional(),
   // JSON envia boolean; multipart/form-data envia texto. O contrato aceita ambos.
   removeReceipt: booleanFromRequest.optional(),
 }).refine((value) => Object.keys(value).length > 0, 'Indique pelo menos um campo.');
+
+export const expenseImportSchema = z.object({
+  items: z.array(expenseCreateSchema).min(1).max(250),
+});
 
 export const expenseFiltersSchema = z.object({
   category: z.string().uuid().optional(),
@@ -87,6 +94,14 @@ const positivePlanningAmount = planningAmount.refine(
   'O valor deve ser superior a zero.',
 );
 
+const accountBalance = z.union([z.string(), z.number()])
+  .transform(String)
+  .transform((value) => value.replace(',', '.'))
+  .refine(
+    (value) => /^-?\d{1,10}(?:\.\d{1,2})?$/.test(value) && Math.abs(Number(value)) <= 9_999_999_999.99,
+    'Use um saldo entre -9999999999,99 e 9999999999,99, com no maximo duas casas decimais.',
+  );
+
 const planningDate = z.string()
   .regex(dateOnly, 'Use uma data no formato YYYY-MM-DD.')
   .transform((value) => new Date(`${value}T00:00:00.000Z`));
@@ -96,6 +111,7 @@ export const incomeCreateSchema = z.object({
   source: z.string().trim().max(120).optional(),
   amount: positivePlanningAmount,
   date: planningDate,
+  accountId: expenseCreateSchema.shape.accountId,
 });
 
 export const incomeUpdateSchema = incomeCreateSchema.partial().refine(
@@ -127,6 +143,7 @@ export const recurringExpenseCreateSchema = z.object({
   location: z.string().trim().min(1).max(160),
   amount: positivePlanningAmount,
   categoryId: z.string().uuid(),
+  accountId: expenseCreateSchema.shape.accountId,
   dayOfMonth: z.coerce.number().int().min(1).max(31),
 });
 
@@ -135,9 +152,78 @@ export const recurringExpenseUpdateSchema = z.object({
   location: recurringExpenseCreateSchema.shape.location.optional(),
   amount: recurringExpenseCreateSchema.shape.amount.optional(),
   categoryId: recurringExpenseCreateSchema.shape.categoryId.optional(),
+  accountId: expenseCreateSchema.shape.accountId.optional(),
   dayOfMonth: recurringExpenseCreateSchema.shape.dayOfMonth.optional(),
   isActive: booleanFromRequest.optional(),
 }).refine(
+  (value) => Object.keys(value).length > 0,
+  'Indique pelo menos um campo.',
+);
+
+const accountSchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  type: z.nativeEnum(AccountType),
+  openingBalance: accountBalance.optional().default('0'),
+  creditLimit: planningAmount.optional(),
+});
+
+export const accountCreateSchema = accountSchema.superRefine((value, context) => {
+  if (value.type !== 'credit_card' && value.creditLimit !== undefined) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: 'O limite de crédito só se aplica a cartões.', path: ['creditLimit'] });
+  }
+});
+
+export const accountUpdateSchema = accountSchema.partial().refine(
+  (value) => Object.keys(value).length > 0,
+  'Indique pelo menos um campo.',
+);
+
+export const transferCreateSchema = z.object({
+  fromAccountId: z.string().uuid(),
+  toAccountId: z.string().uuid(),
+  amount: positivePlanningAmount,
+  description: z.string().trim().max(160).optional(),
+  date: planningDate,
+}).refine(
+  (value) => value.fromAccountId !== value.toAccountId,
+  { message: 'Escolha duas contas diferentes.', path: ['toAccountId'] },
+);
+
+export const recurringIncomeCreateSchema = z.object({
+  description: z.string().trim().min(1).max(160),
+  source: z.string().trim().max(120).optional(),
+  amount: positivePlanningAmount,
+  accountId: expenseCreateSchema.shape.accountId,
+  dayOfMonth: z.coerce.number().int().min(1).max(31),
+});
+
+export const recurringIncomeUpdateSchema = z.object({
+  description: recurringIncomeCreateSchema.shape.description.optional(),
+  source: recurringIncomeCreateSchema.shape.source.optional(),
+  amount: recurringIncomeCreateSchema.shape.amount.optional(),
+  accountId: recurringIncomeCreateSchema.shape.accountId.optional(),
+  dayOfMonth: recurringIncomeCreateSchema.shape.dayOfMonth.optional(),
+  isActive: booleanFromRequest.optional(),
+}).refine(
+  (value) => Object.keys(value).length > 0,
+  'Indique pelo menos um campo.',
+);
+
+const annualInterestRate = z.union([z.string(), z.number()])
+  .transform(String)
+  .transform((value) => value.replace(',', '.'))
+  .refine((value) => /^\d{1,3}(?:\.\d{1,2})?$/.test(value) && Number(value) >= 0 && Number(value) <= 100, 'Use uma taxa entre 0% e 100%.');
+
+export const debtCreateSchema = z.object({
+  name: z.string().trim().min(1).max(100),
+  lender: z.string().trim().min(1).max(100),
+  currentBalance: planningAmount,
+  annualInterestRate,
+  monthlyPayment: positivePlanningAmount,
+  nextPaymentDate: planningDate.optional(),
+});
+
+export const debtUpdateSchema = debtCreateSchema.partial().refine(
   (value) => Object.keys(value).length > 0,
   'Indique pelo menos um campo.',
 );

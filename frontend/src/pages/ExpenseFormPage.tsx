@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent, type FormEvent } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { ArrowLeft, CalendarDays, Camera, Check, FileImage, FileText, MapPin, ReceiptText, ScanText, Tag, Upload, X } from 'lucide-react';
+import { ArrowLeft, CalendarDays, Camera, Check, FileImage, FileText, MapPin, ReceiptText, ScanText, Tag, Upload, WalletCards, X } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { errorMessage } from '../api/client';
-import { categoryApi, expenseApi } from '../api/resources';
+import { accountApi, categoryApi, expenseApi } from '../api/resources';
 import { PageHeader } from '../components/PageHeader';
 import { AuthenticatedReceiptImage } from '../components/AuthenticatedReceiptImage';
 import { PdfReceiptPreview } from '../components/PdfReceiptPreview';
 import { ErrorState, LoadingState, Spinner } from '../components/States';
-import type { Category, ExpenseInput } from '../types';
+import type { Category, ExpenseInput, FinancialAccount } from '../types';
 import { toDateInputValue, todayInputValue } from '../utils/format';
 import { readReceiptFile, type ReceiptOcrResult } from '../utils/receiptOcr';
 
@@ -44,6 +44,7 @@ export function ExpenseFormPage() {
   const hadStoredReceiptRef = useRef(false);
   const isEditing = Boolean(expenseId);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [accounts, setAccounts] = useState<FinancialAccount[]>([]);
   const [form, setForm] = useState<ExpenseInput>(initialForm);
   const [errors, setErrors] = useState<FormErrors>({});
   const [pageError, setPageError] = useState('');
@@ -80,13 +81,14 @@ export function ExpenseFormPage() {
     setPageError('');
 
     const request = isEditing && expenseId
-      ? Promise.all([categoryApi.list(), expenseApi.get(expenseId)])
-      : Promise.all([categoryApi.list(), Promise.resolve(null)]);
+      ? Promise.all([categoryApi.list(), accountApi.list(), expenseApi.get(expenseId)])
+      : Promise.all([categoryApi.list(), accountApi.list(), Promise.resolve(null)]);
 
     request
-      .then(([categoryList, expense]) => {
+      .then(([categoryList, accountList, expense]) => {
         if (!active) return;
         setCategories(categoryList);
+        setAccounts(accountList);
         if (expense) {
           setForm({
             description: expense.description,
@@ -94,6 +96,7 @@ export function ExpenseFormPage() {
             amount: String(expense.amount),
             date: toDateInputValue(expense.date),
             categoryId: expense.categoryId || expense.category?.id || '',
+            accountId: expense.accountId || null,
             receipt: null,
           });
           setExistingReceipt(expense.receiptImageUrl || null);
@@ -313,6 +316,13 @@ export function ExpenseFormPage() {
                   {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
                 </select></span>
                 {errors.categoryId && <small className="field__error" id="category-error">{errors.categoryId}</small>}
+              </label>
+              <label className="field field--span-2">
+                <span>Conta <em>opcional</em></span>
+                <span className="field__control"><WalletCards aria-hidden="true" /><select name="accountId" value={form.accountId || ''} onChange={(event) => updateField('accountId', event.target.value || null)}>
+                  <option value="">Sem conta associada</option>
+                  {accounts.map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}
+                </select></span>
               </label>
             </div>
           </div>

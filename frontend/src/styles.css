@@ -4195,6 +4195,522 @@ h3 {
   font-size: 0.6875rem;
 }
 
+.planning-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: -0.75rem 0 1.25rem;
+}
+
+.planning-calendar {
+  margin-bottom: 1.5rem;
+  padding: 1.25rem;
+  background: linear-gradient(135deg, var(--surface), var(--brand-soft));
+  border: 0.0625rem solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.planning-calendar .section-heading {
+  margin-bottom: 0.75rem;
+}
+
+.planning-calendar__list {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.625rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.planning-calendar__item {
+  display: grid;
+  min-width: 0;
+  min-height: 6.25rem;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.625rem;
+  padding: 0.75rem;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  border: 0.0625rem solid var(--line);
+  border-radius: var(--radius-md);
+}
+
+.planning-calendar__item time {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-content: center;
+  color: #11251a;
+  background: var(--accent);
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+
+.planning-calendar__item time b {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  line-height: 1;
+}
+
+.planning-calendar__item time span {
+  font-size: 0.5625rem;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.planning-calendar__item > div {
+  min-width: 0;
+}
+
+.planning-calendar__item strong,
+.planning-calendar__item small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.planning-calendar__item strong {
+  color: var(--ink-strong);
+  font-size: 0.8125rem;
+}
+
+.planning-calendar__item small {
+  margin-top: 0.1875rem;
+  color: var(--muted);
+  font-size: 0.6875rem;
+}
+
+.calendar-amount {
+  grid-column: 1 / -1;
+  color: var(--danger);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.calendar-amount--income {
+  color: var(--success);
+}
+
+.planning-calendar__item--income time {
+  color: #0d2519;
+  background: #9ee7bd;
+}
+
+.planning-calendar__item--debt time {
+  color: #3f2d09;
+  background: #f3cf7a;
+}
+
+.planning-calendar__item--goal time {
+  color: #153444;
+  background: #97d8ef;
+}
+
+.planning-calendar__empty,
+.planning-subsection__empty,
+.accounts-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.planning-subsection {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 0.0625rem solid var(--line);
+}
+
+.section-heading--compact {
+  margin-bottom: 0.875rem;
+}
+
+.section-heading--compact h3 {
+  margin: 0.125rem 0 0;
+  color: var(--ink-strong);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  letter-spacing: -0.035em;
+}
+
+.planning-form--recurring-income,
+.planning-form--debt {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+}
+
+.planning-form--recurring-income > .button,
+.planning-form--debt > .button {
+  justify-self: start;
+}
+
+.planning-row--income {
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+}
+
+.planning-row--income small {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--brand);
+  font-size: 0.6875rem;
+  font-weight: 650;
+}
+
+.planning-row--paused {
+  opacity: 0.58;
+}
+
+.planning-debts {
+  background: linear-gradient(135deg, var(--surface), color-mix(in srgb, var(--warning-soft) 45%, var(--surface)));
+}
+
+.debt-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.875rem;
+  margin-top: 1rem;
+}
+
+.debt-card {
+  padding: 1rem;
+  background: var(--surface);
+  border: 0.0625rem solid var(--line);
+  border-radius: var(--radius-lg);
+}
+
+.debt-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.debt-card h3,
+.debt-card p {
+  margin: 0;
+}
+
+.debt-card h3 {
+  color: var(--ink-strong);
+  font-size: 0.9375rem;
+}
+
+.debt-card__header p,
+.debt-card__due {
+  margin-top: 0.25rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.debt-card__metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.375rem;
+  margin-top: 1rem;
+}
+
+.debt-card__metrics span {
+  min-width: 0;
+}
+
+.debt-card__metrics small,
+.debt-card__metrics strong {
+  display: block;
+}
+
+.debt-card__metrics small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.625rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.debt-card__metrics strong {
+  margin-top: 0.1875rem;
+  color: var(--ink-strong);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.accounts-total {
+  display: grid;
+  min-height: 10rem;
+  align-content: center;
+  justify-items: center;
+  margin-bottom: 1.5rem;
+  padding: 1.5rem;
+  overflow: hidden;
+  color: #e8f7ee;
+  background: radial-gradient(circle at 74% 10%, rgb(201 242 119 / 32%), transparent 28%), linear-gradient(135deg, #164a3c, #0c2820);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  text-align: center;
+}
+
+.accounts-total span,
+.accounts-total small {
+  color: rgb(232 247 238 / 76%);
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+
+.accounts-total strong {
+  margin: 0.375rem 0;
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 7vw, 4.5rem);
+  letter-spacing: -0.07em;
+  line-height: 1;
+}
+
+.accounts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+
+.accounts-panel {
+  min-width: 0;
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  background: var(--surface);
+  border: 0.0625rem solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.accounts-grid .accounts-panel {
+  margin-top: 0;
+}
+
+.accounts-panel--list {
+  margin-top: 1.5rem;
+}
+
+.account-cards,
+.transfer-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.account-card-large {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 5.25rem;
+  padding: 0.875rem;
+  background: var(--surface-soft);
+  border: 0.0625rem solid var(--line);
+  border-radius: var(--radius-md);
+}
+
+.account-card-large__icon {
+  display: grid;
+  width: 2.625rem;
+  height: 2.625rem;
+  place-items: center;
+  color: var(--brand);
+  background: var(--brand-soft);
+  border-radius: var(--radius-md);
+}
+
+.account-card-large--credit_card .account-card-large__icon {
+  color: #774f0b;
+  background: #f8df9b;
+}
+
+.account-card-large p,
+.account-card-large h3 {
+  margin: 0;
+}
+
+.account-card-large p {
+  color: var(--muted);
+  font-size: 0.6875rem;
+}
+
+.account-card-large h3 {
+  margin-top: 0.125rem;
+  color: var(--ink-strong);
+  font-size: 0.9375rem;
+}
+
+.account-card-large > strong {
+  color: var(--ink-strong);
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+}
+
+.account-card-large > small {
+  grid-column: 2;
+  color: var(--muted);
+  font-size: 0.6875rem;
+}
+
+.transfer-list article {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 0;
+  border-bottom: 0.0625rem solid var(--line);
+}
+
+.transfer-list article:last-child {
+  border-bottom: 0;
+}
+
+.transfer-list article > span {
+  display: grid;
+  width: 2.375rem;
+  height: 2.375rem;
+  place-items: center;
+  color: var(--brand);
+  background: var(--brand-soft);
+  border-radius: 50%;
+}
+
+.transfer-list h3,
+.transfer-list p {
+  margin: 0;
+}
+
+.transfer-list h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: var(--ink-strong);
+  font-size: 0.8125rem;
+}
+
+.transfer-list h3 svg {
+  width: 0.875rem;
+  height: 0.875rem;
+  color: var(--muted);
+}
+
+.transfer-list p {
+  margin-top: 0.1875rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.transfer-list strong {
+  color: var(--ink-strong);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+}
+
+.csv-import {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: 1rem;
+  background: var(--surface);
+  border: 0.0625rem solid var(--brand);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.csv-import__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.csv-import__heading h2,
+.csv-import__heading p {
+  margin: 0;
+}
+
+.csv-import__heading h2 {
+  color: var(--ink-strong);
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  letter-spacing: -0.035em;
+}
+
+.csv-import__heading > div > p:last-child {
+  max-width: 38rem;
+  margin-top: 0.25rem;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.csv-import__controls {
+  display: grid;
+  grid-template-columns: minmax(12rem, 1.3fr) repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.upload-zone--compact {
+  min-height: 2.75rem;
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  padding: 0.625rem 0.75rem;
+  color: var(--brand-dark);
+  background: var(--brand-soft);
+  border-style: solid;
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem;
+  font-weight: 650;
+}
+
+.upload-zone--compact svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.csv-import__preview {
+  padding: 0.875rem;
+  background: var(--surface-soft);
+  border: 0.0625rem solid var(--line);
+  border-radius: var(--radius-md);
+}
+
+.csv-import__preview p,
+.csv-import__preview small {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.csv-import__preview strong {
+  color: var(--ink-strong);
+}
+
+.csv-import__preview ol {
+  display: grid;
+  gap: 0.375rem;
+  padding: 0;
+  margin: 0.625rem 0;
+  list-style: none;
+}
+
+.csv-import__preview li {
+  display: grid;
+  grid-template-columns: 5rem minmax(0, 1fr) auto;
+  gap: 0.625rem;
+  color: var(--ink-soft);
+  font-size: 0.75rem;
+}
+
+.csv-import__preview li span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.csv-import__preview li b {
+  font-family: var(--font-mono);
+}
+
 @keyframes receipt-preview-pulse {
   from { opacity: 0.45; transform: scale(0.96); }
   to { opacity: 1; transform: scale(1); }
@@ -4225,6 +4741,15 @@ h3 {
 
   .planning-form--recurring {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .planning-calendar__list,
+  .debt-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .csv-import__controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .planning-form--recurring > .button {
@@ -4518,6 +5043,43 @@ h3 {
 
   .planning-form--recurring > .button {
     grid-column: auto;
+  }
+
+  .planning-header-actions {
+    margin-top: -0.5rem;
+  }
+
+  .planning-header-actions .button {
+    flex: 1 1 10rem;
+  }
+
+  .planning-calendar {
+    padding: 1.125rem;
+  }
+
+  .planning-calendar__list,
+  .debt-grid,
+  .accounts-grid,
+  .planning-form--recurring-income,
+  .planning-form--debt,
+  .csv-import__controls {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .planning-calendar__item {
+    min-height: 5.5rem;
+  }
+
+  .account-card-large {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .account-card-large > small {
+    grid-column: 2 / -1;
+  }
+
+  .csv-import__preview li {
+    grid-template-columns: 4.5rem minmax(0, 1fr) auto;
   }
 
   .recurring-card {

@@ -9,7 +9,7 @@ import { NotFoundPage } from './pages/NotFoundPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { LoadingState } from './components/States';
 import { RouteTransitionOutlet } from './components/RouteTransitionOutlet';
-import { loadDashboardPage, loadExpenseFormPage, loadFinancialOnboardingPage, loadInvestmentsPage, loadPlanningPage } from './routePreloads';
+import { loadAccountsPage, loadDashboardPage, loadExpenseFormPage, loadFinancialOnboardingPage, loadInvestmentsPage, loadPlanningPage } from './routePreloads';
 
 const DashboardPage = lazy(() => loadDashboardPage().then((module) => ({
   default: module.DashboardPage,
@@ -29,6 +29,10 @@ const InvestmentsPage = lazy(() => loadInvestmentsPage().then((module) => ({
 
 const PlanningPage = lazy(() => loadPlanningPage().then((module) => ({
   default: module.PlanningPage,
+})));
+
+const AccountsPage = lazy(() => loadAccountsPage().then((module) => ({
+  default: module.AccountsPage,
 })));
 
 const routeFallback = <div className="page"><LoadingState label="A abrir esta página" /></div>;
@@ -52,6 +56,7 @@ export default function App() {
           <Route path="/expenses/:expenseId/edit" element={<Suspense fallback={routeFallback}><ExpenseFormPage /></Suspense>} />
           <Route path="/categories" element={<CategoriesPage />} />
           <Route path="/planning" element={<Suspense fallback={routeFallback}><PlanningPage /></Suspense>} />
+          <Route path="/accounts" element={<Suspense fallback={routeFallback}><AccountsPage /></Suspense>} />
           <Route path="/investments" element={<Suspense fallback={routeFallback}><InvestmentsPage /></Suspense>} />
         </Route>
       </Route>

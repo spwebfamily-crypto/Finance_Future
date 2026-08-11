@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  accountCreateSchema,
+  debtCreateSchema,
   expenseCreateSchema,
   expenseFiltersSchema,
   expenseUpdateSchema,
@@ -7,6 +9,7 @@ import {
   incomeCreateSchema,
   registerSchema,
   recurringExpenseCreateSchema,
+  recurringIncomeCreateSchema,
   savingsGoalCreateSchema,
 } from './validation.js';
 
@@ -100,5 +103,23 @@ describe('request validation', () => {
     };
     expect(recurringExpenseCreateSchema.parse(base).dayOfMonth).toBe(31);
     expect(() => recurringExpenseCreateSchema.parse({ ...base, dayOfMonth: 32 })).toThrow();
+  });
+
+  it('validates accounts, transfers and recurring income compatible values', () => {
+    const account = accountCreateSchema.parse({ name: 'Cartao pessoal', type: 'credit_card', openingBalance: '-25,50', creditLimit: '1200' });
+    const recurringIncome = recurringIncomeCreateSchema.parse({ description: 'Salario', amount: '1500,00', dayOfMonth: 25, accountId: '' });
+
+    expect(account.openingBalance).toBe('-25.50');
+    expect(account.creditLimit).toBe('1200');
+    expect(recurringIncome.accountId).toBeNull();
+    expect(() => accountCreateSchema.parse({ name: 'Conta', type: 'current', creditLimit: '100' })).toThrow();
+  });
+
+  it('accepts debt tracking values and blocks invalid interest rates', () => {
+    const debt = debtCreateSchema.parse({ name: 'Credito', lender: 'Banco', currentBalance: '5000', annualInterestRate: '4,25', monthlyPayment: '160', nextPaymentDate: '2026-09-10' });
+
+    expect(debt.annualInterestRate).toBe('4.25');
+    expect(debt.nextPaymentDate?.toISOString()).toBe('2026-09-10T00:00:00.000Z');
+    expect(() => debtCreateSchema.parse({ ...debt, annualInterestRate: '125' })).toThrow();
   });
 });

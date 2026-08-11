@@ -1,23 +1,24 @@
-import { CalendarClock, FolderKanban, LayoutDashboard, LogOut, Plus, ReceiptText, TrendingUp, WifiOff } from 'lucide-react';
+import { CalendarClock, FolderKanban, Landmark, LayoutDashboard, LogOut, Plus, ReceiptText, TrendingUp, WifiOff } from 'lucide-react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import { NavLink, useLocation, useOutlet } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { Brand } from '../components/Brand';
 import { ThemeToggle } from '../components/ThemeToggle';
-import { preloadDashboardPage, preloadExpenseFormPage, preloadInvestmentsPage, preloadPlanningPage } from '../routePreloads';
+import { preloadAccountsPage, preloadDashboardPage, preloadExpenseFormPage, preloadInvestmentsPage, preloadPlanningPage } from '../routePreloads';
 
 const navItems = [
   { to: '/dashboard', label: 'Visão geral', icon: LayoutDashboard, preload: preloadDashboardPage },
   { to: '/expenses', label: 'Despesas', icon: ReceiptText },
   { to: '/planning', label: 'Plano', icon: CalendarClock, preload: preloadPlanningPage },
+  { to: '/accounts', label: 'Contas', icon: Landmark, preload: preloadAccountsPage },
   { to: '/investments', label: 'Investir', icon: TrendingUp, preload: preloadInvestmentsPage },
   { to: '/categories', label: 'Categorias', icon: FolderKanban },
 ];
 
 function Navigation({ mobile = false }: { mobile?: boolean }) {
   const items = mobile
-    ? [navItems[0], navItems[1], null, navItems[2], navItems[3], navItems[4]]
+    ? [navItems[0], navItems[1], null, navItems[2], navItems[4], navItems[5]]
     : navItems;
   return (
     <nav className={mobile ? 'mobile-nav' : 'side-nav'} aria-label="Navegação principal">

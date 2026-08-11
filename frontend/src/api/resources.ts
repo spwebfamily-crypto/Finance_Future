@@ -18,6 +18,15 @@ import type {
   RecurringExpenseInput,
   SavingsGoal,
   SavingsGoalInput,
+  AccountTransfer,
+  AccountTransferInput,
+  Debt,
+  DebtInput,
+  ExpenseImportResult,
+  FinancialAccount,
+  FinancialAccountInput,
+  RecurringIncome,
+  RecurringIncomeInput,
 } from '../types';
 import { apiRequest } from './client';
 
@@ -35,6 +44,7 @@ function expenseRequestBody(input: ExpenseInput) {
     amount: input.amount,
     date: input.date,
     categoryId: input.categoryId,
+    ...(input.accountId === undefined ? {} : { accountId: input.accountId || '' }),
     ...(input.removeReceipt ? { removeReceipt: true } : {}),
   };
   if (!input.receipt) return fields;
@@ -86,6 +96,8 @@ export const expenseApi = {
       }),
     ),
   remove: (id: string) => apiRequest<void>(`/expenses/${id}`, { method: 'DELETE' }),
+  import: async (items: ExpenseInput[]) =>
+    unwrap(await apiRequest<ApiEnvelope<ExpenseImportResult> | ExpenseImportResult>('/expenses/import', { method: 'POST', body: { items } })),
 };
 
 export const categoryApi = {
@@ -169,4 +181,36 @@ export const recurringExpenseApi = {
   record: async (id: string) =>
     unwrap(await apiRequest<ApiEnvelope<RecurringExpense> | RecurringExpense>(`/recurring-expenses/${id}/record`, { method: 'POST' })),
   remove: (id: string) => apiRequest<void>(`/recurring-expenses/${id}`, { method: 'DELETE' }),
+};
+
+export const accountApi = {
+  list: async () => unwrap(await apiRequest<ApiEnvelope<FinancialAccount[]> | FinancialAccount[]>('/accounts')),
+  create: async (input: FinancialAccountInput) =>
+    unwrap(await apiRequest<ApiEnvelope<FinancialAccount> | FinancialAccount>('/accounts', { method: 'POST', body: { ...input } })),
+  update: async (id: string, input: Partial<FinancialAccountInput>) =>
+    unwrap(await apiRequest<ApiEnvelope<FinancialAccount> | FinancialAccount>(`/accounts/${id}`, { method: 'PATCH', body: { ...input } })),
+  remove: (id: string) => apiRequest<void>(`/accounts/${id}`, { method: 'DELETE' }),
+  transfers: async () => unwrap(await apiRequest<ApiEnvelope<AccountTransfer[]> | AccountTransfer[]>('/accounts/transfers')),
+  transfer: async (input: AccountTransferInput) =>
+    unwrap(await apiRequest<ApiEnvelope<AccountTransfer> | AccountTransfer>('/accounts/transfers', { method: 'POST', body: { ...input } })),
+};
+
+export const recurringIncomeApi = {
+  list: async () => unwrap(await apiRequest<ApiEnvelope<RecurringIncome[]> | RecurringIncome[]>('/recurring-incomes')),
+  create: async (input: RecurringIncomeInput) =>
+    unwrap(await apiRequest<ApiEnvelope<RecurringIncome> | RecurringIncome>('/recurring-incomes', { method: 'POST', body: { ...input } })),
+  update: async (id: string, input: Partial<RecurringIncomeInput & { isActive: boolean }>) =>
+    unwrap(await apiRequest<ApiEnvelope<RecurringIncome> | RecurringIncome>(`/recurring-incomes/${id}`, { method: 'PATCH', body: { ...input } })),
+  record: async (id: string) =>
+    unwrap(await apiRequest<ApiEnvelope<RecurringIncome> | RecurringIncome>(`/recurring-incomes/${id}/record`, { method: 'POST' })),
+  remove: (id: string) => apiRequest<void>(`/recurring-incomes/${id}`, { method: 'DELETE' }),
+};
+
+export const debtApi = {
+  list: async () => unwrap(await apiRequest<ApiEnvelope<Debt[]> | Debt[]>('/debts')),
+  create: async (input: DebtInput) =>
+    unwrap(await apiRequest<ApiEnvelope<Debt> | Debt>('/debts', { method: 'POST', body: { ...input } })),
+  update: async (id: string, input: Partial<DebtInput>) =>
+    unwrap(await apiRequest<ApiEnvelope<Debt> | Debt>(`/debts/${id}`, { method: 'PATCH', body: { ...input } })),
+  remove: (id: string) => apiRequest<void>(`/debts/${id}`, { method: 'DELETE' }),
 };

@@ -16,12 +16,17 @@ const incomeSelect = {
   date: true,
   createdAt: true,
   updatedAt: true,
+  account: { select: { id: true, name: true, type: true } },
 } satisfies Prisma.IncomeSelect;
 
 type PublicIncome = Prisma.IncomeGetPayload<{ select: typeof incomeSelect }>;
 
 function presentIncome(income: PublicIncome) {
   return { ...income, amount: income.amount.toDecimalPlaces(2).toNumber() };
+}
+
+async function accountBelongsToUser(accountId: string, userId: string) {
+  return prisma.account.findFirst({ where: { id: accountId, userId }, select: { id: true } });
 }
 
 router.get('/', async (request: AuthenticatedRequest, response, next) => {
@@ -38,8 +43,11 @@ router.get('/', async (request: AuthenticatedRequest, response, next) => {
 router.post('/', async (request: AuthenticatedRequest, response, next) => {
   try {
     const input = incomeCreateSchema.parse(request.body);
+    if (input.accountId && !(await accountBelongsToUser(input.accountId, request.user!.id))) {
+      return sendError(response, 404, 'ACCOUNT_NOT_FOUND', 'Conta não encontrada.');
+    }
     const income = await prisma.income.create({
-      data: { ...input, source: input.source || null, userId: request.user!.id },
+      data: { ...input, source: input.source || null, accountId: input.accountId ?? null, userId: request.user!.id },
       select: incomeSelect,
     });
     return response.status(201).json({ data: presentIncome(income) });
@@ -51,6 +59,9 @@ router.patch('/:id', async (request: AuthenticatedRequest, response, next) => {
     const input = incomeUpdateSchema.parse(request.body);
     const existing = await prisma.income.findFirst({ where: { id: request.params.id, userId: request.user!.id }, select: { id: true } });
     if (!existing) return sendError(response, 404, 'INCOME_NOT_FOUND', 'Rendimento não encontrado.');
+    if (input.accountId && !(await accountBelongsToUser(input.accountId, request.user!.id))) {
+      return sendError(response, 404, 'ACCOUNT_NOT_FOUND', 'Conta não encontrada.');
+    }
     const income = await prisma.income.update({
       where: { id: existing.id },
       data: { ...input, ...(input.source === undefined ? {} : { source: input.source || null }) },

@@ -8,7 +8,7 @@ import { env } from '../config.js';
 import { ApiError, requireAuth, sendError } from '../middleware.js';
 import { prisma } from '../prisma.js';
 import type { AuthenticatedRequest } from '../types.js';
-import { expenseCreateSchema, expenseFiltersSchema, expenseUpdateSchema } from '../validation.js';
+import { expenseCreateSchema, expenseFiltersSchema, expenseImportSchema, expenseUpdateSchema } from '../validation.js';
 
 const uploadDirectory = path.resolve(process.cwd(), env.UPLOAD_DIR);
 const MEGABYTE = 1024 * 1024;
@@ -173,6 +173,9 @@ const expensePublicSelect = {
   category: {
     select: { id: true, name: true, icon: true, isDefault: true },
   },
+  account: {
+    select: { id: true, name: true, type: true },
+  },
 } satisfies Prisma.ExpenseSelect;
 
 type PublicExpenseRecord = Prisma.ExpenseGetPayload<{ select: typeof expensePublicSelect }>;
@@ -195,6 +198,10 @@ function presentExpense(expense: PublicExpenseRecord) {
 
 async function categoryBelongsToUser(categoryId: string, userId: string) {
   return prisma.category.findFirst({ where: { id: categoryId, userId }, select: { id: true } });
+}
+
+async function accountBelongsToUser(accountId: string, userId: string) {
+  return prisma.account.findFirst({ where: { id: accountId, userId }, select: { id: true } });
 }
 
 function normalizedReceiptMime(file: Express.Multer.File) {
@@ -326,6 +333,10 @@ function nextUtcDay(date: string) {
   return value;
 }
 
+function importSignature(item: { categoryId: string; description: string; amount: string; date: Date }) {
+  return [item.date.toISOString().slice(0, 10), item.categoryId, item.description.trim().toLocaleLowerCase('pt-PT'), new Prisma.Decimal(item.amount).toFixed(2)].join('|');
+}
+
 router.get('/', async (request: AuthenticatedRequest, response, next) => {
   try {
     const filters = expenseFiltersSchema.parse(request.query);
@@ -347,6 +358,49 @@ router.get('/', async (request: AuthenticatedRequest, response, next) => {
   } catch (error) {
     return next(error);
   }
+});
+
+router.post('/import', expenseMutationLimiter, async (request: AuthenticatedRequest, response, next) => {
+  try {
+    const { items } = expenseImportSchema.parse(request.body);
+    const categoryIds = [...new Set(items.map((item) => item.categoryId))];
+    const accountIds = [...new Set(items.flatMap((item) => item.accountId ? [item.accountId] : []))];
+    const [categories, accounts] = await Promise.all([
+      prisma.category.findMany({ where: { userId: request.user!.id, id: { in: categoryIds } }, select: { id: true } }),
+      accountIds.length ? prisma.account.findMany({ where: { userId: request.user!.id, id: { in: accountIds } }, select: { id: true } }) : Promise.resolve([]),
+    ]);
+    if (categories.length !== categoryIds.length) return sendError(response, 404, 'CATEGORY_NOT_FOUND', 'Uma das categorias não foi encontrada.');
+    if (accounts.length !== accountIds.length) return sendError(response, 404, 'ACCOUNT_NOT_FOUND', 'Uma das contas não foi encontrada.');
+
+    const dates = items.map((item) => item.date.getTime());
+    const start = new Date(Math.min(...dates));
+    const end = nextUtcDay(new Date(Math.max(...dates)).toISOString().slice(0, 10));
+    const existing = await prisma.expense.findMany({
+      where: { userId: request.user!.id, date: { gte: start, lt: end } },
+      select: { categoryId: true, description: true, amount: true, date: true },
+    });
+    const signatures = new Set(existing.map((expense) => importSignature({ ...expense, amount: expense.amount.toFixed(2) })));
+    const uniqueItems = items.filter((item) => {
+      const signature = importSignature(item);
+      if (signatures.has(signature)) return false;
+      signatures.add(signature);
+      return true;
+    });
+    if (uniqueItems.length) {
+      await prisma.expense.createMany({
+        data: uniqueItems.map((item) => ({
+          userId: request.user!.id,
+          categoryId: item.categoryId,
+          accountId: item.accountId ?? null,
+          description: item.description,
+          location: item.location,
+          amount: item.amount,
+          date: item.date,
+        })),
+      });
+    }
+    return response.status(201).json({ data: { imported: uniqueItems.length, skipped: items.length - uniqueItems.length } });
+  } catch (error) { return next(error); }
 });
 
 router.get('/:id/receipt', receiptDownloadIpLimiter, receiptDownloadUserLimiter, receiptDownloadGuard, async (request: AuthenticatedRequest, response, next) => {
@@ -420,6 +474,9 @@ router.post('/', expenseIpLimiter, expenseMutationLimiter, receiptMemoryGuard, u
     if (!category) {
       return sendError(response, 404, 'CATEGORY_NOT_FOUND', 'Categoria não encontrada.');
     }
+    if (input.accountId && !(await accountBelongsToUser(input.accountId, request.user!.id))) {
+      return sendError(response, 404, 'ACCOUNT_NOT_FOUND', 'Conta não encontrada.');
+    }
 
     const receipt = request.file;
     const data: Prisma.ExpenseUncheckedCreateInput = {
@@ -428,6 +485,7 @@ router.post('/', expenseIpLimiter, expenseMutationLimiter, receiptMemoryGuard, u
       amount: input.amount,
       date: input.date,
       categoryId: input.categoryId,
+      accountId: input.accountId ?? null,
       userId: request.user!.id,
       receiptImageUrl: null,
       receiptData: receipt ? Uint8Array.from(receipt.buffer) : null,
@@ -469,6 +527,9 @@ router.patch('/:id', expenseIpLimiter, expenseMutationLimiter, receiptMemoryGuar
     }
     if (input.categoryId && !(await categoryBelongsToUser(input.categoryId, request.user!.id))) {
       return sendError(response, 404, 'CATEGORY_NOT_FOUND', 'Categoria não encontrada.');
+    }
+    if (input.accountId && !(await accountBelongsToUser(input.accountId, request.user!.id))) {
+      return sendError(response, 404, 'ACCOUNT_NOT_FOUND', 'Conta não encontrada.');
     }
 
     const { removeReceipt, ...changes } = input;

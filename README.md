@@ -17,6 +17,15 @@ ExpenseSnap é uma aplicação mobile-first para registar despesas pessoais e pe
 - Área educativa de investimento com exemplos para estudo, riscos, fontes oficiais e comparação neutra de plataformas; não dá ordens de compra nem promete retorno.
 - PWA instalável, navegação otimizada para telefone e cache dos últimos dados quando fica sem ligação.
 
+## Novas areas do plano financeiro
+
+- Contas, dinheiro e cartoes com saldo derivado de movimentos e transferencias internas.
+- Importacao de CSV com pre-visualizacao, categoria/conta de reserva e deteccao de duplicados.
+- Rendimentos recorrentes: o utilizador confirma cada recebimento antes de este afetar o saldo.
+- Calendario financeiro que junta vencimentos, rendimentos previstos, dividas e metas.
+- Alertas no plano e notificacoes opcionais do navegador.
+- Dividas com saldo, taxa anual, prestacao, proximo vencimento e atualizacao manual apos cada pagamento.
+
 ## Tecnologias
 
 - React, TypeScript, Vite, Framer Motion e Lucide React no frontend.

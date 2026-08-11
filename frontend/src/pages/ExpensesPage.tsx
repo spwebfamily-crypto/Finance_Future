@@ -3,7 +3,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { CalendarDays, ChevronDown, Download, Edit3, MapPin, Plus, Receipt, Search, SlidersHorizontal, Trash2 } from 'lucide-react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { errorMessage } from '../api/client';
-import { categoryApi, expenseApi } from '../api/resources';
+import { accountApi, categoryApi, expenseApi } from '../api/resources';
 import { useAuth } from '../auth/AuthContext';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { CategoryIcon } from '../components/CategoryIcon';
@@ -11,8 +11,9 @@ import { EmptyState, ErrorState, LoadingState } from '../components/States';
 import { PageHeader } from '../components/PageHeader';
 import { AuthenticatedReceiptImage } from '../components/AuthenticatedReceiptImage';
 import { NoticeToast } from '../components/NoticeToast';
+import { CsvExpenseImport } from '../components/CsvExpenseImport';
 import { preloadExpenseFormPage } from '../routePreloads';
-import type { Category, Expense, ExpenseFilters } from '../types';
+import type { Category, Expense, ExpenseFilters, FinancialAccount } from '../types';
 import { formatCurrency, formatDate } from '../utils/format';
 
 interface FilterDraft {
@@ -59,6 +60,7 @@ export function ExpensesPage() {
   const location = useLocation();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [accounts, setAccounts] = useState<FinancialAccount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<Expense | null>(null);
@@ -103,12 +105,14 @@ export function ExpensesPage() {
     setIsLoading(true);
     setError('');
     try {
-      const [expenseList, categoryList] = await Promise.all([
+      const [expenseList, categoryList, accountList] = await Promise.all([
         expenseApi.list(activeFilters),
         categoryApi.list(),
+        accountApi.list(),
       ]);
       setExpenses(expenseList);
       setCategories(categoryList);
+      setAccounts(accountList);
     } catch (requestError) {
       setError(errorMessage(requestError));
     } finally {
@@ -284,6 +288,14 @@ export function ExpensesPage() {
           <input value={searchTerm} onChange={(event) => updateClientFilter('search', event.target.value)} placeholder="Pesquisar por descrição, local ou categoria" type="search" />
           {searchTerm && <button type="button" onClick={() => updateClientFilter('search', '')} aria-label="Limpar pesquisa">Limpar</button>}
         </label>
+        <CsvExpenseImport
+          categories={categories}
+          accounts={accounts}
+          onImported={(result) => {
+            setNotice(`${result.imported} movimento${result.imported === 1 ? '' : 's'} importado${result.imported === 1 ? '' : 's'}${result.skipped ? `; ${result.skipped} duplicado${result.skipped === 1 ? '' : 's'} ignorado${result.skipped === 1 ? '' : 's'}.` : '.'}`);
+            void loadData();
+          }}
+        />
       </section>
 
       <section className="expense-section" aria-labelledby="expense-list-title">

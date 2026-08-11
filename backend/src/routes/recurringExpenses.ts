@@ -11,6 +11,7 @@ router.use(requireAuth);
 const recurringExpenseSelect = {
   id: true,
   categoryId: true,
+  accountId: true,
   description: true,
   location: true,
   amount: true,
@@ -21,6 +22,7 @@ const recurringExpenseSelect = {
   createdAt: true,
   updatedAt: true,
   category: { select: { id: true, name: true, icon: true } },
+  account: { select: { id: true, name: true, type: true } },
 } satisfies Prisma.RecurringExpenseSelect;
 
 type PublicRecurringExpense = Prisma.RecurringExpenseGetPayload<{ select: typeof recurringExpenseSelect }>;
@@ -50,6 +52,10 @@ async function categoryBelongsToUser(categoryId: string, userId: string) {
   return prisma.category.findFirst({ where: { id: categoryId, userId }, select: { id: true } });
 }
 
+async function accountBelongsToUser(accountId: string, userId: string) {
+  return prisma.account.findFirst({ where: { id: accountId, userId }, select: { id: true } });
+}
+
 router.get('/', async (request: AuthenticatedRequest, response, next) => {
   try {
     const recurringExpenses = await prisma.recurringExpense.findMany({
@@ -67,6 +73,9 @@ router.post('/', async (request: AuthenticatedRequest, response, next) => {
     if (!(await categoryBelongsToUser(input.categoryId, request.user!.id))) {
       return sendError(response, 404, 'CATEGORY_NOT_FOUND', 'Categoria não encontrada.');
     }
+    if (input.accountId && !(await accountBelongsToUser(input.accountId, request.user!.id))) {
+      return sendError(response, 404, 'ACCOUNT_NOT_FOUND', 'Conta não encontrada.');
+    }
     const recurringExpense = await prisma.recurringExpense.create({
       data: { ...input, userId: request.user!.id, nextDueDate: nextDueDate(input.dayOfMonth) },
       select: recurringExpenseSelect,
@@ -83,6 +92,9 @@ router.patch('/:id', async (request: AuthenticatedRequest, response, next) => {
     if (input.categoryId && !(await categoryBelongsToUser(input.categoryId, request.user!.id))) {
       return sendError(response, 404, 'CATEGORY_NOT_FOUND', 'Categoria não encontrada.');
     }
+    if (input.accountId && !(await accountBelongsToUser(input.accountId, request.user!.id))) {
+      return sendError(response, 404, 'ACCOUNT_NOT_FOUND', 'Conta não encontrada.');
+    }
     const recurringExpense = await prisma.recurringExpense.update({
       where: { id: existing.id },
       data: { ...input, ...(input.dayOfMonth === undefined ? {} : { nextDueDate: nextDueDate(input.dayOfMonth) }) },
@@ -97,13 +109,14 @@ router.post('/:id/record', async (request: AuthenticatedRequest, response, next)
     const recurringExpense = await prisma.$transaction(async (transaction) => {
       const current = await transaction.recurringExpense.findFirst({
         where: { id: request.params.id, userId: request.user!.id, isActive: true },
-        select: { id: true, userId: true, categoryId: true, description: true, location: true, amount: true, dayOfMonth: true, nextDueDate: true },
+        select: { id: true, userId: true, categoryId: true, accountId: true, description: true, location: true, amount: true, dayOfMonth: true, nextDueDate: true },
       });
       if (!current) return null;
       await transaction.expense.create({
         data: {
           userId: current.userId,
           categoryId: current.categoryId,
+          accountId: current.accountId,
           description: current.description,
           location: current.location,
           amount: current.amount,

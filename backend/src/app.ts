@@ -12,6 +12,9 @@ import financialProfileRoutes from './routes/financialProfile.js';
 import incomeRoutes from './routes/incomes.js';
 import savingsGoalRoutes from './routes/savingsGoals.js';
 import recurringExpenseRoutes from './routes/recurringExpenses.js';
+import accountRoutes from './routes/accounts.js';
+import recurringIncomeRoutes from './routes/recurringIncomes.js';
+import debtRoutes from './routes/debts.js';
 
 export const app = express();
 
@@ -34,6 +37,9 @@ app.use('/api/financial-profile', financialProfileRoutes);
 app.use('/api/incomes', incomeRoutes);
 app.use('/api/savings-goals', savingsGoalRoutes);
 app.use('/api/recurring-expenses', recurringExpenseRoutes);
+app.use('/api/accounts', accountRoutes);
+app.use('/api/recurring-incomes', recurringIncomeRoutes);
+app.use('/api/debts', debtRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

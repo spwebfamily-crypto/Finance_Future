@@ -26,7 +26,9 @@ export interface Category {
 export interface Expense {
   id: string;
   categoryId: string;
+  accountId?: string | null;
   category: Category;
+  account?: FinancialAccount | null;
   description: string;
   location: string;
   amount: string | number;
@@ -48,6 +50,7 @@ export interface ExpenseInput {
   amount: string;
   date: string;
   categoryId: string;
+  accountId?: string | null;
   receipt?: File | null;
   removeReceipt?: boolean;
 }
@@ -56,6 +59,8 @@ export interface Income {
   id: string;
   description: string;
   source?: string | null;
+  accountId?: string | null;
+  account?: FinancialAccount | null;
   amount: number;
   date: string;
   createdAt: string;
@@ -67,6 +72,7 @@ export interface IncomeInput {
   source?: string;
   amount: number;
   date: string;
+  accountId?: string | null;
 }
 
 export interface SavingsGoal {
@@ -91,7 +97,9 @@ export interface SavingsGoalInput {
 export interface RecurringExpense {
   id: string;
   categoryId: string;
+  accountId?: string | null;
   category: Category;
+  account?: FinancialAccount | null;
   description: string;
   location: string;
   amount: number;
@@ -108,7 +116,95 @@ export interface RecurringExpenseInput {
   location: string;
   amount: number;
   categoryId: string;
+  accountId?: string | null;
   dayOfMonth: number;
+}
+
+export type AccountType = 'current' | 'savings' | 'cash' | 'credit_card' | 'other';
+
+export interface FinancialAccount {
+  id: string;
+  name: string;
+  type: AccountType;
+  openingBalance: number;
+  creditLimit?: number | null;
+  currentBalance?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FinancialAccountInput {
+  name: string;
+  type: AccountType;
+  openingBalance?: number;
+  creditLimit?: number;
+}
+
+export interface AccountTransfer {
+  id: string;
+  amount: number;
+  description?: string | null;
+  date: string;
+  createdAt: string;
+  fromAccount: Pick<FinancialAccount, 'id' | 'name'>;
+  toAccount: Pick<FinancialAccount, 'id' | 'name'>;
+}
+
+export interface AccountTransferInput {
+  fromAccountId: string;
+  toAccountId: string;
+  amount: number;
+  description?: string;
+  date: string;
+}
+
+export interface RecurringIncome {
+  id: string;
+  accountId?: string | null;
+  account?: FinancialAccount | null;
+  description: string;
+  source?: string | null;
+  amount: number;
+  dayOfMonth: number;
+  nextDueDate: string;
+  isActive: boolean;
+  lastReceivedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RecurringIncomeInput {
+  description: string;
+  source?: string;
+  amount: number;
+  accountId?: string | null;
+  dayOfMonth: number;
+}
+
+export interface Debt {
+  id: string;
+  name: string;
+  lender: string;
+  currentBalance: number;
+  annualInterestRate: number;
+  monthlyPayment: number;
+  nextPaymentDate?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DebtInput {
+  name: string;
+  lender: string;
+  currentBalance: number;
+  annualInterestRate: number;
+  monthlyPayment: number;
+  nextPaymentDate?: string | null;
+}
+
+export interface ExpenseImportResult {
+  imported: number;
+  skipped: number;
 }
 
 export interface ApiEnvelope<T> {
