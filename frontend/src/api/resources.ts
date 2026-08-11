@@ -12,6 +12,12 @@ import type {
   AnalyticsTrend,
   FinancialProfile,
   FinancialProfileInput,
+  Income,
+  IncomeInput,
+  RecurringExpense,
+  RecurringExpenseInput,
+  SavingsGoal,
+  SavingsGoalInput,
 } from '../types';
 import { apiRequest } from './client';
 
@@ -134,4 +140,33 @@ export const financialProfileApi = {
       body: { ...input },
     })),
   remove: () => apiRequest<void>('/financial-profile', { method: 'DELETE', cacheResponse: false }),
+};
+
+export const incomeApi = {
+  list: async () => unwrap(await apiRequest<ApiEnvelope<Income[]> | Income[]>('/incomes')),
+  create: async (input: IncomeInput) =>
+    unwrap(await apiRequest<ApiEnvelope<Income> | Income>('/incomes', { method: 'POST', body: { ...input } })),
+  update: async (id: string, input: Partial<IncomeInput>) =>
+    unwrap(await apiRequest<ApiEnvelope<Income> | Income>(`/incomes/${id}`, { method: 'PATCH', body: { ...input } })),
+  remove: (id: string) => apiRequest<void>(`/incomes/${id}`, { method: 'DELETE' }),
+};
+
+export const savingsGoalApi = {
+  list: async () => unwrap(await apiRequest<ApiEnvelope<SavingsGoal[]> | SavingsGoal[]>('/savings-goals')),
+  create: async (input: SavingsGoalInput) =>
+    unwrap(await apiRequest<ApiEnvelope<SavingsGoal> | SavingsGoal>('/savings-goals', { method: 'POST', body: { ...input } })),
+  update: async (id: string, input: Partial<SavingsGoalInput>) =>
+    unwrap(await apiRequest<ApiEnvelope<SavingsGoal> | SavingsGoal>(`/savings-goals/${id}`, { method: 'PATCH', body: { ...input } })),
+  remove: (id: string) => apiRequest<void>(`/savings-goals/${id}`, { method: 'DELETE' }),
+};
+
+export const recurringExpenseApi = {
+  list: async () => unwrap(await apiRequest<ApiEnvelope<RecurringExpense[]> | RecurringExpense[]>('/recurring-expenses')),
+  create: async (input: RecurringExpenseInput) =>
+    unwrap(await apiRequest<ApiEnvelope<RecurringExpense> | RecurringExpense>('/recurring-expenses', { method: 'POST', body: { ...input } })),
+  update: async (id: string, input: Partial<RecurringExpenseInput & { isActive: boolean }>) =>
+    unwrap(await apiRequest<ApiEnvelope<RecurringExpense> | RecurringExpense>(`/recurring-expenses/${id}`, { method: 'PATCH', body: { ...input } })),
+  record: async (id: string) =>
+    unwrap(await apiRequest<ApiEnvelope<RecurringExpense> | RecurringExpense>(`/recurring-expenses/${id}/record`, { method: 'POST' })),
+  remove: (id: string) => apiRequest<void>(`/recurring-expenses/${id}`, { method: 'DELETE' }),
 };

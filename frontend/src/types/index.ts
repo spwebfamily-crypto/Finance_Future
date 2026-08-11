@@ -52,6 +52,65 @@ export interface ExpenseInput {
   removeReceipt?: boolean;
 }
 
+export interface Income {
+  id: string;
+  description: string;
+  source?: string | null;
+  amount: number;
+  date: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface IncomeInput {
+  description: string;
+  source?: string;
+  amount: number;
+  date: string;
+}
+
+export interface SavingsGoal {
+  id: string;
+  name: string;
+  icon?: string | null;
+  targetAmount: number;
+  currentAmount: number;
+  targetDate?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SavingsGoalInput {
+  name: string;
+  icon?: string;
+  targetAmount: number;
+  currentAmount?: number;
+  targetDate?: string | null;
+}
+
+export interface RecurringExpense {
+  id: string;
+  categoryId: string;
+  category: Category;
+  description: string;
+  location: string;
+  amount: number;
+  dayOfMonth: number;
+  nextDueDate: string;
+  isActive: boolean;
+  lastPaidAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RecurringExpenseInput {
+  description: string;
+  location: string;
+  amount: number;
+  categoryId: string;
+  dayOfMonth: number;
+}
+
 export interface ApiEnvelope<T> {
   data: T;
 }

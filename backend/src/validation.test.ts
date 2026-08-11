@@ -4,7 +4,10 @@ import {
   expenseFiltersSchema,
   expenseUpdateSchema,
   financialProfileUpsertSchema,
+  incomeCreateSchema,
   registerSchema,
+  recurringExpenseCreateSchema,
+  savingsGoalCreateSchema,
 } from './validation.js';
 
 describe('request validation', () => {
@@ -78,5 +81,24 @@ describe('request validation', () => {
 
     expect(() => financialProfileUpsertSchema.parse({ ...base, currentSavings: '-1' })).toThrow();
     expect(() => financialProfileUpsertSchema.parse({ ...base, riskTolerance: 'unlimited' })).toThrow();
+  });
+
+  it('normalizes planning data and keeps dates date-only', () => {
+    const income = incomeCreateSchema.parse({ description: 'Salário', source: 'Empresa', amount: '1500,50', date: '2026-08-25' });
+    const goal = savingsGoalCreateSchema.parse({ name: 'Reserva', targetAmount: '3000', currentAmount: '450,25', targetDate: '2027-01-31' });
+
+    expect(income.amount).toBe('1500.50');
+    expect(income.date.toISOString()).toBe('2026-08-25T00:00:00.000Z');
+    expect(goal.currentAmount).toBe('450.25');
+    expect(goal.targetDate?.toISOString()).toBe('2027-01-31T00:00:00.000Z');
+  });
+
+  it('accepts recurring expense days through the 31st and rejects invalid values', () => {
+    const base = {
+      description: 'Renda', location: 'Senhorio', amount: '850',
+      categoryId: '7c8f0f14-1f87-4dfb-a2bf-85bf170a79c8', dayOfMonth: 31,
+    };
+    expect(recurringExpenseCreateSchema.parse(base).dayOfMonth).toBe(31);
+    expect(() => recurringExpenseCreateSchema.parse({ ...base, dayOfMonth: 32 })).toThrow();
   });
 });

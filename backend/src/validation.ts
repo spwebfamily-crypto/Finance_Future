@@ -74,6 +74,74 @@ export const expenseFiltersSchema = z.object({
   { message: 'A data inicial não pode ser posterior à data final.', path: ['from'] },
 );
 
+const planningAmount = z.union([z.string(), z.number()])
+  .transform(String)
+  .transform((value) => value.replace(',', '.'))
+  .refine(
+    (value) => profileMoney.test(value) && Number(value) >= 0,
+    'Use um valor entre 0 e 9999999999,99, com no máximo duas casas decimais.',
+  );
+
+const positivePlanningAmount = planningAmount.refine(
+  (value) => Number(value) > 0,
+  'O valor deve ser superior a zero.',
+);
+
+const planningDate = z.string()
+  .regex(dateOnly, 'Use uma data no formato YYYY-MM-DD.')
+  .transform((value) => new Date(`${value}T00:00:00.000Z`));
+
+export const incomeCreateSchema = z.object({
+  description: z.string().trim().min(1).max(160),
+  source: z.string().trim().max(120).optional(),
+  amount: positivePlanningAmount,
+  date: planningDate,
+});
+
+export const incomeUpdateSchema = incomeCreateSchema.partial().refine(
+  (value) => Object.keys(value).length > 0,
+  'Indique pelo menos um campo.',
+);
+
+export const savingsGoalCreateSchema = z.object({
+  name: z.string().trim().min(1).max(100),
+  icon: z.string().trim().max(32).optional(),
+  targetAmount: positivePlanningAmount,
+  currentAmount: planningAmount.optional().default('0'),
+  targetDate: planningDate.optional(),
+});
+
+export const savingsGoalUpdateSchema = z.object({
+  name: savingsGoalCreateSchema.shape.name.optional(),
+  icon: savingsGoalCreateSchema.shape.icon.optional(),
+  targetAmount: savingsGoalCreateSchema.shape.targetAmount.optional(),
+  currentAmount: planningAmount.optional(),
+  targetDate: planningDate.nullable().optional(),
+}).refine(
+  (value) => Object.keys(value).length > 0,
+  'Indique pelo menos um campo.',
+);
+
+export const recurringExpenseCreateSchema = z.object({
+  description: z.string().trim().min(1).max(160),
+  location: z.string().trim().min(1).max(160),
+  amount: positivePlanningAmount,
+  categoryId: z.string().uuid(),
+  dayOfMonth: z.coerce.number().int().min(1).max(31),
+});
+
+export const recurringExpenseUpdateSchema = z.object({
+  description: recurringExpenseCreateSchema.shape.description.optional(),
+  location: recurringExpenseCreateSchema.shape.location.optional(),
+  amount: recurringExpenseCreateSchema.shape.amount.optional(),
+  categoryId: recurringExpenseCreateSchema.shape.categoryId.optional(),
+  dayOfMonth: recurringExpenseCreateSchema.shape.dayOfMonth.optional(),
+  isActive: booleanFromRequest.optional(),
+}).refine(
+  (value) => Object.keys(value).length > 0,
+  'Indique pelo menos um campo.',
+);
+
 export const budgetCreateSchema = z.object({
   categoryId: z.string().uuid(),
   monthlyLimit,
