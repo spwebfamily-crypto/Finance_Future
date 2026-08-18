@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
-import { ArrowRightLeft, Banknote, CreditCard, Landmark, Plus, Trash2, WalletCards } from 'lucide-react';
+import { ArrowRightLeft, Banknote, CreditCard, Landmark, PencilLine, Plus, Trash2, WalletCards } from 'lucide-react';
 import { accountApi } from '../api/resources';
 import { errorMessage } from '../api/client';
+import { BalanceCorrectionDialog } from '../components/BalanceCorrectionDialog';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { ErrorState, LoadingState, Spinner } from '../components/States';
 import { NoticeToast } from '../components/NoticeToast';
@@ -19,6 +20,10 @@ const accountLabels: Record<AccountType, string> = {
 
 function amount(value: string) {
   return Number(value.replace(',', '.'));
+}
+
+function isValidAccountBalance(value: string) {
+  return /^-?\d{1,10}(?:[.,]\d{1,2})?$/.test(value.trim());
 }
 
 function AccountIcon({ type }: { type: AccountType }) {
@@ -39,6 +44,9 @@ export function AccountsPage() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<FinancialAccount | null>(null);
+  const [balanceTarget, setBalanceTarget] = useState<FinancialAccount | null>(null);
+  const [correctedBalance, setCorrectedBalance] = useState('');
+  const [balanceError, setBalanceError] = useState('');
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -91,10 +99,40 @@ export function AccountsPage() {
     setIsSaving(true);
     try {
       await accountApi.remove(deleteTarget.id);
-      setAccounts((items) => items.filter((item) => item.id !== deleteTarget.id));
+      const [nextAccounts, nextTransfers] = await Promise.all([accountApi.list(), accountApi.transfers()]);
+      setAccounts(nextAccounts);
+      setTransfers(nextTransfers);
       setDeleteTarget(null);
       setNotice('Conta removida.');
     } catch (requestError) { setError(errorMessage(requestError)); }
+    finally { setIsSaving(false); }
+  }
+
+  function openBalanceCorrection(account: FinancialAccount) {
+    const balance = account.currentBalance ?? account.openingBalance;
+    setError('');
+    setBalanceError('');
+    setBalanceTarget(account);
+    setCorrectedBalance(String(balance).replace('.', ','));
+  }
+
+  async function correctBalance() {
+    if (!balanceTarget) return;
+    const nextBalance = amount(correctedBalance);
+    if (!isValidAccountBalance(correctedBalance) || !Number.isFinite(nextBalance) || Math.abs(nextBalance) > 9_999_999_999.99) {
+      setBalanceError('Indique um saldo válido, com no máximo duas casas decimais.');
+      return;
+    }
+    setIsSaving(true);
+    setError('');
+    try {
+      const updated = await accountApi.correctBalance(balanceTarget.id, { currentBalance: nextBalance });
+      setAccounts((items) => items.map((item) => item.id === updated.id ? updated : item));
+      setBalanceTarget(null);
+      setCorrectedBalance('');
+      setBalanceError('');
+      setNotice('Saldo corrigido.');
+    } catch (requestError) { setBalanceError(errorMessage(requestError)); }
     finally { setIsSaving(false); }
   }
 
@@ -113,10 +151,11 @@ export function AccountsPage() {
         <section className="accounts-panel" aria-labelledby="transfer-title"><div className="section-heading"><div><p className="eyebrow">Mover dinheiro</p><h2 id="transfer-title">Transferência</h2></div><ArrowRightLeft aria-hidden="true" /></div><details className="planning-disclosure" open={accounts.length < 2}><summary><span>Fazer transferência</span><small>Mover dinheiro entre duas contas.</small></summary>{accounts.length < 2 && <p className="planning-disclosure__hint">Crie pelo menos duas contas antes de fazer uma transferência.</p>}<form className="planning-form" onSubmit={createTransfer}><div className="planning-form__split"><label className="field"><span>De</span><select value={transferForm.fromAccountId} onChange={(event) => setTransferForm((form) => ({ ...form, fromAccountId: event.target.value }))}><option value="">Escolher</option>{accounts.map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}</select></label><label className="field"><span>Para</span><select value={transferForm.toAccountId} onChange={(event) => setTransferForm((form) => ({ ...form, toAccountId: event.target.value }))}><option value="">Escolher</option>{accounts.map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}</select></label></div><div className="planning-form__split"><label className="field"><span>Valor</span><input inputMode="decimal" value={transferForm.amount} onChange={(event) => setTransferForm((form) => ({ ...form, amount: event.target.value }))} placeholder="0,00" /></label><label className="field"><span>Data</span><input type="date" value={transferForm.date} onChange={(event) => setTransferForm((form) => ({ ...form, date: event.target.value }))} /></label></div><label className="field"><span>Nota <em>opcional</em></span><input value={transferForm.description} onChange={(event) => setTransferForm((form) => ({ ...form, description: event.target.value }))} placeholder="Ex.: reforço da poupança" /></label><button className="button button--primary" disabled={isSaving || accounts.length < 2} type="submit">Transferir</button></form></details></section>
       </div>
 
-      <section className="accounts-panel accounts-panel--list" aria-labelledby="accounts-title"><div className="section-heading"><div><p className="eyebrow">Saldos</p><h2 id="accounts-title">As suas contas</h2></div></div><div className="account-cards">{accounts.length ? accounts.map((account) => { const balance = account.currentBalance ?? account.openingBalance; const cardUse = account.type === 'credit_card' && account.creditLimit ? Math.max(0, -balance) / account.creditLimit : null; return <article className={`account-card-large account-card-large--${account.type}`} key={account.id}><span className="account-card-large__icon"><AccountIcon type={account.type} /></span><div><p>{accountLabels[account.type]}</p><h3>{account.name}</h3></div><strong>{formatCurrency(balance, currency)}</strong>{cardUse !== null && <small>{Math.min(100, cardUse * 100).toFixed(0)}% do limite utilizado</small>}<button type="button" className="icon-button icon-button--danger" aria-label={`Remover conta ${account.name}`} onClick={() => setDeleteTarget(account)}><Trash2 aria-hidden="true" /></button></article>; }) : <p className="accounts-empty">Crie a primeira conta acima para começar a acompanhar o seu saldo.</p>}</div></section>
+      <section className="accounts-panel accounts-panel--list" aria-labelledby="accounts-title"><div className="section-heading"><div><p className="eyebrow">Saldos</p><h2 id="accounts-title">As suas contas</h2></div></div><div className="account-cards">{accounts.length ? accounts.map((account) => { const balance = account.currentBalance ?? account.openingBalance; const cardUse = account.type === 'credit_card' && account.creditLimit ? Math.max(0, -balance) / account.creditLimit : null; return <article className={`account-card-large account-card-large--${account.type}`} key={account.id}><span className="account-card-large__icon"><AccountIcon type={account.type} /></span><div><p>{accountLabels[account.type]}</p><h3>{account.name}</h3></div><strong>{formatCurrency(balance, currency)}</strong>{cardUse !== null && <small>{Math.min(100, cardUse * 100).toFixed(0)}% do limite utilizado</small>}<div className="account-card-large__actions"><button type="button" className="icon-button account-card-large__correct" aria-label={`Corrigir saldo da conta ${account.name}`} onClick={() => openBalanceCorrection(account)}><PencilLine aria-hidden="true" /><span>Corrigir valor</span></button><button type="button" className="icon-button icon-button--danger" aria-label={`Remover conta ${account.name}`} title="Remover conta" onClick={() => setDeleteTarget(account)}><Trash2 aria-hidden="true" /></button></div></article>; }) : <p className="accounts-empty">Crie a primeira conta acima para começar a acompanhar o seu saldo.</p>}</div></section>
 
       <section className="accounts-panel accounts-panel--list" aria-labelledby="transfers-title"><div className="section-heading"><div><p className="eyebrow">Histórico</p><h2 id="transfers-title">Últimas transferências</h2></div></div>{transfers.length ? <div className="transfer-list">{transfers.map((transfer) => <article key={transfer.id}><span><ArrowRightLeft aria-hidden="true" /></span><div><h3>{transfer.fromAccount.name} <ArrowRightLeft aria-hidden="true" /> {transfer.toAccount.name}</h3><p>{transfer.description || formatDate(transfer.date)}{transfer.description ? ` · ${formatDate(transfer.date)}` : ''}</p></div><strong>{formatCurrency(transfer.amount, currency)}</strong></article>)}</div> : <p className="accounts-empty">As transferências entre contas aparecem aqui.</p>}</section>
-      <ConfirmDialog open={Boolean(deleteTarget)} title="Remover esta conta?" description={deleteTarget ? `“${deleteTarget.name}” será removida. As despesas e rendimentos existentes deixam de estar associados a esta conta.` : ''} confirmLabel="Remover conta" busy={isSaving} onCancel={() => setDeleteTarget(null)} onConfirm={() => void removeAccount()} />
+      <BalanceCorrectionDialog open={Boolean(balanceTarget)} accountName={balanceTarget?.name ?? ''} currentBalance={balanceTarget?.currentBalance ?? balanceTarget?.openingBalance ?? 0} currency={currency} value={correctedBalance} errorMessage={balanceError} busy={isSaving} onValueChange={(value) => { setCorrectedBalance(value); setBalanceError(''); }} onCancel={() => { setBalanceTarget(null); setBalanceError(''); }} onConfirm={() => void correctBalance()} />
+      <ConfirmDialog open={Boolean(deleteTarget)} title="Remover esta conta?" description={deleteTarget ? `“${deleteTarget.name}” será removida. As despesas e rendimentos existentes deixam de estar associados a esta conta. As transferências desta conta também serão removidas, sem alterar o saldo das restantes contas.` : ''} confirmLabel="Remover conta" busy={isSaving} onCancel={() => setDeleteTarget(null)} onConfirm={() => void removeAccount()} />
     </div>
   );
 }

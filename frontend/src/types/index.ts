@@ -140,6 +140,10 @@ export interface FinancialAccountInput {
   creditLimit?: number;
 }
 
+export interface FinancialAccountBalanceCorrectionInput {
+  currentBalance: number;
+}
+
 export interface AccountTransfer {
   id: string;
   amount: number;

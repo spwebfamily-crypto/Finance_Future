@@ -24,6 +24,7 @@ import type {
   DebtInput,
   ExpenseImportResult,
   FinancialAccount,
+  FinancialAccountBalanceCorrectionInput,
   FinancialAccountInput,
   RecurringIncome,
   RecurringIncomeInput,
@@ -189,6 +190,8 @@ export const accountApi = {
     unwrap(await apiRequest<ApiEnvelope<FinancialAccount> | FinancialAccount>('/accounts', { method: 'POST', body: { ...input } })),
   update: async (id: string, input: Partial<FinancialAccountInput>) =>
     unwrap(await apiRequest<ApiEnvelope<FinancialAccount> | FinancialAccount>(`/accounts/${id}`, { method: 'PATCH', body: { ...input } })),
+  correctBalance: async (id: string, input: FinancialAccountBalanceCorrectionInput) =>
+    unwrap(await apiRequest<ApiEnvelope<FinancialAccount> | FinancialAccount>(`/accounts/${id}/balance`, { method: 'PATCH', body: { ...input } })),
   remove: (id: string) => apiRequest<void>(`/accounts/${id}`, { method: 'DELETE' }),
   transfers: async () => unwrap(await apiRequest<ApiEnvelope<AccountTransfer[]> | AccountTransfer[]>('/accounts/transfers')),
   transfer: async (input: AccountTransferInput) =>

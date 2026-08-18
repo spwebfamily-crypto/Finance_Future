@@ -178,6 +178,10 @@ export const accountUpdateSchema = accountSchema.partial().refine(
   'Indique pelo menos um campo.',
 );
 
+export const accountBalanceCorrectionSchema = z.object({
+  currentBalance: accountBalance,
+});
+
 export const transferCreateSchema = z.object({
   fromAccountId: z.string().uuid(),
   toAccountId: z.string().uuid(),

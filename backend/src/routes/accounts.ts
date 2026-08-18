@@ -3,7 +3,7 @@ import { Router } from 'express';
 import { requireAuth, sendError } from '../middleware.js';
 import { prisma } from '../prisma.js';
 import type { AuthenticatedRequest } from '../types.js';
-import { accountCreateSchema, accountUpdateSchema, transferCreateSchema } from '../validation.js';
+import { accountBalanceCorrectionSchema, accountCreateSchema, accountUpdateSchema, transferCreateSchema } from '../validation.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -32,6 +32,18 @@ function sum(values: Prisma.Decimal[]) {
   return values.reduce((total, value) => total.add(value), new Prisma.Decimal(0));
 }
 
+function activityBalance(account: {
+  incomes: Array<{ amount: Prisma.Decimal }>;
+  expenses: Array<{ amount: Prisma.Decimal }>;
+  outgoingTransfers: Array<{ amount: Prisma.Decimal }>;
+  incomingTransfers: Array<{ amount: Prisma.Decimal }>;
+}) {
+  return sum(account.incomes.map((income) => income.amount))
+    .sub(sum(account.expenses.map((expense) => expense.amount)))
+    .sub(sum(account.outgoingTransfers.map((transfer) => transfer.amount)))
+    .add(sum(account.incomingTransfers.map((transfer) => transfer.amount)));
+}
+
 router.get('/', async (request: AuthenticatedRequest, response, next) => {
   try {
     const accounts = await prisma.account.findMany({
@@ -46,11 +58,7 @@ router.get('/', async (request: AuthenticatedRequest, response, next) => {
       orderBy: [{ type: 'asc' }, { name: 'asc' }],
     });
     return response.json({ data: accounts.map((account) => {
-      const balance = account.openingBalance
-        .add(sum(account.incomes.map((income) => income.amount)))
-        .sub(sum(account.expenses.map((expense) => expense.amount)))
-        .sub(sum(account.outgoingTransfers.map((transfer) => transfer.amount)))
-        .add(sum(account.incomingTransfers.map((transfer) => transfer.amount)));
+      const balance = account.openingBalance.add(activityBalance(account));
       return { ...presentAccount(account), currentBalance: balance.toDecimalPlaces(2).toNumber() };
     }) });
   } catch (error) { return next(error); }
@@ -81,13 +89,70 @@ router.patch('/:id', async (request: AuthenticatedRequest, response, next) => {
   } catch (error) { return next(error); }
 });
 
+router.patch('/:id/balance', async (request: AuthenticatedRequest, response, next) => {
+  try {
+    const input = accountBalanceCorrectionSchema.parse(request.body);
+    const existing = await prisma.account.findFirst({
+      where: { id: request.params.id, userId: request.user!.id },
+      select: {
+        ...accountSelect,
+        expenses: { select: { amount: true } },
+        incomes: { select: { amount: true } },
+        outgoingTransfers: { select: { amount: true } },
+        incomingTransfers: { select: { amount: true } },
+      },
+    });
+    if (!existing) return sendError(response, 404, 'ACCOUNT_NOT_FOUND', 'Conta não encontrada.');
+
+    const targetBalance = new Prisma.Decimal(input.currentBalance);
+    const openingBalance = targetBalance.sub(activityBalance(existing));
+    const account = await prisma.account.update({
+      where: { id: existing.id },
+      data: { openingBalance },
+      select: accountSelect,
+    });
+    return response.json({
+      data: {
+        ...presentAccount(account),
+        currentBalance: targetBalance.toDecimalPlaces(2).toNumber(),
+      },
+    });
+  } catch (error) { return next(error); }
+});
+
 router.delete('/:id', async (request: AuthenticatedRequest, response, next) => {
   try {
     const existing = await prisma.account.findFirst({ where: { id: request.params.id, userId: request.user!.id }, select: { id: true } });
     if (!existing) return sendError(response, 404, 'ACCOUNT_NOT_FOUND', 'Conta não encontrada.');
-    const transfers = await prisma.transfer.count({ where: { userId: request.user!.id, OR: [{ fromAccountId: existing.id }, { toAccountId: existing.id }] } });
-    if (transfers) return sendError(response, 409, 'ACCOUNT_HAS_TRANSFERS', 'Não é possível remover uma conta com transferências.');
-    await prisma.account.delete({ where: { id: existing.id } });
+
+    await prisma.$transaction(async (transaction) => {
+      const transfers = await transaction.transfer.findMany({
+        where: { userId: request.user!.id, OR: [{ fromAccountId: existing.id }, { toAccountId: existing.id }] },
+        select: { amount: true, fromAccountId: true, toAccountId: true },
+      });
+      const balanceAdjustments = new Map<string, Prisma.Decimal>();
+
+      for (const transfer of transfers) {
+        const otherAccountId = transfer.fromAccountId === existing.id ? transfer.toAccountId : transfer.fromAccountId;
+        const adjustment = transfer.fromAccountId === existing.id ? transfer.amount : transfer.amount.negated();
+        balanceAdjustments.set(
+          otherAccountId,
+          (balanceAdjustments.get(otherAccountId) ?? new Prisma.Decimal(0)).add(adjustment),
+        );
+      }
+
+      for (const [accountId, adjustment] of balanceAdjustments) {
+        await transaction.account.update({
+          where: { id: accountId },
+          data: { openingBalance: { increment: adjustment } },
+        });
+      }
+
+      await transaction.transfer.deleteMany({
+        where: { userId: request.user!.id, OR: [{ fromAccountId: existing.id }, { toAccountId: existing.id }] },
+      });
+      await transaction.account.delete({ where: { id: existing.id } });
+    });
     return response.status(204).end();
   } catch (error) { return next(error); }
 });
