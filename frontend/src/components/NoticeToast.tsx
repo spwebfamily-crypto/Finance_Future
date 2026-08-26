@@ -1,5 +1,5 @@
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { X } from 'lucide-react';
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { X } from "lucide-react";
 
 export function NoticeToast({ message, onClose }: { message: string; onClose: () => void }) {
   const reduceMotion = useReducedMotion();
@@ -16,7 +16,9 @@ export function NoticeToast({ message, onClose }: { message: string; onClose: ()
           transition={{ duration: reduceMotion ? 0 : 0.2, ease: [0.16, 1, 0.3, 1] }}
         >
           {message}
-          <button type="button" onClick={onClose} aria-label="Fechar aviso"><X aria-hidden="true" /></button>
+          <button type="button" onClick={onClose} aria-label="Fechar aviso">
+            <X aria-hidden="true" />
+          </button>
         </motion.div>
       )}
     </AnimatePresence>

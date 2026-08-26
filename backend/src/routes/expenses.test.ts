@@ -1,15 +1,17 @@
-import type { Server } from 'node:http';
-import type { AddressInfo } from 'node:net';
-import { Prisma } from '@prisma/client';
-import express from 'express';
-import jwt from 'jsonwebtoken';
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { errorHandler } from '../middleware.js';
-import expenseRoutes from './expenses.js';
+import type { Server } from "node:http";
+import type { AddressInfo } from "node:net";
+import { Prisma } from "@prisma/client";
+import express from "express";
+import jwt from "jsonwebtoken";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { errorHandler } from "../middleware.js";
+import expenseRoutes from "./expenses.js";
 
 const repositories = vi.hoisted(() => ({
   categoryFindFirst: vi.fn(),
   expenseFindFirst: vi.fn(),
+  expenseFindMany: vi.fn(),
+  expenseCount: vi.fn(),
   expenseCreate: vi.fn(),
   expenseUpdate: vi.fn(),
   expenseDelete: vi.fn(),
@@ -18,7 +20,7 @@ const repositories = vi.hoisted(() => ({
   transaction: vi.fn(),
 }));
 
-vi.mock('../prisma.js', () => {
+vi.mock("../prisma.js", () => {
   const transactionClient = {
     $queryRaw: repositories.queryRaw,
     expense: {
@@ -26,6 +28,8 @@ vi.mock('../prisma.js', () => {
       create: repositories.expenseCreate,
       update: repositories.expenseUpdate,
       findFirst: repositories.expenseFindFirst,
+      findMany: repositories.expenseFindMany,
+      count: repositories.expenseCount,
     },
   };
   return {
@@ -33,65 +37,75 @@ vi.mock('../prisma.js', () => {
       category: { findFirst: repositories.categoryFindFirst },
       expense: {
         findFirst: repositories.expenseFindFirst,
+        findMany: repositories.expenseFindMany,
+        count: repositories.expenseCount,
         create: repositories.expenseCreate,
         update: repositories.expenseUpdate,
         delete: repositories.expenseDelete,
       },
-      $transaction: repositories.transaction.mockImplementation((callback) => callback(transactionClient)),
+      $transaction: repositories.transaction.mockImplementation((input) =>
+        Array.isArray(input) ? Promise.all(input) : input(transactionClient),
+      ),
     },
   };
 });
 
-const userId = '7c8f0f14-1f87-4dfb-a2bf-85bf170a79c8';
-const categoryId = 'dfc493e7-f9dc-48c5-9341-f659b5c5f288';
-const expenseId = '7b5f1793-45d7-485f-ab68-e32d1a57ed0d';
-const pdfBytes = Buffer.from('%PDF-1.7\n1 0 obj\n<<>>\nendobj\n%%EOF', 'ascii');
+const userId = "7c8f0f14-1f87-4dfb-a2bf-85bf170a79c8";
+const categoryId = "dfc493e7-f9dc-48c5-9341-f659b5c5f288";
+const expenseId = "7b5f1793-45d7-485f-ab68-e32d1a57ed0d";
+const pdfBytes = Buffer.from("%PDF-1.7\n1 0 obj\n<<>>\nendobj\n%%EOF", "ascii");
 
 const presentedExpense = {
   id: expenseId,
   categoryId,
-  description: 'Supermercado',
-  location: 'Lisboa',
-  amount: new Prisma.Decimal('24.90'),
-  date: new Date('2026-08-10T00:00:00.000Z'),
+  description: "Supermercado",
+  location: "Lisboa",
+  amount: new Prisma.Decimal("24.90"),
+  date: new Date("2026-08-10T00:00:00.000Z"),
   receiptImageUrl: null,
-  receiptMimeType: 'application/pdf',
-  createdAt: new Date('2026-08-10T12:00:00.000Z'),
-  updatedAt: new Date('2026-08-10T12:00:00.000Z'),
-  category: { id: categoryId, name: 'Alimentação', icon: 'shopping-basket', isDefault: true, userId },
+  receiptMimeType: "application/pdf",
+  createdAt: new Date("2026-08-10T12:00:00.000Z"),
+  updatedAt: new Date("2026-08-10T12:00:00.000Z"),
+  category: {
+    id: categoryId,
+    name: "Alimentação",
+    icon: "shopping-basket",
+    isDefault: true,
+    userId,
+  },
 };
 
 function authorization() {
   const token = jwt.sign(
-    { type: 'access', email: 'owner@example.com' },
+    { type: "access", email: "owner@example.com" },
     process.env.JWT_ACCESS_SECRET!,
-    { subject: userId, expiresIn: '5m' },
+    { subject: userId, expiresIn: "5m" },
   );
   return `Bearer ${token}`;
 }
 
-function expenseForm(file = new Blob([pdfBytes], { type: 'application/pdf' })) {
+function expenseForm(file = new Blob([pdfBytes], { type: "application/pdf" })) {
   const form = new FormData();
-  form.set('description', 'Supermercado');
-  form.set('location', 'Lisboa');
-  form.set('amount', '24.90');
-  form.set('date', '2026-08-10');
-  form.set('categoryId', categoryId);
-  form.set('receipt', file, 'fatura.pdf');
+  form.set("description", "Supermercado");
+  form.set("location", "Lisboa");
+  form.set("amount", "24.90");
+  form.set("date", "2026-08-10");
+  form.set("categoryId", categoryId);
+  form.set("receipt", file, "fatura.pdf");
   return form;
 }
 
-describe('expense receipt storage', () => {
+describe("expense receipt storage", () => {
   let server: Server;
   let baseUrl: string;
 
   beforeAll(async () => {
     const app = express();
     app.use(express.json());
-    app.use('/api/expenses', expenseRoutes);
+    app.use("/api/expenses", expenseRoutes);
     app.use(errorHandler);
     await new Promise<void>((resolve) => {
-      server = app.listen(0, '127.0.0.1', resolve);
+      server = app.listen(0, "127.0.0.1", resolve);
     });
     const address = server.address() as AddressInfo;
     baseUrl = `http://127.0.0.1:${address.port}`;
@@ -99,13 +113,15 @@ describe('expense receipt storage', () => {
 
   afterAll(async () => {
     await new Promise<void>((resolve, reject) => {
-      server.close((error) => error ? reject(error) : resolve());
+      server.close((error) => (error ? reject(error) : resolve()));
     });
   });
 
   beforeEach(() => {
     repositories.categoryFindFirst.mockReset().mockResolvedValue({ id: categoryId });
     repositories.expenseFindFirst.mockReset();
+    repositories.expenseFindMany.mockReset();
+    repositories.expenseCount.mockReset();
     repositories.expenseCreate.mockReset().mockResolvedValue(presentedExpense);
     repositories.expenseUpdate.mockReset();
     repositories.expenseDelete.mockReset();
@@ -116,9 +132,9 @@ describe('expense receipt storage', () => {
     repositories.queryRaw.mockReset().mockResolvedValue([]);
   });
 
-  it('stores an authenticated PDF in PostgreSQL instead of the local filesystem', async () => {
+  it("stores an authenticated PDF in PostgreSQL instead of the local filesystem", async () => {
     const response = await fetch(`${baseUrl}/api/expenses`, {
-      method: 'POST',
+      method: "POST",
       headers: { Authorization: authorization() },
       body: expenseForm(),
     });
@@ -128,21 +144,23 @@ describe('expense receipt storage', () => {
     expect(body.data.receiptImageUrl).toBe(`/api/expenses/${expenseId}/receipt`);
     expect(repositories.queryRaw).toHaveBeenCalledTimes(2);
     for (const [query] of repositories.queryRaw.mock.calls) {
-      expect(Array.from(query as TemplateStringsArray).join('?')).toContain('::text AS lock_result');
+      expect(Array.from(query as TemplateStringsArray).join("?")).toContain(
+        "::text AS lock_result",
+      );
     }
     expect(repositories.expenseCreate).toHaveBeenCalledOnce();
     const createCall = repositories.expenseCreate.mock.calls[0][0];
     expect(createCall.data.receiptImageUrl).toBeNull();
-    expect(createCall.data.receiptMimeType).toBe('application/pdf');
-    expect(createCall.data.receiptFileName).toBe('fatura.pdf');
+    expect(createCall.data.receiptMimeType).toBe("application/pdf");
+    expect(createCall.data.receiptFileName).toBe("fatura.pdf");
     expect(Buffer.from(createCall.data.receiptData)).toEqual(pdfBytes);
   });
 
-  it('serves the private blob without allowing browser or shared-cache storage', async () => {
+  it("serves the private blob without allowing browser or shared-cache storage", async () => {
     repositories.expenseFindFirst.mockResolvedValue({
       receiptData: Uint8Array.from(pdfBytes),
-      receiptMimeType: 'application/pdf',
-      receiptFileName: 'fatura agosto.pdf',
+      receiptMimeType: "application/pdf",
+      receiptFileName: "fatura agosto.pdf",
       receiptImageUrl: null,
     });
 
@@ -151,47 +169,52 @@ describe('expense receipt storage', () => {
     });
 
     expect(response.status).toBe(200);
-    expect(response.headers.get('cache-control')).toBe('private, no-store');
-    expect(response.headers.get('content-type')).toContain('application/pdf');
-    expect(response.headers.get('content-disposition')).toContain("filename*=UTF-8''fatura%20agosto.pdf");
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+    expect(response.headers.get("content-type")).toContain("application/pdf");
+    expect(response.headers.get("content-disposition")).toContain(
+      "filename*=UTF-8''fatura%20agosto.pdf",
+    );
     expect(Buffer.from(await response.arrayBuffer())).toEqual(pdfBytes);
   });
 
-  it('rejects a renamed non-PDF before writing to the database', async () => {
+  it("rejects a renamed non-PDF before writing to the database", async () => {
     const response = await fetch(`${baseUrl}/api/expenses`, {
-      method: 'POST',
+      method: "POST",
       headers: { Authorization: authorization() },
-      body: expenseForm(new Blob(['<script>alert(1)</script>'], { type: 'application/pdf' })),
+      body: expenseForm(new Blob(["<script>alert(1)</script>"], { type: "application/pdf" })),
     });
     const body = await response.json();
 
     expect(response.status).toBe(415);
-    expect(body.error.code).toBe('INVALID_RECEIPT_CONTENT');
+    expect(body.error.code).toBe("INVALID_RECEIPT_CONTENT");
     expect(repositories.expenseCreate).not.toHaveBeenCalled();
   });
 
-  it('enforces the persistent per-user quota before inserting another receipt', async () => {
+  it("enforces the persistent per-user quota before inserting another receipt", async () => {
     repositories.expenseAggregate
       .mockResolvedValueOnce({ _sum: { receiptFileSize: 100 * 1024 * 1024 }, _count: { _all: 10 } })
-      .mockResolvedValueOnce({ _sum: { receiptFileSize: 100 * 1024 * 1024 }, _count: { _all: 10 } });
+      .mockResolvedValueOnce({
+        _sum: { receiptFileSize: 100 * 1024 * 1024 },
+        _count: { _all: 10 },
+      });
 
     const response = await fetch(`${baseUrl}/api/expenses`, {
-      method: 'POST',
+      method: "POST",
       headers: { Authorization: authorization() },
       body: expenseForm(),
     });
     const body = await response.json();
 
     expect(response.status).toBe(413);
-    expect(body.error.code).toBe('RECEIPT_USER_QUOTA_EXCEEDED');
+    expect(body.error.code).toBe("RECEIPT_USER_QUOTA_EXCEEDED");
     expect(repositories.expenseCreate).not.toHaveBeenCalled();
   });
 
-  it('removes an existing receipt when a JSON PATCH sends a boolean flag', async () => {
+  it("removes an existing receipt when a JSON PATCH sends a boolean flag", async () => {
     const storedReceipt = {
       id: expenseId,
       receiptImageUrl: null,
-      receiptMimeType: 'application/pdf',
+      receiptMimeType: "application/pdf",
       receiptFileSize: pdfBytes.length,
     };
     repositories.expenseFindFirst
@@ -204,10 +227,10 @@ describe('expense receipt storage', () => {
     });
 
     const response = await fetch(`${baseUrl}/api/expenses/${expenseId}`, {
-      method: 'PATCH',
+      method: "PATCH",
       headers: {
         Authorization: authorization(),
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ removeReceipt: true }),
     });
@@ -223,5 +246,83 @@ describe('expense receipt storage', () => {
       receiptFileName: null,
       receiptFileSize: null,
     });
+  });
+});
+
+describe("expense listing pagination", () => {
+  let server: Server;
+  let baseUrl: string;
+
+  beforeAll(async () => {
+    const app = express();
+    app.use(express.json());
+    app.use("/api/expenses", expenseRoutes);
+    app.use(errorHandler);
+    await new Promise<void>((resolve) => {
+      server = app.listen(0, "127.0.0.1", resolve);
+    });
+    const address = server.address() as AddressInfo;
+    baseUrl = `http://127.0.0.1:${address.port}`;
+  });
+
+  afterAll(async () => {
+    await new Promise<void>((resolve, reject) => {
+      server.close((error) => (error ? reject(error) : resolve()));
+    });
+  });
+
+  beforeEach(() => {
+    repositories.categoryFindFirst.mockReset().mockResolvedValue({ id: categoryId });
+    repositories.expenseFindFirst.mockReset();
+    repositories.expenseFindMany.mockReset().mockResolvedValue([presentedExpense]);
+    repositories.expenseCount.mockReset().mockResolvedValue(1);
+    repositories.expenseCreate.mockReset();
+    repositories.expenseUpdate.mockReset();
+    repositories.expenseDelete.mockReset();
+    repositories.expenseAggregate.mockReset();
+    repositories.queryRaw.mockReset();
+  });
+
+  it("returns metadata and applies the default first page of 100", async () => {
+    const response = await fetch(`${baseUrl}/api/expenses`, {
+      headers: { Authorization: authorization() },
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.meta).toEqual({ page: 1, pageSize: 100, total: 1, pageCount: 1 });
+    expect(repositories.expenseFindMany.mock.calls[0][0]).toMatchObject({
+      skip: 0,
+      take: 100,
+      where: { userId },
+    });
+    expect(repositories.expenseCount).toHaveBeenCalledOnce();
+  });
+
+  it("honours explicit page and pageSize with consistent totals", async () => {
+    repositories.expenseCount.mockResolvedValue(120);
+
+    const response = await fetch(`${baseUrl}/api/expenses?page=3&pageSize=25`, {
+      headers: { Authorization: authorization() },
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.meta).toEqual({ page: 3, pageSize: 25, total: 120, pageCount: 5 });
+    expect(repositories.expenseFindMany.mock.calls[0][0]).toMatchObject({
+      skip: 50,
+      take: 25,
+    });
+  });
+
+  it("rejects a pageSize above the supported ceiling", async () => {
+    const response = await fetch(`${baseUrl}/api/expenses?pageSize=501`, {
+      headers: { Authorization: authorization() },
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(body.error.code).toBe("VALIDATION_ERROR");
+    expect(repositories.expenseFindMany).not.toHaveBeenCalled();
   });
 });

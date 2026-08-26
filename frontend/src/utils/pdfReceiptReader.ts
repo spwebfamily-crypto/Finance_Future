@@ -1,6 +1,6 @@
-import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
-import type { PDFDocumentProxy, PDFPageProxy, RenderTask } from 'pdfjs-dist';
-import { localOcrOptions } from './localOcr';
+import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+import type { PDFDocumentProxy, PDFPageProxy, RenderTask } from "pdfjs-dist";
+import { localOcrOptions } from "./localOcr";
 
 const MAX_TEXT_PAGES = 20;
 const MAX_OCR_PAGES = 5;
@@ -11,14 +11,15 @@ async function raceWithAbort<T>(operation: Promise<T>, signal?: AbortSignal): Pr
   signal.throwIfAborted();
   let abort: (() => void) | null = null;
   const cancelled = new Promise<never>((_resolve, reject) => {
-    abort = () => reject(signal.reason ?? new DOMException('A leitura foi cancelada.', 'AbortError'));
-    signal.addEventListener('abort', abort, { once: true });
+    abort = () =>
+      reject(signal.reason ?? new DOMException("A leitura foi cancelada.", "AbortError"));
+    signal.addEventListener("abort", abort, { once: true });
     if (signal.aborted) abort();
   });
   try {
     return await Promise.race([operation, cancelled]);
   } finally {
-    if (abort) signal.removeEventListener('abort', abort);
+    if (abort) signal.removeEventListener("abort", abort);
   }
 }
 
@@ -52,47 +53,55 @@ async function fileBytes(file: File) {
   const buffer = maybeArrayBuffer.arrayBuffer
     ? await maybeArrayBuffer.arrayBuffer()
     : await new Promise<ArrayBuffer>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as ArrayBuffer);
-      reader.onerror = () => reject(reader.error || new Error('Não foi possível ler o PDF.'));
-      reader.readAsArrayBuffer(file);
-    });
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as ArrayBuffer);
+        reader.onerror = () => reject(reader.error || new Error("Não foi possível ler o PDF."));
+        reader.readAsArrayBuffer(file);
+      });
   return new Uint8Array(buffer);
 }
 
-function joinLineParts(parts: TextLine['parts']) {
+function joinLineParts(parts: TextLine["parts"]) {
   const ordered = [...parts]
     .sort((left, right) => left.x - right.x)
-    .filter((part, index, all) => !all.slice(0, index).some((previous) => previous.value === part.value && Math.abs(previous.x - part.x) < 1));
-  let result = '';
+    .filter(
+      (part, index, all) =>
+        !all
+          .slice(0, index)
+          .some((previous) => previous.value === part.value && Math.abs(previous.x - part.x) < 1),
+    );
+  let result = "";
   let previousEnd = 0;
   let previousAverageWidth = 0;
   for (const part of ordered) {
     if (result) {
       const gap = part.x - previousEnd;
       const compactThreshold = Math.max(0.8, Math.min(2.5, previousAverageWidth * 0.38));
-      if (gap > compactThreshold) result += ' ';
+      if (gap > compactThreshold) result += " ";
     }
     result += part.value;
     previousEnd = part.x + part.width;
     previousAverageWidth = part.width > 0 ? part.width / Math.max(part.value.length, 1) : 4;
   }
-  return result.replace(/\s+/g, ' ').trim();
+  return result.replace(/\s+/g, " ").trim();
 }
 
 /** Reconstructs reading order from items already transformed into viewport coordinates. */
 export function reconstructPageText(items: PositionedTextItem[]) {
   const lines: TextLine[] = [];
   for (const item of items) {
-    const value = item.str.replace(/\s+/g, ' ').trim();
+    const value = item.str.replace(/\s+/g, " ").trim();
     if (!value) continue;
     const x = item.transform?.[4] ?? 0;
     const y = item.transform?.[5] ?? 0;
-    const inferredHeight = item.height ?? Math.hypot(item.transform?.[2] ?? 0, item.transform?.[3] ?? 0);
+    const inferredHeight =
+      item.height ?? Math.hypot(item.transform?.[2] ?? 0, item.transform?.[3] ?? 0);
     const height = Math.max(1, inferredHeight || 10);
     const tolerance = Math.max(2, Math.min(6, height * 0.36));
     let line = lines
-      .filter((candidate) => Math.abs(candidate.y - y) <= Math.max(tolerance, candidate.height * 0.36))
+      .filter(
+        (candidate) => Math.abs(candidate.y - y) <= Math.max(tolerance, candidate.height * 0.36),
+      )
       .sort((left, right) => Math.abs(left.y - y) - Math.abs(right.y - y))[0];
     if (!line) {
       line = { y, height, parts: [] };
@@ -109,7 +118,7 @@ export function reconstructPageText(items: PositionedTextItem[]) {
     .sort((left, right) => left.y - right.y)
     .map((line) => joinLineParts(line.parts))
     .filter(Boolean)
-    .join('\n');
+    .join("\n");
 }
 
 export function composePdfPages(pages: PdfPageText[], totalPages: number) {
@@ -117,11 +126,11 @@ export function composePdfPages(pages: PdfPageText[], totalPages: number) {
     .sort((left, right) => left.pageNumber - right.pageNumber)
     .filter((page) => page.text.trim())
     .map((page) => `Página ${page.pageNumber} de ${totalPages}\n${page.text.trim()}`)
-    .join('\n\n');
+    .join("\n\n");
 }
 
 function textQuality(text: string) {
-  const compact = text.replace(/\s+/g, ' ').trim();
+  const compact = text.replace(/\s+/g, " ").trim();
   if (!compact) return 0;
   const letters = compact.match(/[A-Za-zÀ-ÿ]/g)?.length ?? 0;
   const digits = compact.match(/\d/g)?.length ?? 0;
@@ -132,20 +141,23 @@ function textQuality(text: string) {
 }
 
 function needsOcr(text: string) {
-  const compact = text.replace(/\s+/g, ' ').trim();
+  const compact = text.replace(/\s+/g, " ").trim();
   const letters = compact.match(/[A-Za-zÀ-ÿ]/g)?.length ?? 0;
   const words = compact.match(/[A-Za-zÀ-ÿ]{3,}/g)?.length ?? 0;
   const hasMoney = /\d{1,3}(?:[.\s,]\d{3})*[.,]\s*\d{2}/.test(compact);
   const replacementCharacters = compact.match(/[�□]/g)?.length ?? 0;
-  return compact.length < 55
-    || letters < 20
-    || words < 4
-    || replacementCharacters > Math.max(2, compact.length * 0.04)
-    || (!hasMoney && compact.length < 180);
+  return (
+    compact.length < 55 ||
+    letters < 20 ||
+    words < 4 ||
+    replacementCharacters > Math.max(2, compact.length * 0.04) ||
+    (!hasMoney && compact.length < 180)
+  );
 }
 
 function pagesToExtract(pageCount: number) {
-  if (pageCount <= MAX_TEXT_PAGES) return Array.from({ length: pageCount }, (_, index) => index + 1);
+  if (pageCount <= MAX_TEXT_PAGES)
+    return Array.from({ length: pageCount }, (_, index) => index + 1);
   return [...Array.from({ length: MAX_TEXT_PAGES - 1 }, (_, index) => index + 1), pageCount];
 }
 
@@ -155,7 +167,11 @@ function ocrPriority(page: PdfPageText, pageCount: number) {
   return 2 + page.pageNumber / Math.max(pageCount, 1);
 }
 
-function enhanceLowContrastCanvas(context: CanvasRenderingContext2D, width: number, height: number) {
+function enhanceLowContrastCanvas(
+  context: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+) {
   try {
     const image = context.getImageData(0, 0, width, height);
     const histogram = new Uint32Array(256);
@@ -164,7 +180,11 @@ function enhanceLowContrastCanvas(context: CanvasRenderingContext2D, width: numb
     for (let y = 0; y < height; y += sampleStride) {
       for (let x = 0; x < width; x += sampleStride) {
         const offset = (y * width + x) * 4;
-        const luminance = Math.round(image.data[offset] * 0.2126 + image.data[offset + 1] * 0.7152 + image.data[offset + 2] * 0.0722);
+        const luminance = Math.round(
+          image.data[offset] * 0.2126 +
+            image.data[offset + 1] * 0.7152 +
+            image.data[offset + 2] * 0.0722,
+        );
         histogram[luminance] += 1;
         samples += 1;
       }
@@ -184,7 +204,10 @@ function enhanceLowContrastCanvas(context: CanvasRenderingContext2D, width: numb
     if (span < 28 || span >= 145) return false;
     const scale = 235 / span;
     for (let offset = 0; offset < image.data.length; offset += 4) {
-      const luminance = image.data[offset] * 0.2126 + image.data[offset + 1] * 0.7152 + image.data[offset + 2] * 0.0722;
+      const luminance =
+        image.data[offset] * 0.2126 +
+        image.data[offset + 1] * 0.7152 +
+        image.data[offset + 2] * 0.0722;
       const adjusted = Math.max(8, Math.min(243, Math.round((luminance - low) * scale + 8)));
       image.data[offset] = adjusted;
       image.data[offset + 1] = adjusted;
@@ -203,27 +226,33 @@ export async function readPdfReceipt(
   signal?: AbortSignal,
 ): Promise<PdfReadResult> {
   signal?.throwIfAborted();
-  onProgress?.(0.03, 'A abrir o PDF…');
-  const pdfjs = await import('pdfjs-dist');
+  onProgress?.(0.03, "A abrir o PDF…");
+  const pdfjs = await import("pdfjs-dist");
   signal?.throwIfAborted();
   pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
   const bytes = await fileBytes(file);
   signal?.throwIfAborted();
-  const loadingTask = pdfjs.getDocument({ data: bytes, isEvalSupported: false, useSystemFonts: true });
+  const loadingTask = pdfjs.getDocument({
+    data: bytes,
+    isEvalSupported: false,
+    useSystemFonts: true,
+  });
   let loadingDestroyPromise: Promise<void> | null = null;
   const destroyLoadingTask = () => {
     loadingDestroyPromise ??= loadingTask.destroy().catch(() => undefined);
     return loadingDestroyPromise;
   };
-  const abortLoading = () => { void destroyLoadingTask(); };
-  signal?.addEventListener('abort', abortLoading, { once: true });
+  const abortLoading = () => {
+    void destroyLoadingTask();
+  };
+  signal?.addEventListener("abort", abortLoading, { once: true });
   let pdfDocument: PDFDocumentProxy;
   try {
     const loadedDocument = await raceWithAbort(loadingTask.promise, signal);
     if (signal?.aborted || loadingDestroyPromise) {
       await destroyLoadingTask();
       signal?.throwIfAborted();
-      throw new Error('A abertura do PDF foi interrompida.');
+      throw new Error("A abertura do PDF foi interrompida.");
     }
     pdfDocument = loadedDocument;
   } catch (error) {
@@ -231,7 +260,7 @@ export async function readPdfReceipt(
     signal?.throwIfAborted();
     throw error;
   } finally {
-    signal?.removeEventListener('abort', abortLoading);
+    signal?.removeEventListener("abort", abortLoading);
   }
 
   try {
@@ -240,7 +269,10 @@ export async function readPdfReceipt(
     for (let pageIndex = 0; pageIndex < pageNumbers.length; pageIndex += 1) {
       signal?.throwIfAborted();
       const pageNumber = pageNumbers[pageIndex];
-      onProgress?.(0.05 + ((pageIndex + 1) / pageNumbers.length) * 0.3, `A ler texto da página ${pageNumber} de ${pdfDocument.numPages}…`);
+      onProgress?.(
+        0.05 + ((pageIndex + 1) / pageNumbers.length) * 0.3,
+        `A ler texto da página ${pageNumber} de ${pdfDocument.numPages}…`,
+      );
       const page: PDFPageProxy = await pdfDocument.getPage(pageNumber);
       signal?.throwIfAborted();
       try {
@@ -248,20 +280,22 @@ export async function readPdfReceipt(
         const content = await page.getTextContent({ includeMarkedContent: false });
         signal?.throwIfAborted();
         const items: PositionedTextItem[] = content.items.flatMap((item) => {
-          if (!('str' in item)) return [];
+          if (!("str" in item)) return [];
           const transform = pdfjs.Util.transform(viewport.transform, item.transform);
-          return [{
-            str: item.str,
-            hasEOL: item.hasEOL,
-            transform,
-            width: Math.abs(item.width * viewport.scale),
-            height: Math.max(1, Math.hypot(transform[2], transform[3])),
-          }];
+          return [
+            {
+              str: item.str,
+              hasEOL: item.hasEOL,
+              transform,
+              width: Math.abs(item.width * viewport.scale),
+              height: Math.max(1, Math.hypot(transform[2], transform[3])),
+            },
+          ];
         });
         pages.push({ pageNumber, text: reconstructPageText(items) });
-      } catch (error) {
+      } catch {
         signal?.throwIfAborted();
-        pages.push({ pageNumber, text: '' });
+        pages.push({ pageNumber, text: "" });
       } finally {
         page.cleanup();
       }
@@ -270,23 +304,31 @@ export async function readPdfReceipt(
 
     const pagesNeedingOcr = pages
       .filter((page) => needsOcr(page.text))
-      .sort((left, right) => ocrPriority(left, pdfDocument.numPages) - ocrPriority(right, pdfDocument.numPages))
+      .sort(
+        (left, right) =>
+          ocrPriority(left, pdfDocument.numPages) - ocrPriority(right, pdfDocument.numPages),
+      )
       .slice(0, MAX_OCR_PAGES);
 
     if (!pagesNeedingOcr.length) {
       signal?.throwIfAborted();
-      onProgress?.(1, 'Texto do PDF identificado.');
-      return { text: composePdfPages(pages, pdfDocument.numPages), pageCount: pdfDocument.numPages, usedOcr: false };
+      onProgress?.(1, "Texto do PDF identificado.");
+      return {
+        text: composePdfPages(pages, pdfDocument.numPages),
+        pageCount: pdfDocument.numPages,
+        usedOcr: false,
+      };
     }
 
-    onProgress?.(0.36, 'A preparar o OCR local…');
+    onProgress?.(0.36, "A preparar o OCR local…");
     let activeOcrPage = 0;
-    const { default: Tesseract } = await import('tesseract.js');
+    const { default: Tesseract } = await import("tesseract.js");
     signal?.throwIfAborted();
-    const pendingWorker = Tesseract.createWorker('por+eng', Tesseract.OEM.LSTM_ONLY, {
+    const pendingWorker = Tesseract.createWorker("por+eng", Tesseract.OEM.LSTM_ONLY, {
       ...localOcrOptions,
       logger: ({ progress, status }) => {
-        const pageFraction = (activeOcrPage + Math.max(0, Math.min(1, progress))) / pagesNeedingOcr.length;
+        const pageFraction =
+          (activeOcrPage + Math.max(0, Math.min(1, progress))) / pagesNeedingOcr.length;
         onProgress?.(0.36 + pageFraction * 0.62, status);
       },
     });
@@ -299,11 +341,16 @@ export async function readPdfReceipt(
     }
     let terminationPromise: Promise<void> | null = null;
     const terminateWorker = () => {
-      terminationPromise ??= worker.terminate().then(() => undefined).catch(() => undefined);
+      terminationPromise ??= worker
+        .terminate()
+        .then(() => undefined)
+        .catch(() => undefined);
       return terminationPromise;
     };
-    const abortOcr = () => { void terminateWorker(); };
-    signal?.addEventListener('abort', abortOcr, { once: true });
+    const abortOcr = () => {
+      void terminateWorker();
+    };
+    signal?.addEventListener("abort", abortOcr, { once: true });
     try {
       if (signal?.aborted) void terminateWorker();
       signal?.throwIfAborted();
@@ -315,20 +362,31 @@ export async function readPdfReceipt(
         signal?.throwIfAborted();
         let canvas: HTMLCanvasElement | undefined;
         let renderTask: RenderTask | null = null;
-        const abortRender = () => { renderTask?.cancel(); };
-        signal?.addEventListener('abort', abortRender, { once: true });
+        const abortRender = () => {
+          renderTask?.cancel();
+        };
+        signal?.addEventListener("abort", abortRender, { once: true });
         try {
           const baseViewport = page.getViewport({ scale: 1, rotation: page.rotate });
-          const targetScale = Math.max(0.1, Math.min(2.2, Math.sqrt(MAX_CANVAS_PIXELS / Math.max(baseViewport.width * baseViewport.height, 1))));
+          const targetScale = Math.max(
+            0.1,
+            Math.min(
+              2.2,
+              Math.sqrt(MAX_CANVAS_PIXELS / Math.max(baseViewport.width * baseViewport.height, 1)),
+            ),
+          );
           const viewport = page.getViewport({ scale: targetScale, rotation: page.rotate });
-          canvas = document.createElement('canvas');
+          canvas = document.createElement("canvas");
           canvas.width = Math.ceil(viewport.width);
           canvas.height = Math.ceil(viewport.height);
-          const context = canvas.getContext('2d', { alpha: false });
-          if (!context) throw new Error('O navegador não conseguiu preparar a página do PDF.');
-          context.fillStyle = '#ffffff';
+          const context = canvas.getContext("2d", { alpha: false });
+          if (!context) throw new Error("O navegador não conseguiu preparar a página do PDF.");
+          context.fillStyle = "#ffffff";
           context.fillRect(0, 0, canvas.width, canvas.height);
-          onProgress?.(0.36 + (pageIndex / pagesNeedingOcr.length) * 0.62, `OCR local na página ${target.pageNumber} de ${pdfDocument.numPages}…`);
+          onProgress?.(
+            0.36 + (pageIndex / pagesNeedingOcr.length) * 0.62,
+            `OCR local na página ${target.pageNumber} de ${pdfDocument.numPages}…`,
+          );
           // PDF.js applies only the page's declared rotation; no uncertain orientation guessing is used.
           renderTask = page.render({ canvasContext: context, viewport });
           if (signal?.aborted) renderTask.cancel();
@@ -341,20 +399,27 @@ export async function readPdfReceipt(
           const ocrText = result.data.text.trim();
           const extractedQuality = textQuality(target.text);
           const ocrQuality = textQuality(ocrText);
-          if (ocrText && (extractedQuality === 0 || ocrQuality >= Math.max(20, extractedQuality * 0.72))) target.text = ocrText;
+          if (
+            ocrText &&
+            (extractedQuality === 0 || ocrQuality >= Math.max(20, extractedQuality * 0.72))
+          )
+            target.text = ocrText;
         } finally {
-          signal?.removeEventListener('abort', abortRender);
-          if (canvas) { canvas.width = 1; canvas.height = 1; }
+          signal?.removeEventListener("abort", abortRender);
+          if (canvas) {
+            canvas.width = 1;
+            canvas.height = 1;
+          }
           page.cleanup();
         }
       }
     } finally {
-      signal?.removeEventListener('abort', abortOcr);
+      signal?.removeEventListener("abort", abortOcr);
       await terminateWorker();
     }
 
     signal?.throwIfAborted();
-    onProgress?.(1, 'Leitura local concluída.');
+    onProgress?.(1, "Leitura local concluída.");
     return {
       text: composePdfPages(pages, pdfDocument.numPages),
       pageCount: pdfDocument.numPages,

@@ -1,19 +1,29 @@
-import { motion, useReducedMotion } from 'framer-motion';
-import { ShieldCheck } from 'lucide-react';
-import { Brand } from './Brand';
+import { motion, useReducedMotion } from "framer-motion";
+import { ShieldCheck } from "lucide-react";
+import { Brand } from "./Brand";
 
 const storyContent = {
   login: {
-    eyebrow: 'Dinheiro sem distrações',
-    title: <>Tudo o que saiu. <em>Nada escondido.</em></>,
-    description: 'Um arquivo simples para perceber hábitos, comparar meses e decidir com mais calma.',
-    footer: 'Os comprovativos são lidos localmente no seu dispositivo.',
+    eyebrow: "Dinheiro sem distrações",
+    title: (
+      <>
+        Tudo o que saiu. <em>Nada escondido.</em>
+      </>
+    ),
+    description:
+      "Um arquivo simples para perceber hábitos, comparar meses e decidir com mais calma.",
+    footer: "Os comprovativos são lidos localmente no seu dispositivo.",
   },
   register: {
-    eyebrow: 'Comece pelo essencial',
-    title: <>Uma rotina leve para <em>cuidar do futuro.</em></>,
-    description: 'Crie a conta e conte-nos apenas o necessário para organizar a sua vida financeira.',
-    footer: 'Pode rever os seus dados financeiros quando quiser.',
+    eyebrow: "Comece pelo essencial",
+    title: (
+      <>
+        Uma rotina leve para <em>cuidar do futuro.</em>
+      </>
+    ),
+    description:
+      "Crie a conta e conte-nos apenas o necessário para organizar a sua vida financeira.",
+    footer: "Pode rever os seus dados financeiros quando quiser.",
   },
 } as const;
 
@@ -36,7 +46,9 @@ export function AuthStory({ variant }: { variant: keyof typeof storyContent }) {
           <p>{content.description}</p>
         </div>
       </motion.div>
-      <div className="auth-story__footer"><ShieldCheck size={16} aria-hidden="true" /> {content.footer}</div>
+      <div className="auth-story__footer">
+        <ShieldCheck size={16} aria-hidden="true" /> {content.footer}
+      </div>
     </section>
   );
 }

@@ -1,17 +1,17 @@
-import { Router } from 'express';
-import { prisma } from '../prisma.js';
-import { requireAuth, sendError } from '../middleware.js';
-import { categoryCreateSchema, categoryUpdateSchema } from '../validation.js';
-import type { AuthenticatedRequest } from '../types.js';
+import { Router } from "express";
+import { prisma } from "../prisma.js";
+import { requireAuth, sendError } from "../middleware.js";
+import { categoryCreateSchema, categoryUpdateSchema } from "../validation.js";
+import type { AuthenticatedRequest } from "../types.js";
 
 const router = Router();
 router.use(requireAuth);
 
-router.get('/', async (request: AuthenticatedRequest, response, next) => {
+router.get("/", async (request: AuthenticatedRequest, response, next) => {
   try {
     const categories = await prisma.category.findMany({
       where: { userId: request.user!.id },
-      orderBy: [{ isDefault: 'desc' }, { name: 'asc' }],
+      orderBy: [{ isDefault: "desc" }, { name: "asc" }],
     });
     return response.json({ data: categories });
   } catch (error) {
@@ -19,7 +19,7 @@ router.get('/', async (request: AuthenticatedRequest, response, next) => {
   }
 });
 
-router.post('/', async (request: AuthenticatedRequest, response, next) => {
+router.post("/", async (request: AuthenticatedRequest, response, next) => {
   try {
     const input = categoryCreateSchema.parse(request.body);
     const category = await prisma.category.create({
@@ -35,7 +35,7 @@ router.post('/', async (request: AuthenticatedRequest, response, next) => {
   }
 });
 
-router.patch('/:id', async (request: AuthenticatedRequest, response, next) => {
+router.patch("/:id", async (request: AuthenticatedRequest, response, next) => {
   try {
     const input = categoryUpdateSchema.parse(request.body);
     const existing = await prisma.category.findFirst({
@@ -43,10 +43,15 @@ router.patch('/:id', async (request: AuthenticatedRequest, response, next) => {
     });
 
     if (!existing) {
-      return sendError(response, 404, 'CATEGORY_NOT_FOUND', 'Categoria não encontrada.');
+      return sendError(response, 404, "CATEGORY_NOT_FOUND", "Categoria não encontrada.");
     }
     if (existing.isDefault) {
-      return sendError(response, 403, 'DEFAULT_CATEGORY', 'As categorias base não podem ser alteradas.');
+      return sendError(
+        response,
+        403,
+        "DEFAULT_CATEGORY",
+        "As categorias base não podem ser alteradas.",
+      );
     }
 
     const category = await prisma.category.update({
@@ -62,17 +67,22 @@ router.patch('/:id', async (request: AuthenticatedRequest, response, next) => {
   }
 });
 
-router.delete('/:id', async (request: AuthenticatedRequest, response, next) => {
+router.delete("/:id", async (request: AuthenticatedRequest, response, next) => {
   try {
     const category = await prisma.category.findFirst({
       where: { id: request.params.id, userId: request.user!.id },
     });
 
     if (!category) {
-      return sendError(response, 404, 'CATEGORY_NOT_FOUND', 'Categoria não encontrada.');
+      return sendError(response, 404, "CATEGORY_NOT_FOUND", "Categoria não encontrada.");
     }
     if (category.isDefault) {
-      return sendError(response, 403, 'DEFAULT_CATEGORY', 'As categorias base não podem ser eliminadas.');
+      return sendError(
+        response,
+        403,
+        "DEFAULT_CATEGORY",
+        "As categorias base não podem ser eliminadas.",
+      );
     }
 
     await prisma.category.delete({ where: { id: category.id } });

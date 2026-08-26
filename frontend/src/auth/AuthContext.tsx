@@ -1,9 +1,23 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { authApi } from '../api/resources';
-import { refreshAccessToken } from '../api/client';
-import { clearSession, getAccessToken, getRefreshToken, getStoredUser, saveSession } from '../api/token-store';
-import { clearOfflineCache } from '../api/offline-cache';
-import type { User } from '../types';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
+import { authApi } from "../api/resources";
+import { refreshAccessToken } from "../api/client";
+import {
+  clearSession,
+  getAccessToken,
+  getRefreshToken,
+  getStoredUser,
+  saveSession,
+} from "../api/token-store";
+import { clearOfflineCache } from "../api/offline-cache";
+import type { User } from "../types";
 
 interface AuthContextValue {
   user: User | null;
@@ -18,9 +32,17 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(() => getStoredUser());
-  const [isInitializing, setIsInitializing] = useState(() => Boolean(getRefreshToken() && !getAccessToken()));
+  const [isInitializing, setIsInitializing] = useState(() =>
+    Boolean(getRefreshToken() && !getAccessToken()),
+  );
 
   const logout = useCallback(() => {
+    // Revoga a sessão no servidor antes de limpar o estado local. O token é
+    // lido antes de clearSession; falhas de rede não impedem o logout local.
+    const refreshToken = getRefreshToken();
+    if (refreshToken) {
+      void authApi.logout(refreshToken).catch(() => undefined);
+    }
     clearOfflineCache(user);
     clearSession();
     setUser(null);
@@ -28,8 +50,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const handleExpiredSession = () => logout();
-    window.addEventListener('expensesnap:session-expired', handleExpiredSession);
-    return () => window.removeEventListener('expensesnap:session-expired', handleExpiredSession);
+    window.addEventListener("expensesnap:session-expired", handleExpiredSession);
+    return () => window.removeEventListener("expensesnap:session-expired", handleExpiredSession);
   }, [logout]);
 
   useEffect(() => {
@@ -71,6 +93,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth deve ser usado dentro de AuthProvider.');
+  if (!context) throw new Error("useAuth deve ser usado dentro de AuthProvider.");
   return context;
 }

@@ -1,10 +1,10 @@
-import { motion, useReducedMotion } from 'framer-motion';
-import { ChartNoAxesCombined, ReceiptText, WalletCards } from 'lucide-react';
+import { motion, useReducedMotion } from "framer-motion";
+import { ChartNoAxesCombined, ReceiptText, WalletCards } from "lucide-react";
 
 const nodes = [
-  { label: 'Registo', icon: ReceiptText, className: 'auth-flow__node--top' },
-  { label: 'Equilíbrio', icon: WalletCards, className: 'auth-flow__node--middle' },
-  { label: 'Clareza', icon: ChartNoAxesCombined, className: 'auth-flow__node--bottom' },
+  { label: "Registo", icon: ReceiptText, className: "auth-flow__node--top" },
+  { label: "Equilíbrio", icon: WalletCards, className: "auth-flow__node--middle" },
+  { label: "Clareza", icon: ChartNoAxesCombined, className: "auth-flow__node--bottom" },
 ];
 
 export function AuthFlowVisual() {
@@ -31,7 +31,11 @@ export function AuthFlowVisual() {
           strokeDasharray="0.16 0.08"
           initial={reduceMotion ? false : { opacity: 0, strokeDashoffset: -0.16 }}
           animate={reduceMotion ? undefined : { opacity: 1, strokeDashoffset: 0 }}
-          transition={{ delay: reduceMotion ? 0 : 0.03, duration: reduceMotion ? 0 : 0.38, ease: [0.22, 1, 0.36, 1] }}
+          transition={{
+            delay: reduceMotion ? 0 : 0.03,
+            duration: reduceMotion ? 0 : 0.38,
+            ease: [0.22, 1, 0.36, 1],
+          }}
         />
       </svg>
       <div className="auth-flow__nodes">
@@ -41,9 +45,15 @@ export function AuthFlowVisual() {
             key={label}
             initial={reduceMotion ? false : { opacity: 0, y: 12 }}
             animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
-            transition={{ delay: reduceMotion ? 0 : index * 0.045, duration: reduceMotion ? 0 : 0.24, ease: [0.22, 1, 0.36, 1] }}
+            transition={{
+              delay: reduceMotion ? 0 : index * 0.045,
+              duration: reduceMotion ? 0 : 0.24,
+              ease: [0.22, 1, 0.36, 1],
+            }}
           >
-            <span className="auth-flow__icon"><Icon size={19} strokeWidth={1.8} /></span>
+            <span className="auth-flow__icon">
+              <Icon size={19} strokeWidth={1.8} />
+            </span>
             <span>{label}</span>
           </motion.div>
         ))}

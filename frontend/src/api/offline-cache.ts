@@ -1,6 +1,6 @@
-import type { User } from '../types';
+import type { User } from "../types";
 
-const PREFIX = 'expensesnap.offline.';
+const PREFIX = "expensesnap.offline.";
 const MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 function key(user: User, path: string) {
@@ -8,7 +8,7 @@ function key(user: User, path: string) {
 }
 
 export function cacheGet<T>(user: User | null, path: string): T | null {
-  if (!user || typeof window === 'undefined') return null;
+  if (!user || typeof window === "undefined") return null;
   try {
     const raw = window.localStorage.getItem(key(user, path));
     if (!raw) return null;
@@ -21,7 +21,7 @@ export function cacheGet<T>(user: User | null, path: string): T | null {
 }
 
 export function cacheSet<T>(user: User | null, path: string, payload: T) {
-  if (!user || typeof window === 'undefined') return;
+  if (!user || typeof window === "undefined") return;
   try {
     window.localStorage.setItem(key(user, path), JSON.stringify({ cachedAt: Date.now(), payload }));
   } catch {
@@ -30,7 +30,7 @@ export function cacheSet<T>(user: User | null, path: string, payload: T) {
 }
 
 export function clearOfflineCache(user?: User | null) {
-  if (typeof window === 'undefined') return;
+  if (typeof window === "undefined") return;
   const prefix = user ? `${PREFIX}${user.id}.` : PREFIX;
   try {
     for (let index = window.localStorage.length - 1; index >= 0; index -= 1) {

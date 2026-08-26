@@ -1,7 +1,7 @@
-import { AnimatePresence } from 'framer-motion';
-import { useEffect, useState } from 'react';
-import { useAuth } from '../auth/AuthContext';
-import { FullPageLoader } from './States';
+import { AnimatePresence } from "framer-motion";
+import { useEffect, useState } from "react";
+import { useAuth } from "../auth/AuthContext";
+import { FullPageLoader } from "./States";
 
 const LOADER_REVEAL_DELAY_MS = 140;
 

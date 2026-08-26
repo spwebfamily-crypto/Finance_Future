@@ -1,16 +1,16 @@
-import type { FinancialProfile } from '@prisma/client';
-import { Router } from 'express';
-import { requireAuth } from '../middleware.js';
-import { prisma } from '../prisma.js';
-import type { AuthenticatedRequest, FinancialProfileResponse } from '../types.js';
-import { financialProfileUpsertSchema } from '../validation.js';
+import type { FinancialProfile } from "@prisma/client";
+import { Router } from "express";
+import { requireAuth } from "../middleware.js";
+import { prisma } from "../prisma.js";
+import type { AuthenticatedRequest, FinancialProfileResponse } from "../types.js";
+import { financialProfileUpsertSchema } from "../validation.js";
 
 const router = Router();
 router.use((_request, response, next) => {
   response.set({
-    'Cache-Control': 'private, no-store',
-    Pragma: 'no-cache',
-    Expires: '0',
+    "Cache-Control": "private, no-store",
+    Pragma: "no-cache",
+    Expires: "0",
   });
   next();
 });
@@ -33,7 +33,7 @@ function presentFinancialProfile(profile: FinancialProfile): FinancialProfileRes
   };
 }
 
-router.get('/', async (request: AuthenticatedRequest, response, next) => {
+router.get("/", async (request: AuthenticatedRequest, response, next) => {
   try {
     const profile = await prisma.financialProfile.findUnique({
       where: { userId: request.user!.id },
@@ -45,7 +45,7 @@ router.get('/', async (request: AuthenticatedRequest, response, next) => {
   }
 });
 
-router.put('/', async (request: AuthenticatedRequest, response, next) => {
+router.put("/", async (request: AuthenticatedRequest, response, next) => {
   try {
     const input = financialProfileUpsertSchema.parse(request.body);
     const profile = await prisma.financialProfile.upsert({
@@ -63,7 +63,7 @@ router.put('/', async (request: AuthenticatedRequest, response, next) => {
   }
 });
 
-router.delete('/', async (request: AuthenticatedRequest, response, next) => {
+router.delete("/", async (request: AuthenticatedRequest, response, next) => {
   try {
     // Idempotente: apagar novamente continua a produzir o mesmo estado final.
     await prisma.financialProfile.deleteMany({ where: { userId: request.user!.id } });

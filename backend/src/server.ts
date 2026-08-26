@@ -1,8 +1,8 @@
-import { app } from './app.js';
-import { env } from './config.js';
-import { prisma } from './prisma.js';
+import { app } from "./app.js";
+import { env } from "./config.js";
+import { prisma } from "./prisma.js";
 
-const server = app.listen(env.PORT, '0.0.0.0', () => {
+const server = app.listen(env.PORT, "0.0.0.0", () => {
   console.log(`ExpenseSnap API disponível em http://localhost:${env.PORT}/api`);
 });
 
@@ -19,5 +19,5 @@ async function shutdown() {
   });
 }
 
-process.on('SIGINT', shutdown);
-process.on('SIGTERM', shutdown);
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);

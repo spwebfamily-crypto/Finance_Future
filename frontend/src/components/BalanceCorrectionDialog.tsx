@@ -1,7 +1,7 @@
-import { useEffect, useId, useRef, type FormEvent } from 'react';
-import { Landmark } from 'lucide-react';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { formatCurrency } from '../utils/format';
+import { useEffect, useId, useRef, type FormEvent } from "react";
+import { Landmark } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { formatCurrency } from "../utils/format";
 
 interface BalanceCorrectionDialogProps {
   open: boolean;
@@ -22,7 +22,7 @@ export function BalanceCorrectionDialog({
   currentBalance,
   currency,
   value,
-  errorMessage = '',
+  errorMessage = "",
   busy = false,
   onValueChange,
   onConfirm,
@@ -36,7 +36,8 @@ export function BalanceCorrectionDialog({
 
   useEffect(() => {
     if (!open) return;
-    const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previouslyFocused =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const frame = window.requestAnimationFrame(() => {
       inputRef.current?.focus();
       inputRef.current?.select();
@@ -50,15 +51,17 @@ export function BalanceCorrectionDialog({
   useEffect(() => {
     if (!open) return;
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !busy) {
+      if (event.key === "Escape" && !busy) {
         event.preventDefault();
         onCancel();
         return;
       }
-      if (event.key !== 'Tab') return;
-      const focusable = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
-      ) ?? []);
+      if (event.key !== "Tab") return;
+      const focusable = Array.from(
+        dialogRef.current?.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      );
       if (!focusable.length) return;
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
@@ -70,8 +73,8 @@ export function BalanceCorrectionDialog({
         first.focus();
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open, busy, onCancel]);
 
   function submit(event: FormEvent) {
@@ -105,11 +108,22 @@ export function BalanceCorrectionDialog({
             exit={reduceMotion ? undefined : { opacity: 0, scale: 0.98, y: 8 }}
             transition={{ duration: reduceMotion ? 0 : 0.24, ease: [0.16, 1, 0.3, 1] }}
           >
-            <span className="confirm-dialog__icon balance-correction-dialog__icon" aria-hidden="true"><Landmark /></span>
+            <span
+              className="confirm-dialog__icon balance-correction-dialog__icon"
+              aria-hidden="true"
+            >
+              <Landmark />
+            </span>
             <h2 id={titleId}>Corrigir valor da conta</h2>
-            <p id={descriptionId}>Defina o saldo atual de “{accountName}”. Os movimentos existentes não serão alterados.</p>
+            <p id={descriptionId}>
+              Defina o saldo atual de “{accountName}”. Os movimentos existentes não serão alterados.
+            </p>
             <form onSubmit={submit}>
-              {errorMessage && <div className="form-alert" role="alert">{errorMessage}</div>}
+              {errorMessage && (
+                <div className="form-alert" role="alert">
+                  {errorMessage}
+                </div>
+              )}
               <label className="field">
                 <span>Novo saldo</span>
                 <input
@@ -126,8 +140,17 @@ export function BalanceCorrectionDialog({
                 Saldo apresentado: {formatCurrency(currentBalance, currency)}
               </small>
               <div className="confirm-dialog__actions">
-                <button className="button button--secondary" type="button" onClick={onCancel} disabled={busy}>Cancelar</button>
-                <button className="button button--primary" type="submit" disabled={busy}>{busy ? 'A corrigir…' : 'Guardar correção'}</button>
+                <button
+                  className="button button--secondary"
+                  type="button"
+                  onClick={onCancel}
+                  disabled={busy}
+                >
+                  Cancelar
+                </button>
+                <button className="button button--primary" type="submit" disabled={busy}>
+                  {busy ? "A corrigir…" : "Guardar correção"}
+                </button>
               </div>
             </form>
           </motion.section>
