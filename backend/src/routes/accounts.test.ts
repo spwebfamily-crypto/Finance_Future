@@ -9,9 +9,11 @@ import accountRoutes from "./accounts.js";
 
 const repositories = vi.hoisted(() => ({
   accountFindFirst: vi.fn(),
+  accountFindMany: vi.fn(),
   accountUpdate: vi.fn(),
   accountDelete: vi.fn(),
   transferFindMany: vi.fn(),
+  transferCreate: vi.fn(),
   transferDeleteMany: vi.fn(),
   transaction: vi.fn(),
 }));
@@ -31,7 +33,12 @@ vi.mock("../prisma.js", () => {
     prisma: {
       account: {
         findFirst: repositories.accountFindFirst,
+        findMany: repositories.accountFindMany,
         update: repositories.accountUpdate,
+      },
+      transfer: {
+        findMany: repositories.transferFindMany,
+        create: repositories.transferCreate,
       },
       $transaction: repositories.transaction.mockImplementation((callback) =>
         callback(transactionClient),
@@ -147,5 +154,133 @@ describe("account balance corrections and deletion", () => {
     expect(adjustments.get(thirdAccountId)).toBe("-40");
     expect(repositories.transferDeleteMany).toHaveBeenCalledOnce();
     expect(repositories.accountDelete).toHaveBeenCalledWith({ where: { id: accountId } });
+  });
+});
+
+describe("account transfers", () => {
+  let server: Server;
+  let baseUrl: string;
+
+  beforeAll(async () => {
+    const app = express();
+    app.use(express.json());
+    app.use("/api/accounts", accountRoutes);
+    app.use(errorHandler);
+    await new Promise<void>((resolve) => {
+      server = app.listen(0, "127.0.0.1", resolve);
+    });
+    const address = server.address() as AddressInfo;
+    baseUrl = `http://127.0.0.1:${address.port}`;
+  });
+
+  afterAll(async () => {
+    await new Promise<void>((resolve, reject) => {
+      server.close((error) => (error ? reject(error) : resolve()));
+    });
+  });
+
+  beforeEach(() => {
+    repositories.accountFindMany.mockReset();
+    repositories.transferFindMany.mockReset();
+    repositories.transferCreate.mockReset();
+  });
+
+  it("creates a transfer between two accounts owned by the user", async () => {
+    repositories.accountFindMany.mockResolvedValue([{ id: accountId }, { id: secondAccountId }]);
+    repositories.transferCreate.mockResolvedValue({
+      id: "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+      fromAccountId: accountId,
+      toAccountId: secondAccountId,
+      amount: new Prisma.Decimal("250"),
+      description: "Renda partilhada",
+      date: new Date("2026-08-05T00:00:00.000Z"),
+      createdAt: new Date("2026-08-05T12:00:00.000Z"),
+      fromAccount: { id: accountId, name: "Conta principal" },
+      toAccount: { id: secondAccountId, name: "Poupança" },
+    });
+
+    const response = await fetch(`${baseUrl}/api/accounts/transfers`, {
+      method: "POST",
+      headers: { Authorization: authorization(), "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fromAccountId: accountId,
+        toAccountId: secondAccountId,
+        amount: "250",
+        description: "Renda partilhada",
+        date: "2026-08-05",
+      }),
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(201);
+    expect(body.data.amount).toBe(250);
+    expect(body.data.fromAccount.name).toBe("Conta principal");
+    expect(body.data.toAccount.name).toBe("Poupança");
+    expect(repositories.accountFindMany).toHaveBeenCalledOnce();
+    expect(repositories.accountFindMany.mock.calls[0][0]).toMatchObject({
+      where: { userId, id: { in: [accountId, secondAccountId] } },
+    });
+    expect(repositories.transferCreate).toHaveBeenCalledOnce();
+    const createCall = repositories.transferCreate.mock.calls[0][0];
+    expect(createCall.data).toMatchObject({
+      fromAccountId: accountId,
+      toAccountId: secondAccountId,
+      amount: "250",
+      description: "Renda partilhada",
+      date: new Date("2026-08-05T00:00:00.000Z"),
+      userId,
+    });
+  });
+
+  it("rejects a transfer involving an account of another user with 404", async () => {
+    repositories.accountFindMany.mockResolvedValue([{ id: accountId }]);
+
+    const response = await fetch(`${baseUrl}/api/accounts/transfers`, {
+      method: "POST",
+      headers: { Authorization: authorization(), "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fromAccountId: accountId,
+        toAccountId: thirdAccountId,
+        amount: "80",
+        date: "2026-08-05",
+      }),
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(404);
+    expect(body.error.code).toBe("ACCOUNT_NOT_FOUND");
+    expect(body.error.message).toBe("Uma das contas não foi encontrada.");
+    expect(repositories.transferCreate).not.toHaveBeenCalled();
+  });
+
+  it("lists the latest transfers of the authenticated user with presented amounts", async () => {
+    repositories.transferFindMany.mockResolvedValue([
+      {
+        id: "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+        amount: new Prisma.Decimal("120.5"),
+        description: null,
+        date: new Date("2026-08-05T00:00:00.000Z"),
+        createdAt: new Date("2026-08-05T12:00:00.000Z"),
+        fromAccount: { id: accountId, name: "Conta principal" },
+        toAccount: { id: secondAccountId, name: "Poupança" },
+      },
+    ]);
+
+    const response = await fetch(`${baseUrl}/api/accounts/transfers`, {
+      headers: { Authorization: authorization() },
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.data).toHaveLength(1);
+    expect(body.data[0].amount).toBe(120.5);
+    expect(body.data[0].description).toBeNull();
+    expect(repositories.transferFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId },
+        orderBy: [{ date: "desc" }, { createdAt: "desc" }],
+        take: 50,
+      }),
+    );
   });
 });

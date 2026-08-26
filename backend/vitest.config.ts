@@ -22,13 +22,13 @@ export default defineConfig({
       reporter: ["text", "lcov"],
       include: ["src/**/*.ts"],
       exclude: ["src/**/*.test.ts", "src/types.ts"],
-      // Linha de base da Fase 1: sobe à medida que a Fase 3 cobre as rotas
-      // restantes (auth, budgets, categories, incomes, recurring*, debts).
+      // Thresholds após a Fase 3: todas as rotas CRUD têm testes; analytics,
+      // app/server/prisma e partes de expenses continuam por cobrir.
       thresholds: {
-        statements: 35,
-        branches: 60,
-        functions: 50,
-        lines: 35,
+        statements: 68,
+        branches: 66,
+        functions: 74,
+        lines: 68,
       },
     },
   },
