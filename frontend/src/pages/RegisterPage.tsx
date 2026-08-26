@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail, UserRound } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { errorMessage } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { AuthStory } from "../components/AuthStory";
@@ -10,7 +10,6 @@ import { preloadFinancialOnboardingPage } from "../routePreloads";
 
 export function RegisterPage() {
   const { register } = useAuth();
-  const navigate = useNavigate();
   const reduceMotion = useReducedMotion();
   const nameRef = useRef<HTMLInputElement>(null);
   const emailRef = useRef<HTMLInputElement>(null);
@@ -47,7 +46,6 @@ export function RegisterPage() {
 
     try {
       await register(name, email, password);
-      navigate("/onboarding", { replace: true });
     } catch (requestError) {
       setError(errorMessage(requestError));
     } finally {

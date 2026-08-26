@@ -275,7 +275,13 @@ export interface AnalyticsSummary {
   previousMonthTotal: number;
   changeAmount: number;
   changePercent: number | null;
+  byDay?: DailyTotal[];
   byCategory: CategorySummary[];
+}
+
+export interface DailyTotal {
+  day: string;
+  total: number;
 }
 
 export type SpendingLevel = "normal" | "high" | "critical" | "insufficient_data";

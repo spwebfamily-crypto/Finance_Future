@@ -1,7 +1,7 @@
 import { useRef, useState, type FormEvent } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail } from "lucide-react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { errorMessage } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { AuthStory } from "../components/AuthStory";
@@ -9,7 +9,6 @@ import { Spinner } from "../components/States";
 
 export function LoginPage() {
   const { login } = useAuth();
-  const navigate = useNavigate();
   const location = useLocation();
   const reduceMotion = useReducedMotion();
   const emailRef = useRef<HTMLInputElement>(null);
@@ -37,10 +36,9 @@ export function LoginPage() {
     setIsSubmitting(true);
 
     try {
-      await login(email, password);
-      const destination = (location.state as { from?: { pathname?: string } } | null)?.from
-        ?.pathname;
-      navigate(destination || "/expenses", { replace: true });
+      const destination =
+        (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || "/expenses";
+      await login(email, password, destination);
     } catch (requestError) {
       setError(errorMessage(requestError));
     } finally {

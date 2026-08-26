@@ -29,11 +29,13 @@ import {
 import { Link } from "react-router-dom";
 import { analyticsApi, budgetApi, categoryApi } from "../api/resources";
 import { errorMessage } from "../api/client";
-import { EmptyState, ErrorState, LoadingState, Spinner } from "../components/States";
+import { EmptyState, ErrorState, Spinner } from "../components/States";
 import { PageHeader } from "../components/PageHeader";
 import { CategoryIcon } from "../components/CategoryIcon";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { NoticeToast } from "../components/NoticeToast";
+import { AnimatedCurrency } from "../components/AnimatedCurrency";
+import { SpendingHeatmap } from "../components/SpendingHeatmap";
 import type { AnalyticsSummary, Budget, Category, SpendingLevelItem } from "../types";
 import { formatCurrency } from "../utils/format";
 
@@ -174,6 +176,14 @@ export function DashboardPage() {
   }, [levels]);
   const MonthPulseIcon = monthPulse.Icon;
 
+  // Gasto atual por categoria, para as barras de progresso dos orçamentos.
+  const spentByCategory = useMemo(() => {
+    const map = new Map<string, { amount: number; level: string }>();
+    for (const item of levels)
+      map.set(item.category.id, { amount: item.currentAmount, level: item.level });
+    return map;
+  }, [levels]);
+
   async function saveBudget(event: FormEvent) {
     event.preventDefault();
     const monthlyLimit = Number(newLimit.replace(",", "."));
@@ -245,7 +255,19 @@ export function DashboardPage() {
         }
       />
       {loading ? (
-        <LoadingState label="A preparar a sua visão geral" />
+        <div className="dashboard-skeleton" aria-hidden="true">
+          <span className="dashboard-skeleton__shortcuts">
+            {[0, 1, 2, 3].map((index) => (
+              <span key={index} className="skeleton-block skeleton-block--shortcut" />
+            ))}
+          </span>
+          <span className="skeleton-block skeleton-block--hero" />
+          <span className="skeleton-block skeleton-block--pulse" />
+          <span className="dashboard-skeleton__charts">
+            <span className="skeleton-block skeleton-block--chart" />
+            <span className="skeleton-block skeleton-block--chart" />
+          </span>
+        </div>
       ) : error && !summary ? (
         <ErrorState message={error} onRetry={() => void load()} />
       ) : !summary ? (
@@ -301,7 +323,9 @@ export function DashboardPage() {
           <section className="dashboard-total" aria-labelledby="total-title">
             <div>
               <p className="eyebrow">Total em {monthLabel(selectedMonth)}</p>
-              <h2 id="total-title">{formatCurrency(summary.total, currency)}</h2>
+              <h2 id="total-title">
+                <AnimatedCurrency value={summary.total} currency={currency} />
+              </h2>
             </div>
             <div
               className={`dashboard-total__compare ${summary.changeAmount > 0 ? "is-up" : "is-down"}`}
@@ -500,6 +524,8 @@ export function DashboardPage() {
             </section>
           </div>
 
+          <SpendingHeatmap month={selectedMonth} byDay={summary.byDay ?? []} currency={currency} />
+
           <section className="dashboard-section" aria-labelledby="levels-title">
             <div className="section-heading">
               <div>
@@ -635,6 +661,12 @@ export function DashboardPage() {
                       ) : (
                         <>
                           <strong>{formatCurrency(budget.monthlyLimit, currency)}</strong>
+                          <BudgetUsage
+                            spent={spentByCategory.get(budget.categoryId)?.amount ?? 0}
+                            limit={budget.monthlyLimit}
+                            level={spentByCategory.get(budget.categoryId)?.level ?? "normal"}
+                            currency={currency}
+                          />
                           <div className="budget-row__actions">
                             <button
                               className="icon-button"
@@ -748,5 +780,36 @@ function TrendTable({
         </tbody>
       </table>
     </details>
+  );
+}
+
+function BudgetUsage({
+  spent,
+  limit,
+  level,
+  currency,
+}: {
+  spent: number;
+  limit: number;
+  level: string;
+  currency: string;
+}) {
+  const usage = limit > 0 ? Math.min(100, (spent / limit) * 100) : 0;
+  return (
+    <div className="budget-row__usage">
+      <div
+        className={`budget-row__bar budget-row__bar--${level}`}
+        role="progressbar"
+        aria-label={`Utilização do orçamento de ${limit > 0 ? `${usage.toFixed(0)}%` : "categoria sem limite"}`}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(usage)}
+      >
+        <span style={{ width: `${usage}%` }} />
+      </div>
+      <small>
+        {formatCurrency(spent, currency)} · {usage.toFixed(0)}%
+      </small>
+    </div>
   );
 }

@@ -27,7 +27,8 @@ test("permite registar uma conta e criar uma despesa com fotografia", async ({ p
   await page.goto("/register");
   await page.getByLabel("Nome").fill("Utilizador E2E");
   await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Palavra-passe").fill("Teste-E2E-2026!");
+  // getByLabel("Palavra-passe") colide com o botão "Mostrar palavra-passe".
+  await page.locator('input[name="password"]').fill("Teste-E2E-2026!");
 
   await Promise.all([
     page.waitForURL(/\/onboarding(?:\?.*)?$/),
@@ -84,7 +85,7 @@ test("permite registar uma conta e criar uma despesa com fotografia", async ({ p
   await expect(page.locator(".receipt-preview__image-link img")).toBeVisible();
 
   await page.goto("/dashboard");
-  await expect(page.getByRole("heading", { name: "O pulso das suas despesas" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "O seu mês, num relance" })).toBeVisible();
   await expect(page.locator("#total-title")).toContainText("12,34");
 
   await page.locator(".budget-create select").selectOption({ index: 1 });

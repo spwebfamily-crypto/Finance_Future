@@ -14,6 +14,7 @@ import { NavLink, useLocation, useOutlet } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { Brand } from "../components/Brand";
 import { ThemeToggle } from "../components/ThemeToggle";
+import { CommandPalette } from "../components/CommandPalette";
 import {
   preloadAccountsPage,
   preloadDashboardPage,
@@ -147,7 +148,10 @@ export function AppShell() {
         >
           <Plus aria-hidden="true" /> Registar despesa
         </NavLink>
-        <ThemeToggle />
+        <div className="sidebar__tools">
+          <CommandPalette />
+          <ThemeToggle />
+        </div>
         <div className="account-card">
           <span className="account-card__avatar" aria-hidden="true">
             {initials}

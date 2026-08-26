@@ -72,7 +72,7 @@ router.get("/summary", async (request: AuthenticatedRequest, response, next) => 
     const [expenses, previousExpenses] = await Promise.all([
       prisma.expense.findMany({
         where: { userId: request.user!.id, date: { gte: start, lt: end } },
-        select: { categoryId: true, amount: true },
+        select: { categoryId: true, amount: true, date: true },
       }),
       prisma.expense.findMany({
         where: {
@@ -84,11 +84,15 @@ router.get("/summary", async (request: AuthenticatedRequest, response, next) => 
     ]);
     const amounts = new Map<string, Prisma.Decimal>();
     const previousAmounts = new Map<string, Prisma.Decimal>();
-    for (const expense of expenses)
+    const dailyAmounts = new Map<string, Prisma.Decimal>();
+    for (const expense of expenses) {
       amounts.set(
         expense.categoryId,
         (amounts.get(expense.categoryId) ?? new Prisma.Decimal(0)).add(expense.amount),
       );
+      const day = expense.date.toISOString().slice(0, 10);
+      dailyAmounts.set(day, (dailyAmounts.get(day) ?? new Prisma.Decimal(0)).add(expense.amount));
+    }
     for (const expense of previousExpenses)
       previousAmounts.set(
         expense.categoryId,
@@ -108,6 +112,10 @@ router.get("/summary", async (request: AuthenticatedRequest, response, next) => 
         changePercent: previousTotal.isZero()
           ? null
           : moneyNumber(difference.div(previousTotal).mul(100)),
+        // Total gasto por dia do mês (dias sem despesas ficam de fora).
+        byDay: [...dailyAmounts.entries()]
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([day, amount]) => ({ day, total: moneyNumber(amount) })),
         byCategory: categories.map((category) => {
           const amount = amounts.get(category.id) ?? new Prisma.Decimal(0);
           const previousAmount = previousAmounts.get(category.id) ?? new Prisma.Decimal(0);

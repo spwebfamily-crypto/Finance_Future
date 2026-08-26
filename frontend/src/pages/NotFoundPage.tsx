@@ -1,5 +1,11 @@
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, LayoutDashboard, Plus, ReceiptText } from "lucide-react";
 import { Link } from "react-router-dom";
+
+const shortcuts = [
+  { to: "/dashboard", label: "Ir para Hoje", Icon: LayoutDashboard },
+  { to: "/expenses", label: "Ver movimentos", Icon: ReceiptText },
+  { to: "/expenses/new", label: "Registar despesa", Icon: Plus },
+];
 
 export function NotFoundPage() {
   return (
@@ -10,9 +16,16 @@ export function NotFoundPage() {
       <p className="eyebrow">Página não encontrada</p>
       <h1>Esta conta não fecha.</h1>
       <p>O endereço pode ter mudado ou já não estar disponível.</p>
-      <Link className="button button--primary" to="/expenses">
-        <ArrowLeft aria-hidden="true" /> Voltar às despesas
-      </Link>
+      <div className="not-found__actions">
+        <Link className="button button--primary" to="/dashboard">
+          <ArrowLeft aria-hidden="true" /> Voltar ao início
+        </Link>
+        {shortcuts.slice(1).map(({ to, label, Icon }) => (
+          <Link key={to} className="button button--secondary" to={to}>
+            <Icon aria-hidden="true" /> {label}
+          </Link>
+        ))}
+      </div>
     </main>
   );
 }

@@ -1,5 +1,6 @@
 import {
   createContext,
+  startTransition,
   useCallback,
   useContext,
   useEffect,
@@ -7,6 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useNavigate } from "react-router-dom";
 import { authApi } from "../api/resources";
 import { refreshAccessToken } from "../api/client";
 import {
@@ -23,14 +25,15 @@ interface AuthContextValue {
   user: User | null;
   isAuthenticated: boolean;
   isInitializing: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, destination?: string) => Promise<void>;
+  register: (name: string, email: string, password: string, destination?: string) => Promise<void>;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(() => getStoredUser());
   const [isInitializing, setIsInitializing] = useState(() =>
     Boolean(getRefreshToken() && !getAccessToken()),
@@ -71,17 +74,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [isInitializing, logout]);
 
-  const login = useCallback(async (email: string, password: string) => {
-    const session = await authApi.login(email, password);
-    saveSession(session.accessToken, session.refreshToken, session.user);
-    setUser(session.user);
-  }, []);
+  // Localização e estado de autenticação têm de se tornar visíveis NO MESMO
+  // commit: o React Router v7 trata navigate() como transição concorrente;
+  // se setUser fosse síncrono, existiria um commit intermédio com a página de
+  // guest (ex.: /register) já autenticada e o GuestRoute redirecionava para
+  // /expenses antes da transição do destino se concretizar.
+  const applySession = useCallback(
+    (session: { accessToken: string; refreshToken: string; user: User }, destination: string) => {
+      saveSession(session.accessToken, session.refreshToken, session.user);
+      navigate(destination, { replace: true });
+      startTransition(() => {
+        setUser(session.user);
+      });
+    },
+    [navigate],
+  );
 
-  const register = useCallback(async (name: string, email: string, password: string) => {
-    const session = await authApi.register(name, email, password);
-    saveSession(session.accessToken, session.refreshToken, session.user);
-    setUser(session.user);
-  }, []);
+  const login = useCallback(
+    async (email: string, password: string, destination = "/expenses") => {
+      const session = await authApi.login(email, password);
+      applySession(session, destination);
+    },
+    [applySession],
+  );
+
+  const register = useCallback(
+    async (name: string, email: string, password: string, destination = "/onboarding") => {
+      const session = await authApi.register(name, email, password);
+      applySession(session, destination);
+    },
+    [applySession],
+  );
 
   const value = useMemo(
     () => ({ user, isAuthenticated: Boolean(user), isInitializing, login, register, logout }),
