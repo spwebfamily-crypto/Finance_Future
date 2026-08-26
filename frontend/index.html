@@ -6,23 +6,32 @@
     <meta name="theme-color" content="#f5f7f2" />
     <script>
       try {
-        const theme = localStorage.getItem('expensesnap.theme');
-        document.documentElement.dataset.theme = theme === 'light' || theme === 'dark'
-          ? theme
-          : (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        const theme = localStorage.getItem("expensesnap.theme");
+        document.documentElement.dataset.theme =
+          theme === "light" || theme === "dark"
+            ? theme
+            : matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light";
       } catch {
-        document.documentElement.dataset.theme = 'light';
+        document.documentElement.dataset.theme = "light";
       }
     </script>
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <meta name="description" content="ExpenseSnap — registo simples e consciente das suas despesas." />
+    <meta
+      name="description"
+      content="ExpenseSnap — registo simples e consciente das suas despesas."
+    />
     <link rel="preload" href="/icon.svg" as="image" type="image/svg+xml" />
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400..800&amp;family=IBM+Plex+Mono:wght@500;600;700&amp;family=Zalando+Sans+Expanded:wght@500..800&amp;display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Figtree:wght@400..800&amp;family=IBM+Plex+Mono:wght@500;600;700&amp;family=Zalando+Sans+Expanded:wght@500..800&amp;display=swap"
+      rel="stylesheet"
+    />
     <title>ExpenseSnap — As suas despesas, com clareza</title>
   </head>
   <body>

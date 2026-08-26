@@ -3,7 +3,15 @@ export interface User {
   name: string;
   email: string;
   currency: string;
+  timeZone?: string;
 }
+
+// Type alias (e não interface) para ser atribuível a Record<string, unknown>.
+export type UserProfileInput = {
+  name?: string;
+  currency?: string;
+  timeZone?: string;
+};
 
 export interface AuthResponse {
   user: User;
@@ -34,7 +42,7 @@ export interface Expense {
   amount: string | number;
   date: string;
   receiptImageUrl?: string | null;
-  receiptMimeType?: 'application/pdf' | 'image/*' | null;
+  receiptMimeType?: "application/pdf" | "image/*" | null;
   createdAt?: string;
 }
 
@@ -42,6 +50,20 @@ export interface ExpenseFilters {
   category?: string;
   from?: string;
   to?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface PaginatedMeta {
+  page: number;
+  pageSize: number;
+  total: number;
+  pageCount: number;
+}
+
+export interface PaginatedResult<T> {
+  data: T[];
+  meta: PaginatedMeta;
 }
 
 export interface ExpenseInput {
@@ -120,7 +142,7 @@ export interface RecurringExpenseInput {
   dayOfMonth: number;
 }
 
-export type AccountType = 'current' | 'savings' | 'cash' | 'credit_card' | 'other';
+export type AccountType = "current" | "savings" | "cash" | "credit_card" | "other";
 
 export interface FinancialAccount {
   id: string;
@@ -150,8 +172,8 @@ export interface AccountTransfer {
   description?: string | null;
   date: string;
   createdAt: string;
-  fromAccount: Pick<FinancialAccount, 'id' | 'name'>;
-  toAccount: Pick<FinancialAccount, 'id' | 'name'>;
+  fromAccount: Pick<FinancialAccount, "id" | "name">;
+  toAccount: Pick<FinancialAccount, "id" | "name">;
 }
 
 export interface AccountTransferInput {
@@ -253,15 +275,21 @@ export interface AnalyticsSummary {
   previousMonthTotal: number;
   changeAmount: number;
   changePercent: number | null;
+  byDay?: DailyTotal[];
   byCategory: CategorySummary[];
 }
 
-export type SpendingLevel = 'normal' | 'high' | 'critical' | 'insufficient_data';
+export interface DailyTotal {
+  day: string;
+  total: number;
+}
+
+export type SpendingLevel = "normal" | "high" | "critical" | "insufficient_data";
 
 export interface SpendingLevelItem {
   category: Category;
   level: SpendingLevel;
-  basis: 'budget' | 'history' | 'none';
+  basis: "budget" | "history" | "none";
   currentAmount: number;
   projectedAmount: number;
   baselineAmount: number | null;
@@ -287,18 +315,18 @@ export interface AnalyticsTrend {
 }
 
 export type FinancialGoal =
-  | 'emergency_fund'
-  | 'debt_repayment'
-  | 'home_purchase'
-  | 'major_purchase'
-  | 'education'
-  | 'retirement'
-  | 'wealth_growth'
-  | 'other';
+  | "emergency_fund"
+  | "debt_repayment"
+  | "home_purchase"
+  | "major_purchase"
+  | "education"
+  | "retirement"
+  | "wealth_growth"
+  | "other";
 
-export type FinancialHorizon = 'short_term' | 'medium_term' | 'long_term';
-export type FinancialExperience = 'none' | 'beginner' | 'intermediate' | 'advanced';
-export type RiskTolerance = 'conservative' | 'moderate' | 'aggressive';
+export type FinancialHorizon = "short_term" | "medium_term" | "long_term";
+export type FinancialExperience = "none" | "beginner" | "intermediate" | "advanced";
+export type RiskTolerance = "conservative" | "moderate" | "aggressive";
 
 export interface FinancialProfileInput {
   monthlyNetIncome: number;

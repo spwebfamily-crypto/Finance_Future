@@ -1,8 +1,8 @@
-export function formatCurrency(value: string | number, currency = 'EUR') {
-  const amount = typeof value === 'number' ? value : Number(value);
+export function formatCurrency(value: string | number, currency = "EUR") {
+  const amount = typeof value === "number" ? value : Number(value);
 
-  return new Intl.NumberFormat('pt-PT', {
-    style: 'currency',
+  return new Intl.NumberFormat("pt-PT", {
+    style: "currency",
     currency,
   }).format(Number.isFinite(amount) ? amount : 0);
 }
@@ -10,15 +10,15 @@ export function formatCurrency(value: string | number, currency = 'EUR') {
 export function formatDate(value: string) {
   const date = new Date(value);
 
-  return new Intl.DateTimeFormat('pt-PT', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
+  return new Intl.DateTimeFormat("pt-PT", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
   }).format(date);
 }
 
 export function toDateInputValue(value: string) {
-  return value ? value.slice(0, 10) : '';
+  return value ? value.slice(0, 10) : "";
 }
 
 export function todayInputValue() {

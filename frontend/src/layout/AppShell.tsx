@@ -1,18 +1,34 @@
-import { CalendarClock, Landmark, LayoutDashboard, LogOut, Plus, ReceiptText, TrendingUp, WifiOff } from 'lucide-react';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { useEffect, useRef, useState } from 'react';
-import { NavLink, useLocation, useOutlet } from 'react-router-dom';
-import { useAuth } from '../auth/AuthContext';
-import { Brand } from '../components/Brand';
-import { ThemeToggle } from '../components/ThemeToggle';
-import { preloadAccountsPage, preloadDashboardPage, preloadExpenseFormPage, preloadInvestmentsPage, preloadPlanningPage } from '../routePreloads';
+import {
+  CalendarClock,
+  Landmark,
+  LayoutDashboard,
+  LogOut,
+  Plus,
+  ReceiptText,
+  TrendingUp,
+  WifiOff,
+} from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+import { NavLink, useLocation, useOutlet } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
+import { Brand } from "../components/Brand";
+import { ThemeToggle } from "../components/ThemeToggle";
+import { CommandPalette } from "../components/CommandPalette";
+import {
+  preloadAccountsPage,
+  preloadDashboardPage,
+  preloadExpenseFormPage,
+  preloadInvestmentsPage,
+  preloadPlanningPage,
+} from "../routePreloads";
 
 const navItems = [
-  { to: '/dashboard', label: 'Hoje', icon: LayoutDashboard, preload: preloadDashboardPage },
-  { to: '/expenses', label: 'Movimentos', icon: ReceiptText },
-  { to: '/accounts', label: 'Contas', icon: Landmark, preload: preloadAccountsPage },
-  { to: '/planning', label: 'Plano', icon: CalendarClock, preload: preloadPlanningPage },
-  { to: '/investments', label: 'Investir', icon: TrendingUp, preload: preloadInvestmentsPage },
+  { to: "/dashboard", label: "Hoje", icon: LayoutDashboard, preload: preloadDashboardPage },
+  { to: "/expenses", label: "Movimentos", icon: ReceiptText },
+  { to: "/accounts", label: "Contas", icon: Landmark, preload: preloadAccountsPage },
+  { to: "/planning", label: "Plano", icon: CalendarClock, preload: preloadPlanningPage },
+  { to: "/investments", label: "Investir", icon: TrendingUp, preload: preloadInvestmentsPage },
 ];
 
 function Navigation({ mobile = false }: { mobile?: boolean }) {
@@ -20,14 +36,16 @@ function Navigation({ mobile = false }: { mobile?: boolean }) {
     ? [navItems[0], navItems[1], null, navItems[2], navItems[3], navItems[4]]
     : navItems;
   return (
-    <nav className={mobile ? 'mobile-nav' : 'side-nav'} aria-label="Navegação principal">
+    <nav className={mobile ? "mobile-nav" : "side-nav"} aria-label="Navegação principal">
       {items.map((item) => {
         if (!item) {
           return (
             <NavLink
               key="new-expense"
               to="/expenses/new"
-              className={({ isActive }) => isActive ? 'mobile-nav__add mobile-nav__add--active' : 'mobile-nav__add'}
+              className={({ isActive }) =>
+                isActive ? "mobile-nav__add mobile-nav__add--active" : "mobile-nav__add"
+              }
               aria-label="Nova despesa"
               onPointerDown={preloadExpenseFormPage}
               onFocus={preloadExpenseFormPage}
@@ -42,8 +60,8 @@ function Navigation({ mobile = false }: { mobile?: boolean }) {
           <NavLink
             key={to}
             to={to}
-            end={to === '/expenses'}
-            className={({ isActive }) => isActive ? 'nav-link nav-link--active' : 'nav-link'}
+            end={to === "/expenses"}
+            className={({ isActive }) => (isActive ? "nav-link nav-link--active" : "nav-link")}
             onPointerEnter={preload}
             onPointerDown={preload}
             onFocus={preload}
@@ -52,7 +70,14 @@ function Navigation({ mobile = false }: { mobile?: boolean }) {
               <>
                 <Icon aria-hidden="true" />
                 <span>{label}</span>
-                {isActive && <motion.span className="nav-link__active-marker" layoutId={mobile ? 'mobile-nav-marker' : 'desktop-nav-marker'} transition={{ type: 'spring', stiffness: 420, damping: 32 }} aria-hidden="true" />}
+                {isActive && (
+                  <motion.span
+                    className="nav-link__active-marker"
+                    layoutId={mobile ? "mobile-nav-marker" : "desktop-nav-marker"}
+                    transition={{ type: "spring", stiffness: 420, damping: 32 }}
+                    aria-hidden="true"
+                  />
+                )}
               </>
             )}
           </NavLink>
@@ -69,17 +94,25 @@ export function AppShell() {
   const reduceMotion = useReducedMotion();
   const logoutTimerRef = useRef<number | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [isOffline, setIsOffline] = useState(() => typeof navigator !== 'undefined' && !navigator.onLine);
+  const [isOffline, setIsOffline] = useState(
+    () => typeof navigator !== "undefined" && !navigator.onLine,
+  );
   useEffect(() => {
     const online = () => setIsOffline(false);
     const offline = () => setIsOffline(true);
-    window.addEventListener('online', online);
-    window.addEventListener('offline', offline);
-    return () => { window.removeEventListener('online', online); window.removeEventListener('offline', offline); };
+    window.addEventListener("online", online);
+    window.addEventListener("offline", offline);
+    return () => {
+      window.removeEventListener("online", online);
+      window.removeEventListener("offline", offline);
+    };
   }, []);
-  useEffect(() => () => {
-    if (logoutTimerRef.current !== null) window.clearTimeout(logoutTimerRef.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (logoutTimerRef.current !== null) window.clearTimeout(logoutTimerRef.current);
+    },
+    [],
+  );
 
   function handleLogout() {
     if (isLoggingOut) return;
@@ -95,14 +128,16 @@ export function AppShell() {
     .split(/\s+/)
     .slice(0, 2)
     .map((part) => part.charAt(0))
-    .join('')
+    .join("")
     .toUpperCase();
 
   return (
     <div className="app-shell">
-      <a className="skip-link" href="#main-content">Saltar para o conteúdo</a>
+      <a className="skip-link" href="#main-content">
+        Saltar para o conteúdo
+      </a>
       <aside className="sidebar">
-        <Brand phase={isLoggingOut ? 'exit' : 'idle'} />
+        <Brand phase={isLoggingOut ? "exit" : "idle"} />
         <Navigation />
         <NavLink
           className="button button--accent sidebar__add"
@@ -113,9 +148,14 @@ export function AppShell() {
         >
           <Plus aria-hidden="true" /> Registar despesa
         </NavLink>
-        <ThemeToggle />
+        <div className="sidebar__tools">
+          <CommandPalette />
+          <ThemeToggle />
+        </div>
         <div className="account-card">
-          <span className="account-card__avatar" aria-hidden="true">{initials}</span>
+          <span className="account-card__avatar" aria-hidden="true">
+            {initials}
+          </span>
           <span className="account-card__identity">
             <strong>{user?.name}</strong>
             <small>{user?.email}</small>
@@ -126,7 +166,7 @@ export function AppShell() {
             onClick={handleLogout}
             disabled={isLoggingOut}
             aria-busy={isLoggingOut}
-            aria-label={isLoggingOut ? 'A terminar sessão' : 'Terminar sessão'}
+            aria-label={isLoggingOut ? "A terminar sessão" : "Terminar sessão"}
             title="Terminar sessão"
           >
             <LogOut aria-hidden="true" />
@@ -135,7 +175,7 @@ export function AppShell() {
       </aside>
 
       <header className="mobile-header">
-        <Brand compact phase={isLoggingOut ? 'exit' : 'idle'} />
+        <Brand compact phase={isLoggingOut ? "exit" : "idle"} />
         <div className="mobile-header__actions">
           <ThemeToggle compact />
           <motion.button
@@ -144,7 +184,7 @@ export function AppShell() {
             onClick={handleLogout}
             disabled={isLoggingOut}
             aria-busy={isLoggingOut}
-            aria-label={isLoggingOut ? 'A terminar sessão' : 'Terminar sessão'}
+            aria-label={isLoggingOut ? "A terminar sessão" : "Terminar sessão"}
             whileTap={reduceMotion ? undefined : { scale: 0.96 }}
           >
             <span aria-hidden="true">{initials}</span>
@@ -154,14 +194,22 @@ export function AppShell() {
       </header>
 
       <main id="main-content" className="main-content" tabIndex={-1}>
-        {isOffline && <div className="offline-banner" role="status"><WifiOff aria-hidden="true" /> Sem ligação. A mostrar os últimos dados guardados.</div>}
+        {isOffline && (
+          <div className="offline-banner" role="status">
+            <WifiOff aria-hidden="true" /> Sem ligação. A mostrar os últimos dados guardados.
+          </div>
+        )}
         <AnimatePresence mode="popLayout" initial={false}>
           <motion.div
             className="route-stage"
             key={location.pathname}
             initial={reduceMotion ? false : { opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={reduceMotion ? undefined : { opacity: 0, y: -3, transition: { duration: 0.09, ease: 'easeOut' } }}
+            exit={
+              reduceMotion
+                ? undefined
+                : { opacity: 0, y: -3, transition: { duration: 0.09, ease: "easeOut" } }
+            }
             transition={{ duration: reduceMotion ? 0 : 0.16, ease: [0.22, 1, 0.36, 1] }}
           >
             {outlet}

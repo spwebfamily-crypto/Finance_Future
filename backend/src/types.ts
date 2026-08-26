@@ -3,8 +3,8 @@ import type {
   FinancialGoal,
   FinancialHorizon,
   RiskTolerance,
-} from '@prisma/client';
-import type { Request } from 'express';
+} from "@prisma/client";
+import type { Request } from "express";
 
 export interface AuthenticatedRequest extends Request {
   user?: {

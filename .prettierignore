@@ -1,0 +1,9 @@
+node_modules
+dist
+coverage
+playwright-report
+test-results
+.netlify
+package-lock.json
+*.md
+frontend/public

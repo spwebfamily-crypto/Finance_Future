@@ -1,6 +1,6 @@
-import { useEffect, useId, useRef } from 'react';
-import { AlertTriangle } from 'lucide-react';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { useEffect, useId, useRef } from "react";
+import { AlertTriangle } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -29,9 +29,8 @@ export function ConfirmDialog({
 
   useEffect(() => {
     if (!open) return;
-    const previouslyFocused = document.activeElement instanceof HTMLElement
-      ? document.activeElement
-      : null;
+    const previouslyFocused =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const frame = window.requestAnimationFrame(() => cancelButtonRef.current?.focus());
     return () => {
       window.cancelAnimationFrame(frame);
@@ -42,16 +41,18 @@ export function ConfirmDialog({
   useEffect(() => {
     if (!open) return;
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !busy) {
+      if (event.key === "Escape" && !busy) {
         event.preventDefault();
         onCancel();
         return;
       }
-      if (event.key !== 'Tab') return;
+      if (event.key !== "Tab") return;
 
-      const focusable = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-      ) ?? []);
+      const focusable = Array.from(
+        dialogRef.current?.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      );
       if (!focusable.length) {
         event.preventDefault();
         return;
@@ -67,8 +68,8 @@ export function ConfirmDialog({
         first.focus();
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open, busy, onCancel]);
 
   return (
@@ -97,12 +98,29 @@ export function ConfirmDialog({
             exit={reduceMotion ? undefined : { opacity: 0, scale: 0.98, y: 8 }}
             transition={{ duration: reduceMotion ? 0 : 0.24, ease: [0.16, 1, 0.3, 1] }}
           >
-            <span className="confirm-dialog__icon" aria-hidden="true"><AlertTriangle /></span>
+            <span className="confirm-dialog__icon" aria-hidden="true">
+              <AlertTriangle />
+            </span>
             <h2 id={titleId}>{title}</h2>
             <p id={descriptionId}>{description}</p>
             <div className="confirm-dialog__actions">
-              <button ref={cancelButtonRef} className="button button--secondary" type="button" onClick={onCancel} disabled={busy}>Cancelar</button>
-              <button className="button button--danger" type="button" onClick={onConfirm} disabled={busy}>{busy ? 'A eliminar…' : confirmLabel}</button>
+              <button
+                ref={cancelButtonRef}
+                className="button button--secondary"
+                type="button"
+                onClick={onCancel}
+                disabled={busy}
+              >
+                Cancelar
+              </button>
+              <button
+                className="button button--danger"
+                type="button"
+                onClick={onConfirm}
+                disabled={busy}
+              >
+                {busy ? "A eliminar…" : confirmLabel}
+              </button>
             </div>
           </motion.section>
         </motion.div>
