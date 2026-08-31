@@ -144,13 +144,24 @@ export interface RecurringExpenseInput {
 
 export type AccountType = "current" | "savings" | "cash" | "credit_card" | "other";
 
+export type AccountSource = "manual" | "bank";
+
+export type BalanceSource = "derived" | "provider";
+
 export interface FinancialAccount {
   id: string;
   name: string;
   type: AccountType;
+  source?: AccountSource;
+  currency?: string;
   openingBalance: number;
   creditLimit?: number | null;
   currentBalance?: number;
+  availableBalance?: number | null;
+  balanceSource?: BalanceSource;
+  balanceAsOf?: string | null;
+  connectionStatus?: BankConnectionStatus | null;
+  lastSyncedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -344,4 +355,147 @@ export interface FinancialProfile extends FinancialProfileInput {
   id: string;
   createdAt: string;
   updatedAt: string;
+}
+
+// ---------------------------------------------------------------------------
+// Open Banking (somente leitura)
+// ---------------------------------------------------------------------------
+
+export type BankConnectionStatus =
+  "pending" | "active" | "reauth_required" | "expired" | "revoked" | "disconnected" | "error";
+
+export type BankTransactionStatus = "pending" | "booked" | "rejected" | "removed";
+
+export type BankTransactionClassification =
+  "unreviewed" | "expense" | "income" | "internal_transfer" | "ignored" | "refund";
+
+export type BankSyncJobStatus = "queued" | "running" | "completed" | "partial" | "failed";
+
+export type PsuType = "personal" | "business";
+
+export type BankRetention = "keep_imported" | "delete_imported";
+
+export interface BankInstitution {
+  id: string;
+  name: string;
+  country: string;
+  logoUrl: string | null;
+  supportsPersonal: boolean;
+  supportsBusiness: boolean;
+}
+
+export interface BankAuthorization {
+  authorizationUrl: string;
+  expiresAt: string;
+  institutionName: string;
+}
+
+export interface BankConnectionAccount {
+  id: string;
+  accountId: string;
+  displayName: string;
+  maskedIban: string | null;
+  currency: string;
+}
+
+export interface BankConnectionSummary {
+  id: string;
+  institutionId: string;
+  institutionName: string;
+  institutionCountry: string;
+  status: BankConnectionStatus;
+  consentExpiresAt: string | null;
+  lastSyncedAt: string | null;
+  nextSyncAt: string | null;
+  error: { code: string; at: string | null } | null;
+  accountCount: number;
+  accounts: BankConnectionAccount[];
+  createdAt: string;
+}
+
+export interface BankSyncJob {
+  id: string;
+  connectionId: string;
+  status: BankSyncJobStatus;
+  trigger: "initial" | "manual" | "scheduled" | "reauthorization";
+  attemptCount: number;
+  startedAt: string | null;
+  finishedAt: string | null;
+  accountsProcessed: number;
+  transactionsCreated: number;
+  transactionsUpdated: number;
+  transactionsSkipped: number;
+  errorCode: string | null;
+  createdAt: string;
+}
+
+export interface BankConnectionDetail extends Omit<BankConnectionSummary, "accounts"> {
+  accounts: Array<
+    BankConnectionAccount & {
+      lastTransactionSyncAt: string | null;
+      account: { id: string; name: string; type: AccountType; source: AccountSource };
+    }
+  >;
+  lastSyncJob: BankSyncJob | null;
+}
+
+export interface BankTransaction {
+  id: string;
+  status: BankTransactionStatus;
+  direction: "debit" | "credit";
+  amount: number;
+  currency: string;
+  bookingDate: string | null;
+  valueDate: string | null;
+  transactionDate: string | null;
+  description: string;
+  counterpartyName: string | null;
+  classification: BankTransactionClassification;
+  excludedFromAnalytics: boolean;
+  expenseId: string | null;
+  incomeId: string | null;
+  transferId: string | null;
+  bankAccountLinkId: string;
+  bankAccountLink: {
+    id: string;
+    displayName: string;
+    maskedIban: string | null;
+    accountId: string;
+    connectionId: string;
+  };
+  expense: {
+    id: string;
+    categoryId: string;
+    category: Pick<Category, "id" | "name" | "icon">;
+  } | null;
+}
+
+export interface BankTransactionFilters {
+  accountId?: string;
+  connectionId?: string;
+  status?: BankTransactionStatus;
+  classification?: BankTransactionClassification;
+  from?: string;
+  to?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface BankTransactionReviewInput {
+  categoryId?: string;
+  classification?: BankTransactionClassification;
+  excludedFromAnalytics?: boolean;
+  confirmInternalTransfer?: boolean;
+}
+
+export interface BankDisconnectResult {
+  connectionId: string;
+  retention: BankRetention;
+  accountsKept: number;
+  accountsDeleted: number;
+  expensesDeleted: number;
+  incomesDeleted: number;
+  transfersDeleted: number;
+  transactionsDeleted: number;
+  sessionRevoked: boolean;
 }

@@ -284,3 +284,160 @@ describe("account transfers", () => {
     );
   });
 });
+
+describe("account contract with linked bank accounts", () => {
+  let server: Server;
+  let baseUrl: string;
+
+  beforeAll(async () => {
+    const app = express();
+    app.use(express.json());
+    app.use("/api/accounts", accountRoutes);
+    app.use(errorHandler);
+    await new Promise<void>((resolve) => {
+      server = app.listen(0, "127.0.0.1", resolve);
+    });
+    baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+  });
+
+  afterAll(async () => {
+    await new Promise<void>((resolve, reject) => {
+      server.close((error) => (error ? reject(error) : resolve()));
+    });
+  });
+
+  beforeEach(() => {
+    repositories.accountFindFirst.mockReset();
+    repositories.accountFindMany.mockReset();
+    repositories.accountUpdate.mockReset();
+    repositories.accountDelete.mockReset().mockResolvedValue({ id: accountId });
+    repositories.transferFindMany.mockReset().mockResolvedValue([]);
+    repositories.transferDeleteMany.mockReset().mockResolvedValue({ count: 0 });
+  });
+
+  const manualAccount = {
+    id: accountId,
+    name: "Conta principal",
+    type: "current",
+    source: "manual",
+    currency: "EUR",
+    openingBalance: new Prisma.Decimal("100"),
+    creditLimit: null,
+    providerCurrentBalance: null,
+    providerAvailableBalance: null,
+    providerBalanceUpdatedAt: null,
+    bankAccountLink: null,
+    createdAt: new Date("2026-08-01T10:00:00.000Z"),
+    updatedAt: new Date("2026-08-01T10:00:00.000Z"),
+    expenses: [{ amount: new Prisma.Decimal("20") }],
+    incomes: [{ amount: new Prisma.Decimal("100") }],
+    outgoingTransfers: [],
+    incomingTransfers: [],
+  };
+
+  const linkedAccount = {
+    ...manualAccount,
+    id: secondAccountId,
+    name: "Conta do banco",
+    source: "bank",
+    providerCurrentBalance: new Prisma.Decimal("1250.30"),
+    providerAvailableBalance: new Prisma.Decimal("1180.30"),
+    providerBalanceUpdatedAt: new Date("2026-08-30T08:00:00.000Z"),
+    bankAccountLink: {
+      connection: { status: "active", lastSyncedAt: new Date("2026-08-30T08:00:00.000Z") },
+    },
+  };
+
+  it("keeps manual accounts derived and exposes the provider snapshot for linked accounts", async () => {
+    repositories.accountFindMany.mockResolvedValue([manualAccount, linkedAccount]);
+
+    const response = await fetch(`${baseUrl}/api/accounts`, {
+      headers: { Authorization: authorization() },
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    const [manual, linked] = body.data;
+    expect(manual).toMatchObject({
+      source: "manual",
+      currentBalance: 180,
+      balanceSource: "derived",
+      availableBalance: null,
+      connectionStatus: null,
+    });
+    // O saldo do banco não soma os movimentos: 1250,30 e não 1330,30.
+    expect(linked).toMatchObject({
+      source: "bank",
+      currentBalance: 1250.3,
+      availableBalance: 1180.3,
+      balanceSource: "provider",
+      balanceAsOf: "2026-08-30T08:00:00.000Z",
+      connectionStatus: "active",
+    });
+    expect(linked.bankAccountLink).toBeUndefined();
+    expect(JSON.stringify(body)).not.toContain("providerSessionCiphertext");
+  });
+
+  it("falls back to the derived balance when the provider has no snapshot yet", async () => {
+    repositories.accountFindMany.mockResolvedValue([
+      { ...linkedAccount, providerCurrentBalance: null, providerAvailableBalance: null },
+    ]);
+
+    const response = await fetch(`${baseUrl}/api/accounts`, {
+      headers: { Authorization: authorization() },
+    });
+    const body = await response.json();
+
+    expect(body.data[0]).toMatchObject({ balanceSource: "derived", currentBalance: 180 });
+  });
+
+  it("blocks manual balance correction on a linked account", async () => {
+    repositories.accountFindFirst.mockResolvedValue({
+      ...linkedAccount,
+      expenses: [],
+      incomes: [],
+    });
+
+    const response = await fetch(`${baseUrl}/api/accounts/${secondAccountId}/balance`, {
+      method: "PATCH",
+      headers: { Authorization: authorization(), "Content-Type": "application/json" },
+      body: JSON.stringify({ currentBalance: 999 }),
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(409);
+    expect(body.error.code).toBe("BANK_LINKED_BALANCE_READ_ONLY");
+    expect(repositories.accountUpdate).not.toHaveBeenCalled();
+  });
+
+  it("still allows balance correction on manual accounts", async () => {
+    repositories.accountFindFirst.mockResolvedValue(manualAccount);
+    repositories.accountUpdate.mockResolvedValue({
+      ...manualAccount,
+      openingBalance: new Prisma.Decimal("150"),
+    });
+
+    const response = await fetch(`${baseUrl}/api/accounts/${accountId}/balance`, {
+      method: "PATCH",
+      headers: { Authorization: authorization(), "Content-Type": "application/json" },
+      body: JSON.stringify({ currentBalance: 230 }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(repositories.accountUpdate).toHaveBeenCalledOnce();
+  });
+
+  it("requires a controlled disconnect before removing a linked account", async () => {
+    repositories.accountFindFirst.mockResolvedValue({ id: secondAccountId, source: "bank" });
+
+    const response = await fetch(`${baseUrl}/api/accounts/${secondAccountId}`, {
+      method: "DELETE",
+      headers: { Authorization: authorization() },
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(409);
+    expect(body.error.code).toBe("BANK_LINKED_ACCOUNT_REQUIRES_DISCONNECT");
+    expect(repositories.accountDelete).not.toHaveBeenCalled();
+  });
+});

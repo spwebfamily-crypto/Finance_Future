@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { FinancialAccount } from "../types";
 import { AccountsPage } from "./AccountsPage";
@@ -11,9 +12,13 @@ const api = vi.hoisted(() => ({
   remove: vi.fn(),
   create: vi.fn(),
   transfer: vi.fn(),
+  connections: vi.fn(),
 }));
 
-vi.mock("../api/resources", () => ({ accountApi: api }));
+vi.mock("../api/resources", () => ({
+  accountApi: api,
+  openBankingApi: { connections: api.connections },
+}));
 vi.mock("../auth/AuthContext", () => ({
   useAuth: () => ({
     user: { id: "user-1", name: "Rita", email: "rita@example.com", currency: "EUR" },
@@ -35,6 +40,7 @@ describe("AccountsPage account actions", () => {
   beforeEach(() => {
     api.list.mockReset().mockResolvedValue([account]);
     api.transfers.mockReset().mockResolvedValue([]);
+    api.connections.mockReset().mockResolvedValue([]);
     api.correctBalance.mockReset();
     api.remove.mockReset().mockResolvedValue(undefined);
   });
@@ -43,7 +49,11 @@ describe("AccountsPage account actions", () => {
     const corrected = { ...account, openingBalance: 225.5, currentBalance: 250.5 };
     api.correctBalance.mockResolvedValue(corrected);
     const user = userEvent.setup();
-    render(<AccountsPage />);
+    render(
+      <MemoryRouter>
+        <AccountsPage />
+      </MemoryRouter>,
+    );
 
     await user.click(
       await screen.findByRole("button", { name: "Corrigir saldo da conta Conta principal" }),
@@ -64,7 +74,11 @@ describe("AccountsPage account actions", () => {
     api.list.mockResolvedValueOnce([account]).mockResolvedValueOnce([]);
     api.transfers.mockResolvedValue([]);
     const user = userEvent.setup();
-    render(<AccountsPage />);
+    render(
+      <MemoryRouter>
+        <AccountsPage />
+      </MemoryRouter>,
+    );
 
     await user.click(await screen.findByRole("button", { name: "Remover conta Conta principal" }));
     expect(

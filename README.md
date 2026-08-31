@@ -63,6 +63,19 @@ O frontend fica em <http://localhost:5173>, a API em <http://localhost:3000/api>
 | `npm run db:migrate` | Aplica migrations Prisma |
 | `npm run db:seed` | Cria categorias base de forma idempotente |
 | `npm run test:e2e` | Testa registo, fotografia e criação de despesa no Chromium |
+| `npm run open-banking:sync` | Processa sincronizações bancárias agendadas (CLI/cron) |
+
+## Open Banking (somente leitura)
+
+Ligação de contas bancárias para leitura de saldos e movimentos (AIS), sem pagamentos. Está atrás
+da flag `OPEN_BANKING_ENABLED=false` por omissão: enquanto estiver desligada, nada muda na
+aplicação. Documentação completa, configuração, limitações e rollback em
+[`docs/open-banking/README.md`](./docs/open-banking/README.md).
+
+```powershell
+# Chave de cifragem dos dados sensíveis em repouso (exatamente 32 bytes)
+openssl rand -base64 32
+```
 
 ## Deploy
 

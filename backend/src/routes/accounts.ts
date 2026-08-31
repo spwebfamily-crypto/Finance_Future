@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { Router } from "express";
 import { requireAuth, sendError } from "../middleware.js";
+import { bankErrorMessages } from "../open-banking/errors.js";
 import { prisma } from "../prisma.js";
 import type { AuthenticatedRequest } from "../types.js";
 import {
@@ -19,6 +20,14 @@ const accountSelect = {
   type: true,
   openingBalance: true,
   creditLimit: true,
+  source: true,
+  currency: true,
+  providerCurrentBalance: true,
+  providerAvailableBalance: true,
+  providerBalanceUpdatedAt: true,
+  bankAccountLink: {
+    select: { connection: { select: { status: true, lastSyncedAt: true } } },
+  },
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.AccountSelect;
@@ -26,10 +35,55 @@ const accountSelect = {
 type PublicAccount = Prisma.AccountGetPayload<{ select: typeof accountSelect }>;
 
 function presentAccount(account: PublicAccount) {
+  // A ligação bancária nunca é exposta diretamente: só o estado e a última
+  // sincronização, já calculados em `balanceView`.
+  const { bankAccountLink: _bankAccountLink, ...fields } = account;
   return {
-    ...account,
+    ...fields,
     openingBalance: account.openingBalance.toDecimalPlaces(2).toNumber(),
     creditLimit: account.creditLimit?.toDecimalPlaces(2).toNumber() ?? null,
+    providerCurrentBalance: account.providerCurrentBalance?.toDecimalPlaces(2).toNumber() ?? null,
+    providerAvailableBalance:
+      account.providerAvailableBalance?.toDecimalPlaces(2).toNumber() ?? null,
+  };
+}
+
+interface AccountBalanceView {
+  currentBalance: number;
+  availableBalance: number | null;
+  balanceSource: "derived" | "provider";
+  balanceAsOf: Date | null;
+  connectionStatus: string | null;
+  lastSyncedAt: Date | null;
+}
+
+/**
+ * Contas ligadas usam o snapshot do banco como fonte principal: os movimentos
+ * não voltam a ser somados. Contas manuais continuam com o saldo derivado.
+ */
+function balanceView(account: PublicAccount, derivedBalance: Prisma.Decimal): AccountBalanceView {
+  const connection = account.bankAccountLink?.connection ?? null;
+  const snapshot = account.providerCurrentBalance;
+  const isLinked = account.source === "bank";
+
+  if (isLinked && snapshot !== null) {
+    return {
+      currentBalance: snapshot.toDecimalPlaces(2).toNumber(),
+      availableBalance: account.providerAvailableBalance?.toDecimalPlaces(2).toNumber() ?? null,
+      balanceSource: "provider",
+      balanceAsOf: account.providerBalanceUpdatedAt,
+      connectionStatus: connection?.status ?? null,
+      lastSyncedAt: connection?.lastSyncedAt ?? null,
+    };
+  }
+
+  return {
+    currentBalance: derivedBalance.toDecimalPlaces(2).toNumber(),
+    availableBalance: null,
+    balanceSource: "derived",
+    balanceAsOf: null,
+    connectionStatus: connection?.status ?? null,
+    lastSyncedAt: connection?.lastSyncedAt ?? null,
   };
 }
 
@@ -63,13 +117,10 @@ router.get("/", async (request: AuthenticatedRequest, response, next) => {
       orderBy: [{ type: "asc" }, { name: "asc" }],
     });
     return response.json({
-      data: accounts.map((account) => {
-        const balance = account.openingBalance.add(activityBalance(account));
-        return {
-          ...presentAccount(account),
-          currentBalance: balance.toDecimalPlaces(2).toNumber(),
-        };
-      }),
+      data: accounts.map((account) => ({
+        ...presentAccount(account),
+        ...balanceView(account, account.openingBalance.add(activityBalance(account))),
+      })),
     });
   } catch (error) {
     return next(error);
@@ -87,6 +138,11 @@ router.post("/", async (request: AuthenticatedRequest, response, next) => {
       data: {
         ...presentAccount(account),
         currentBalance: presentAccount(account).openingBalance,
+        availableBalance: null,
+        balanceSource: "derived",
+        balanceAsOf: null,
+        connectionStatus: null,
+        lastSyncedAt: null,
       },
     });
   } catch (error) {
@@ -130,6 +186,14 @@ router.patch("/:id/balance", async (request: AuthenticatedRequest, response, nex
       },
     });
     if (!existing) return sendError(response, 404, "ACCOUNT_NOT_FOUND", "Conta não encontrada.");
+    if (existing.source === "bank") {
+      return sendError(
+        response,
+        409,
+        "BANK_LINKED_BALANCE_READ_ONLY",
+        bankErrorMessages.BANK_LINKED_BALANCE_READ_ONLY,
+      );
+    }
 
     const targetBalance = new Prisma.Decimal(input.currentBalance);
     const openingBalance = targetBalance.sub(activityBalance(existing));
@@ -153,9 +217,18 @@ router.delete("/:id", async (request: AuthenticatedRequest, response, next) => {
   try {
     const existing = await prisma.account.findFirst({
       where: { id: request.params.id, userId: request.user!.id },
-      select: { id: true },
+      select: { id: true, source: true },
     });
     if (!existing) return sendError(response, 404, "ACCOUNT_NOT_FOUND", "Conta não encontrada.");
+    // Uma conta ligada só pode ser removida depois da desconexão controlada.
+    if (existing.source === "bank") {
+      return sendError(
+        response,
+        409,
+        "BANK_LINKED_ACCOUNT_REQUIRES_DISCONNECT",
+        bankErrorMessages.BANK_LINKED_ACCOUNT_REQUIRES_DISCONNECT,
+      );
+    }
 
     await prisma.$transaction(async (transaction) => {
       const transfers = await transaction.transfer.findMany({

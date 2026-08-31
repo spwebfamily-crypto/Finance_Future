@@ -1,0 +1,228 @@
+import { useCallback, useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Plus } from "lucide-react";
+import { BankConnectionCard } from "../components/BankConnectionCard";
+import { DisconnectBankDialog } from "../components/DisconnectBankDialog";
+import { ErrorState, LoadingState } from "../components/States";
+import { NoticeToast } from "../components/NoticeToast";
+import { PageHeader } from "../components/PageHeader";
+import { openBankingApi } from "../api/resources";
+import { errorMessage } from "../api/client";
+import type { BankConnectionSummary, BankRetention, BankSyncJob } from "../types";
+
+const POLL_INTERVAL_MS = 3_000;
+
+export function BankConnectionsPage() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [connections, setConnections] = useState<BankConnectionSummary[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState(
+    searchParams.get("bankConnection") === "success"
+      ? "Banco ligado. A primeira sincronização começou."
+      : "",
+  );
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [disconnectTarget, setDisconnectTarget] = useState<BankConnectionSummary | null>(null);
+  const [isDisconnecting, setIsDisconnecting] = useState(false);
+  const [pendingJobs, setPendingJobs] = useState<Array<{ connectionId: string; jobId: string }>>(
+    [],
+  );
+
+  const load = useCallback(async () => {
+    setIsLoading(true);
+    setError("");
+    try {
+      setConnections(await openBankingApi.connections());
+    } catch (requestError) {
+      setError(errorMessage(requestError));
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  // Acompanha os jobs em curso sem bloquear a interface.
+  useEffect(() => {
+    if (!pendingJobs.length) return;
+    let cancelled = false;
+    const poll = async () => {
+      const remaining: Array<{ connectionId: string; jobId: string }> = [];
+      for (const job of pendingJobs) {
+        try {
+          const status: BankSyncJob = await openBankingApi.syncJob(job.jobId);
+          if (status.status === "queued" || status.status === "running") {
+            remaining.push(job);
+          } else if (!cancelled) {
+            setNotice(
+              status.status === "completed"
+                ? "Sincronização concluída."
+                : `Sincronização terminada com o estado ${status.status}.`,
+            );
+          }
+        } catch {
+          // Um job já eliminado deixa de ser seguido.
+        }
+      }
+      if (cancelled) return;
+      setPendingJobs(remaining);
+      if (remaining.length) {
+        void load();
+      }
+    };
+    const timer = window.setTimeout(poll, POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [pendingJobs, load]);
+
+  async function sync(connection: BankConnectionSummary) {
+    setBusyId(connection.id);
+    setError("");
+    try {
+      const job = await openBankingApi.sync(connection.id);
+      setPendingJobs((jobs) => [...jobs, { connectionId: connection.id, jobId: job.jobId }]);
+      setNotice("Sincronização pedida.");
+    } catch (requestError) {
+      setError(errorMessage(requestError));
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function reauthorize(connection: BankConnectionSummary) {
+    setBusyId(connection.id);
+    setError("");
+    try {
+      const authorization = await openBankingApi.reauthorize(connection.id);
+      window.location.assign(authorization.authorizationUrl);
+    } catch (requestError) {
+      setError(errorMessage(requestError));
+      setBusyId(null);
+    }
+  }
+
+  async function confirmDisconnect(retention: BankRetention) {
+    if (!disconnectTarget) return;
+    setIsDisconnecting(true);
+    try {
+      const result = await openBankingApi.disconnect(disconnectTarget.id, retention);
+      setNotice(
+        retention === "delete_imported"
+          ? `Banco desligado. ${result.transactionsDeleted} movimentos eliminados.`
+          : "Banco desligado. Os dados importados foram conservados.",
+      );
+      setDisconnectTarget(null);
+      await load();
+    } catch (requestError) {
+      setError(errorMessage(requestError));
+    } finally {
+      setIsDisconnecting(false);
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="page">
+        <LoadingState label="A carregar as ligações bancárias" />
+      </div>
+    );
+  }
+
+  if (error && !connections.length) {
+    return (
+      <div className="page">
+        <ErrorState message={error} onRetry={() => void load()} />
+      </div>
+    );
+  }
+
+  const active = connections.filter((connection) => connection.status !== "disconnected");
+  const disconnected = connections.filter((connection) => connection.status === "disconnected");
+
+  return (
+    <div className="page page--connections">
+      <NoticeToast message={notice} onClose={() => setNotice("")} />
+      <PageHeader
+        eyebrow="Open Banking"
+        title="Bancos ligados"
+        description="Veja o estado do consentimento, renove o acesso, sincronize movimentos ou desligue o banco."
+        action={
+          <button
+            type="button"
+            className="button button--accent"
+            onClick={() => navigate("/accounts/connect")}
+          >
+            <Plus aria-hidden="true" /> Ligar banco
+          </button>
+        }
+      />
+
+      {error && (
+        <div className="form-alert form-alert--page" role="alert">
+          {error}
+        </div>
+      )}
+
+      <section aria-labelledby="active-connections">
+        <h2 id="active-connections" className="section-title">
+          Ligações ativas
+        </h2>
+        {active.length ? (
+          <div className="bank-connection-grid">
+            {active.map((connection) => (
+              <BankConnectionCard
+                key={connection.id}
+                connection={connection}
+                busy={
+                  busyId === connection.id ||
+                  pendingJobs.some((job) => job.connectionId === connection.id)
+                }
+                onSync={(target) => void sync(target)}
+                onReauthorize={(target) => void reauthorize(target)}
+                onDisconnect={(target) => setDisconnectTarget(target)}
+              />
+            ))}
+          </div>
+        ) : (
+          <p className="accounts-empty">
+            Ainda não tem bancos ligados. Ligue um banco para importar saldos e movimentos.
+          </p>
+        )}
+      </section>
+
+      {disconnected.length > 0 && (
+        <section aria-labelledby="closed-connections">
+          <h2 id="closed-connections" className="section-title">
+            Ligações encerradas
+          </h2>
+          <div className="bank-connection-grid">
+            {disconnected.map((connection) => (
+              <BankConnectionCard
+                key={connection.id}
+                connection={connection}
+                busy={false}
+                onSync={(target) => void sync(target)}
+                onReauthorize={(target) => void reauthorize(target)}
+                onDisconnect={(target) => setDisconnectTarget(target)}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      <DisconnectBankDialog
+        open={Boolean(disconnectTarget)}
+        institutionName={disconnectTarget?.institutionName ?? ""}
+        busy={isDisconnecting}
+        onCancel={() => setDisconnectTarget(null)}
+        onConfirm={(retention) => void confirmDisconnect(retention)}
+      />
+    </div>
+  );
+}

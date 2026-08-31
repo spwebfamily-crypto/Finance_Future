@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowRightLeft,
   Banknote,
@@ -6,10 +7,11 @@ import {
   Landmark,
   PencilLine,
   Plus,
+  RefreshCw,
   Trash2,
   WalletCards,
 } from "lucide-react";
-import { accountApi } from "../api/resources";
+import { accountApi, openBankingApi } from "../api/resources";
 import { errorMessage } from "../api/client";
 import { BalanceCorrectionDialog } from "../components/BalanceCorrectionDialog";
 import { ConfirmDialog } from "../components/ConfirmDialog";
@@ -17,7 +19,12 @@ import { ErrorState, LoadingState, Spinner } from "../components/States";
 import { NoticeToast } from "../components/NoticeToast";
 import { PageHeader } from "../components/PageHeader";
 import { useAuth } from "../auth/AuthContext";
-import type { AccountTransfer, AccountType, FinancialAccount } from "../types";
+import type {
+  AccountTransfer,
+  AccountType,
+  BankConnectionSummary,
+  FinancialAccount,
+} from "../types";
 import { formatCurrency, formatDate, todayInputValue } from "../utils/format";
 
 const initialAccount = {
@@ -59,8 +66,12 @@ function AccountIcon({ type }: { type: AccountType }) {
 
 export function AccountsPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [accounts, setAccounts] = useState<FinancialAccount[]>([]);
   const [transfers, setTransfers] = useState<AccountTransfer[]>([]);
+  const [connections, setConnections] = useState<BankConnectionSummary[]>([]);
+  const [syncingConnectionId, setSyncingConnectionId] = useState<string | null>(null);
   const [accountForm, setAccountForm] = useState(initialAccount);
   const [transferForm, setTransferForm] = useState(initialTransfer);
   const [isLoading, setIsLoading] = useState(true);
@@ -82,6 +93,13 @@ export function AccountsPage() {
       ]);
       setAccounts(nextAccounts);
       setTransfers(nextTransfers);
+      // As ligações só são necessárias para as contas ligadas; uma falha não
+      // impede a utilização das contas manuais.
+      try {
+        setConnections(await openBankingApi.connections());
+      } catch {
+        setConnections([]);
+      }
     } catch (requestError) {
       setError(errorMessage(requestError));
     } finally {
@@ -92,6 +110,34 @@ export function AccountsPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Resultado do callback do banco: `?bankConnection=success|error&reason=...`.
+  const bankConnectionOutcome = searchParams.get("bankConnection");
+  useEffect(() => {
+    if (!bankConnectionOutcome) return;
+    setNotice(
+      bankConnectionOutcome === "success"
+        ? "Banco ligado. A primeira sincronização começou."
+        : "Não foi possível concluir a ligação ao banco. Tente novamente.",
+    );
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete("bankConnection");
+    nextParams.delete("reason");
+    setSearchParams(nextParams, { replace: true });
+  }, [bankConnectionOutcome, searchParams, setSearchParams]);
+
+  async function syncConnection(connectionId: string) {
+    setSyncingConnectionId(connectionId);
+    setError("");
+    try {
+      await openBankingApi.sync(connectionId);
+      setNotice("Sincronização pedida.");
+    } catch (requestError) {
+      setError(errorMessage(requestError));
+    } finally {
+      setSyncingConnectionId(null);
+    }
+  }
 
   const currency = user?.currency || "EUR";
   const totalBalance = useMemo(
@@ -234,6 +280,20 @@ export function AccountsPage() {
         eyebrow="Dinheiro disponível"
         title="Contas e cartões"
         description="Acompanhe saldos reais, cartões e transferências sem transformar uma transferência numa despesa."
+        action={
+          <>
+            <button
+              type="button"
+              className="button button--accent"
+              onClick={() => navigate("/accounts/connect")}
+            >
+              <Plus aria-hidden="true" /> Ligar banco
+            </button>
+            <Link className="button button--secondary" to="/accounts/connections">
+              Bancos ligados
+            </Link>
+          </>
+        }
       />
       {error && (
         <div className="form-alert form-alert--page" role="alert">
@@ -442,6 +502,12 @@ export function AccountsPage() {
                 account.type === "credit_card" && account.creditLimit
                   ? Math.max(0, -balance) / account.creditLimit
                   : null;
+              const isLinked = account.source === "bank";
+              const connection = connections.find(
+                (item) =>
+                  item.status !== "disconnected" &&
+                  item.accounts.some((link) => link.accountId === account.id),
+              );
               return (
                 <article
                   className={`account-card-large account-card-large--${account.type}`}
@@ -452,22 +518,58 @@ export function AccountsPage() {
                   </span>
                   <div>
                     <p>{accountLabels[account.type]}</p>
-                    <h3>{account.name}</h3>
+                    <h3>
+                      <Link to={`/accounts/${account.id}`}>{account.name}</Link>
+                    </h3>
+                    <span
+                      className={`account-badge account-badge--${isLinked ? "bank" : "manual"}`}
+                    >
+                      {isLinked ? "Ligada ao banco" : "Manual"}
+                    </span>
                   </div>
-                  <strong>{formatCurrency(balance, currency)}</strong>
+                  <strong>{formatCurrency(balance, account.currency ?? currency)}</strong>
+                  {isLinked &&
+                    account.availableBalance !== null &&
+                    account.availableBalance !== undefined && (
+                      <small>
+                        Disponível:{" "}
+                        {formatCurrency(account.availableBalance, account.currency ?? currency)}
+                      </small>
+                    )}
+                  {isLinked && (
+                    <small>
+                      {account.lastSyncedAt
+                        ? `Última atualização: ${new Date(account.lastSyncedAt).toLocaleString("pt-PT")}`
+                        : "Ainda sem sincronização"}
+                    </small>
+                  )}
                   {cardUse !== null && (
                     <small>{Math.min(100, cardUse * 100).toFixed(0)}% do limite utilizado</small>
                   )}
                   <div className="account-card-large__actions">
-                    <button
-                      type="button"
-                      className="icon-button account-card-large__correct"
-                      aria-label={`Corrigir saldo da conta ${account.name}`}
-                      onClick={() => openBalanceCorrection(account)}
-                    >
-                      <PencilLine aria-hidden="true" />
-                      <span>Corrigir valor</span>
-                    </button>
+                    {isLinked && connection && (
+                      <button
+                        type="button"
+                        className="icon-button"
+                        aria-label={`Sincronizar ${connection.institutionName}`}
+                        disabled={syncingConnectionId === connection.id}
+                        onClick={() => void syncConnection(connection.id)}
+                      >
+                        <RefreshCw aria-hidden="true" />
+                        <span>Sincronizar</span>
+                      </button>
+                    )}
+                    {!isLinked && (
+                      <button
+                        type="button"
+                        className="icon-button account-card-large__correct"
+                        aria-label={`Corrigir saldo da conta ${account.name}`}
+                        onClick={() => openBalanceCorrection(account)}
+                      >
+                        <PencilLine aria-hidden="true" />
+                        <span>Corrigir valor</span>
+                      </button>
+                    )}
                     <button
                       type="button"
                       className="icon-button icon-button--danger"

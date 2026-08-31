@@ -16,6 +16,8 @@ import recurringExpenseRoutes from "./routes/recurringExpenses.js";
 import accountRoutes from "./routes/accounts.js";
 import recurringIncomeRoutes from "./routes/recurringIncomes.js";
 import debtRoutes from "./routes/debts.js";
+import openBankingRoutes from "./routes/openBanking.js";
+import internalOpenBankingRoutes from "./routes/internalOpenBanking.js";
 
 export const app = express();
 
@@ -59,6 +61,9 @@ app.use("/api/recurring-expenses", recurringExpenseRoutes);
 app.use("/api/accounts", accountRoutes);
 app.use("/api/recurring-incomes", recurringIncomeRoutes);
 app.use("/api/debts", debtRoutes);
+app.use("/api/open-banking", openBankingRoutes);
+// Rotas internas de agendamento: protegidas por OPEN_BANKING_CRON_SECRET.
+app.use("/api/internal", internalOpenBankingRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

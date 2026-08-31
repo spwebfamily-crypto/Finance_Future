@@ -21,7 +21,12 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "lcov"],
       include: ["src/**/*.ts"],
-      exclude: ["src/**/*.test.ts", "src/types.ts"],
+      exclude: [
+        "src/**/*.test.ts",
+        "src/types.ts",
+        "src/**/testSupport.ts",
+        "src/**/testPrisma.ts",
+      ],
       // Thresholds após a Fase 3: todas as rotas CRUD têm testes; analytics,
       // app/server/prisma e partes de expenses continuam por cobrir.
       thresholds: {

@@ -1,6 +1,17 @@
 import type {
   ApiEnvelope,
   AuthResponse,
+  BankAuthorization,
+  BankConnectionDetail,
+  BankConnectionSummary,
+  BankDisconnectResult,
+  BankInstitution,
+  BankSyncJob,
+  BankTransaction,
+  BankTransactionFilters,
+  BankTransactionReviewInput,
+  BankRetention,
+  PsuType,
   Category,
   Expense,
   ExpenseFilters,
@@ -364,4 +375,105 @@ export const debtApi = {
       }),
     ),
   remove: (id: string) => apiRequest<void>(`/debts/${id}`, { method: "DELETE" }),
+};
+
+/**
+ * Open Banking. Nenhum destes pedidos é guardado no cache offline: saldos,
+ * ligações e movimentos bancários não ficam em localStorage.
+ */
+export const openBankingApi = {
+  institutions: async (country = "PT", psuType: PsuType = "personal") => {
+    const params = new URLSearchParams({ country, psuType });
+    return unwrap(
+      await apiRequest<ApiEnvelope<BankInstitution[]> | BankInstitution[]>(
+        `/open-banking/institutions?${params.toString()}`,
+        { cacheResponse: false },
+      ),
+    );
+  },
+  authorize: async (input: {
+    institutionId: string;
+    country: string;
+    psuType: PsuType;
+    returnPath: string;
+  }) =>
+    unwrap(
+      await apiRequest<ApiEnvelope<BankAuthorization> | BankAuthorization>(
+        "/open-banking/authorizations",
+        { method: "POST", body: { ...input }, cacheResponse: false },
+      ),
+    ),
+  connections: async () =>
+    unwrap(
+      await apiRequest<ApiEnvelope<BankConnectionSummary[]> | BankConnectionSummary[]>(
+        "/open-banking/connections",
+        { cacheResponse: false },
+      ),
+    ),
+  connection: async (connectionId: string) =>
+    unwrap(
+      await apiRequest<ApiEnvelope<BankConnectionDetail> | BankConnectionDetail>(
+        `/open-banking/connections/${connectionId}`,
+        { cacheResponse: false },
+      ),
+    ),
+  sync: async (connectionId: string) =>
+    unwrap(
+      await apiRequest<
+        ApiEnvelope<{ jobId: string; status: string }> | { jobId: string; status: string }
+      >(`/open-banking/connections/${connectionId}/sync`, { method: "POST", cacheResponse: false }),
+    ),
+  reauthorize: async (connectionId: string, psuType: PsuType = "personal") =>
+    unwrap(
+      await apiRequest<ApiEnvelope<BankAuthorization> | BankAuthorization>(
+        `/open-banking/connections/${connectionId}/reauthorize`,
+        {
+          method: "POST",
+          body: { psuType, returnPath: "/accounts/connections" },
+          cacheResponse: false,
+        },
+      ),
+    ),
+  disconnect: async (connectionId: string, retention: BankRetention) =>
+    unwrap(
+      await apiRequest<ApiEnvelope<BankDisconnectResult> | BankDisconnectResult>(
+        `/open-banking/connections/${connectionId}/disconnect`,
+        { method: "POST", body: { retention }, cacheResponse: false },
+      ),
+    ),
+  syncJob: async (jobId: string) =>
+    unwrap(
+      await apiRequest<ApiEnvelope<BankSyncJob> | BankSyncJob>(`/open-banking/sync-jobs/${jobId}`, {
+        cacheResponse: false,
+      }),
+    ),
+  transactions: async (filters: BankTransactionFilters = {}) => {
+    const params = new URLSearchParams();
+    if (filters.accountId) params.set("accountId", filters.accountId);
+    if (filters.connectionId) params.set("connectionId", filters.connectionId);
+    if (filters.status) params.set("status", filters.status);
+    if (filters.classification) params.set("classification", filters.classification);
+    if (filters.from) params.set("from", filters.from);
+    if (filters.to) params.set("to", filters.to);
+    if (filters.page) params.set("page", String(filters.page));
+    if (filters.pageSize) params.set("pageSize", String(filters.pageSize));
+    const query = params.size ? `?${params.toString()}` : "";
+    const envelope = await apiRequest<ApiEnvelope<BankTransaction[]> & { meta?: PaginatedMeta }>(
+      `/open-banking/transactions${query}`,
+      { cacheResponse: false },
+    );
+    const data = unwrap(envelope);
+    const meta =
+      envelope && typeof envelope === "object" && "meta" in envelope && envelope.meta
+        ? envelope.meta
+        : { page: 1, pageSize: filters.pageSize ?? 50, total: data.length, pageCount: 1 };
+    return { data, meta };
+  },
+  reviewTransaction: async (transactionId: string, input: BankTransactionReviewInput) =>
+    unwrap(
+      await apiRequest<ApiEnvelope<BankTransaction> | BankTransaction>(
+        `/open-banking/transactions/${transactionId}`,
+        { method: "PATCH", body: { ...input }, cacheResponse: false },
+      ),
+    ),
 };

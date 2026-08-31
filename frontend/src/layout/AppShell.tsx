@@ -16,7 +16,10 @@ import { Brand } from "../components/Brand";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { CommandPalette } from "../components/CommandPalette";
 import {
+  preloadAccountDetailPage,
+  preloadAccountsConnectPage,
   preloadAccountsPage,
+  preloadBankConnectionsPage,
   preloadDashboardPage,
   preloadExpenseFormPage,
   preloadInvestmentsPage,
@@ -29,6 +32,13 @@ const navItems = [
   { to: "/accounts", label: "Contas", icon: Landmark, preload: preloadAccountsPage },
   { to: "/planning", label: "Plano", icon: CalendarClock, preload: preloadPlanningPage },
   { to: "/investments", label: "Investir", icon: TrendingUp, preload: preloadInvestmentsPage },
+];
+
+const secondaryLinks = [
+  { to: "/accounts/connect", label: "Ligar banco", preload: preloadAccountsConnectPage },
+  { to: "/accounts/connections", label: "Bancos ligados", preload: preloadBankConnectionsPage },
+  { to: "/accounts", label: "Detalhe de conta", preload: preloadAccountDetailPage },
+  { to: "/privacy", label: "Privacidade bancária", preload: () => undefined },
 ];
 
 function Navigation({ mobile = false }: { mobile?: boolean }) {
@@ -152,6 +162,21 @@ export function AppShell() {
           <CommandPalette />
           <ThemeToggle />
         </div>
+        <nav className="sidebar__secondary" aria-label="Open Banking">
+          {secondaryLinks.map(({ to, label, preload }) => (
+            <NavLink
+              key={to}
+              to={to}
+              className={({ isActive }) =>
+                isActive ? "sidebar__secondary-link is-active" : "sidebar__secondary-link"
+              }
+              onPointerEnter={preload}
+              onFocus={preload}
+            >
+              {label}
+            </NavLink>
+          ))}
+        </nav>
         <div className="account-card">
           <span className="account-card__avatar" aria-hidden="true">
             {initials}
