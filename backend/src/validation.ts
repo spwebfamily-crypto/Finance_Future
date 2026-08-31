@@ -6,6 +6,10 @@ import {
   RiskTolerance,
 } from "@prisma/client";
 import { z } from "zod";
+import { OPEN_BANKING_COUNTRIES, OPEN_BANKING_RETURN_PATHS } from "./open-banking/config.js";
+
+const openBankingCountries = OPEN_BANKING_COUNTRIES;
+const openBankingReturnPaths = OPEN_BANKING_RETURN_PATHS;
 
 const dateOnly = /^\d{4}-\d{2}-\d{2}$/;
 const money = /^\d{1,8}(?:[.,]\d{1,2})?$/;
@@ -325,6 +329,85 @@ export const financialProfileUpsertSchema = z.object({
   horizon: z.nativeEnum(FinancialHorizon),
   experience: z.nativeEnum(FinancialExperience),
   riskTolerance: z.nativeEnum(RiskTolerance),
+});
+
+export const openBankingInstitutionsSchema = z.object({
+  country: z
+    .string()
+    .trim()
+    .length(2)
+    .transform((value) => value.toUpperCase())
+    .default("PT")
+    .refine(
+      (value): value is (typeof openBankingCountries)[number] =>
+        (openBankingCountries as readonly string[]).includes(value),
+      "País fora da allowlist de Open Banking.",
+    ),
+  psuType: z.enum(["personal", "business"]).default("personal"),
+});
+
+export const openBankingAuthorizationSchema = z.object({
+  institutionId: z.string().trim().min(1).max(160),
+  country: openBankingInstitutionsSchema.shape.country,
+  psuType: z.enum(["personal", "business"]).default("personal"),
+  returnPath: z
+    .string()
+    .trim()
+    .max(60)
+    .default("/accounts")
+    .refine(
+      (value): value is (typeof openBankingReturnPaths)[number] =>
+        (openBankingReturnPaths as readonly string[]).includes(value),
+      "Caminho de retorno não permitido.",
+    ),
+});
+
+export const openBankingReauthorizeSchema = z.object({
+  country: openBankingInstitutionsSchema.shape.country,
+  psuType: z.enum(["personal", "business"]).default("personal"),
+  returnPath: openBankingAuthorizationSchema.shape.returnPath,
+});
+
+export const openBankingCallbackSchema = z.object({
+  code: z.string().trim().min(1).max(512).optional(),
+  state: z.string().trim().min(1).max(512).optional(),
+  error: z.string().trim().min(1).max(120).optional(),
+  error_description: z.string().trim().max(400).optional(),
+});
+
+export const openBankingTransactionFiltersSchema = z
+  .object({
+    accountId: z.string().uuid().optional(),
+    connectionId: z.string().uuid().optional(),
+    status: z.enum(["pending", "booked", "rejected", "removed"]).optional(),
+    classification: z
+      .enum(["unreviewed", "expense", "income", "internal_transfer", "ignored", "refund"])
+      .optional(),
+    from: z.string().regex(dateOnly).optional(),
+    to: z.string().regex(dateOnly).optional(),
+    page: z.coerce.number().int().min(1).max(10_000).default(1),
+    pageSize: z.coerce.number().int().min(1).max(200).default(50),
+  })
+  .refine(({ from, to }) => !from || !to || from <= to, {
+    message: "A data inicial não pode ser posterior à data final.",
+    path: ["from"],
+  });
+
+/** O frontend nunca altera montante, moeda nem datas bancárias. */
+export const openBankingTransactionReviewSchema = z
+  .object({
+    categoryId: z.string().uuid().optional(),
+    classification: z
+      .enum(["unreviewed", "expense", "income", "internal_transfer", "ignored", "refund"])
+      .optional(),
+    excludedFromAnalytics: booleanFromRequest.optional(),
+    /** Confirmação explícita quando a classificação exige validação adicional. */
+    confirmInternalTransfer: booleanFromRequest.optional(),
+  })
+  .refine((value) => Object.keys(value).length > 0, "Indique pelo menos um campo.");
+
+export const openBankingDisconnectSchema = z.object({
+  retention: z.enum(["keep_imported", "delete_imported"]),
 });
 
 export const analyticsMonthSchema = z.object({

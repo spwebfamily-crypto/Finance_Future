@@ -10,12 +10,16 @@ import { RegisterPage } from "./pages/RegisterPage";
 import { LoadingState } from "./components/States";
 import { RouteTransitionOutlet } from "./components/RouteTransitionOutlet";
 import {
+  loadAccountDetailPage,
+  loadAccountsConnectPage,
   loadAccountsPage,
+  loadBankConnectionsPage,
   loadDashboardPage,
   loadExpenseFormPage,
   loadFinancialOnboardingPage,
   loadInvestmentsPage,
   loadPlanningPage,
+  loadPrivacyPage,
 } from "./routePreloads";
 
 const DashboardPage = lazy(() =>
@@ -51,6 +55,30 @@ const PlanningPage = lazy(() =>
 const AccountsPage = lazy(() =>
   loadAccountsPage().then((module) => ({
     default: module.AccountsPage,
+  })),
+);
+
+const AccountsConnectPage = lazy(() =>
+  loadAccountsConnectPage().then((module) => ({
+    default: module.AccountsConnectPage,
+  })),
+);
+
+const BankConnectionsPage = lazy(() =>
+  loadBankConnectionsPage().then((module) => ({
+    default: module.BankConnectionsPage,
+  })),
+);
+
+const AccountDetailPage = lazy(() =>
+  loadAccountDetailPage().then((module) => ({
+    default: module.AccountDetailPage,
+  })),
+);
+
+const PrivacyPage = lazy(() =>
+  loadPrivacyPage().then((module) => ({
+    default: module.PrivacyPage,
   })),
 );
 
@@ -119,6 +147,38 @@ export default function App() {
             element={
               <Suspense fallback={routeFallback}>
                 <AccountsPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/accounts/connect"
+            element={
+              <Suspense fallback={routeFallback}>
+                <AccountsConnectPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/accounts/connections"
+            element={
+              <Suspense fallback={routeFallback}>
+                <BankConnectionsPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/accounts/:accountId"
+            element={
+              <Suspense fallback={routeFallback}>
+                <AccountDetailPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/privacy"
+            element={
+              <Suspense fallback={routeFallback}>
+                <PrivacyPage />
               </Suspense>
             }
           />

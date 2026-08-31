@@ -30,6 +30,11 @@ model User {
   notes            FinancialNote[]
   refreshTokens    RefreshToken[]
   financialProfile FinancialProfile?
+
+  bankConnections         BankConnection[]
+  bankAuthorizationAttempts BankAuthorizationAttempt[]
+  bankTransactions        BankTransaction[]
+  bankSyncJobs            BankSyncJob[]
 }
 
 enum FinancialGoal {
@@ -118,12 +123,14 @@ model Expense {
   receiptFileSize Int?
   // Legacy nullable column kept for backwards-compatible databases. The app never writes or reads it.
   ocrRawText      String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   account  Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  // Movimento bancário que originou esta despesa, quando existir.
+  bankTransaction BankTransaction?
 
   @@index([userId, date])
   @@index([userId, categoryId, date])
@@ -159,6 +166,8 @@ model Income {
 
   user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   account Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  // Movimento bancário que originou este rendimento, quando existir.
+  bankTransaction BankTransaction?
 
   @@index([userId, date])
   @@index([userId, accountId, date])
@@ -212,13 +221,27 @@ enum AccountType {
   other
 }
 
+enum AccountSource {
+  // Conta criada pelo utilizador: o saldo é derivado dos movimentos.
+  manual
+  // Conta ligada por Open Banking: o saldo vem do provedor.
+  bank
+}
+
 model Account {
-  id              String      @id @default(uuid())
+  id              String        @id @default(uuid())
   userId          String
   name            String
   type            AccountType
-  openingBalance  Decimal     @default(0) @db.Decimal(12, 2)
-  creditLimit     Decimal?    @db.Decimal(12, 2)
+  openingBalance  Decimal       @default(0) @db.Decimal(12, 2)
+  creditLimit     Decimal?      @db.Decimal(12, 2)
+  source          AccountSource @default(manual)
+  currency        String        @default("EUR")
+  // Snapshots do saldo fornecido pelo banco. São a fonte principal enquanto a
+  // conta estiver ligada; nunca se somam aos movimentos derivados.
+  providerCurrentBalance   Decimal?   @db.Decimal(12, 2)
+  providerAvailableBalance Decimal?  @db.Decimal(12, 2)
+  providerBalanceUpdatedAt DateTime?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
@@ -229,6 +252,7 @@ model Account {
   recurringIncomes  RecurringIncome[]
   outgoingTransfers Transfer[]         @relation("TransferFrom")
   incomingTransfers Transfer[]         @relation("TransferTo")
+  bankAccountLink   BankAccountLink?
 
   @@unique([userId, name])
   @@index([userId, type])
@@ -248,6 +272,8 @@ model Transfer {
   user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   fromAccount Account @relation("TransferFrom", fields: [fromAccountId], references: [id], onDelete: Restrict)
   toAccount   Account @relation("TransferTo", fields: [toAccountId], references: [id], onDelete: Restrict)
+  // Movimentos bancários que originaram esta transferência entre contas próprias.
+  bankTransactions BankTransaction[]
 
   @@index([userId, date])
   @@index([fromAccountId, date])
@@ -320,4 +346,217 @@ model RefreshToken {
 
   @@index([userId])
   @@index([expiresAt])
+}
+
+// ---------------------------------------------------------------------------
+// Open Banking (somente leitura / AIS).
+// Nenhum modelo guarda palavra-passe, credencial bancária ou IBAN completo.
+// ---------------------------------------------------------------------------
+
+enum BankProvider {
+  enable_banking
+  fake
+}
+
+enum BankConnectionStatus {
+  pending
+  active
+  reauth_required
+  expired
+  revoked
+  disconnected
+  error
+}
+
+enum BankTransactionStatus {
+  pending
+  booked
+  rejected
+  removed
+}
+
+enum BankTransactionDirection {
+  debit
+  credit
+}
+
+enum BankTransactionClassification {
+  unreviewed
+  expense
+  income
+  internal_transfer
+  ignored
+  refund
+}
+
+enum BankSyncJobStatus {
+  queued
+  running
+  completed
+  partial
+  failed
+}
+
+enum BankSyncTrigger {
+  initial
+  manual
+  scheduled
+  reauthorization
+}
+
+// Tentativa de autorização: guarda apenas o hash do state, nunca o state em si.
+model BankAuthorizationAttempt {
+  id                      String       @id @default(uuid())
+  userId                  String
+  provider                BankProvider
+  institutionId           String
+  institutionName         String
+  country                 String
+  psuType                 String
+  stateHash               String       @unique
+  providerAuthorizationId String?
+  // Ligação que está a ser renovada (ausente numa autorização inicial).
+  connectionId            String?
+  // Validado contra uma allowlist interna; impede open redirect no callback.
+  returnPath              String
+  expiresAt               DateTime
+  usedAt                  DateTime?
+  createdAt               DateTime     @default(now())
+
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  connection BankConnection? @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([expiresAt])
+  @@index([connectionId])
+}
+
+model BankConnection {
+  id        String       @id @default(uuid())
+  userId    String
+  provider  BankProvider
+  // Identificador de sessão do provedor, cifrado em repouso (AES-256-GCM).
+  providerSessionCiphertext String
+  institutionId       String
+  institutionName     String
+  institutionCountry  String
+  status              BankConnectionStatus
+  consentExpiresAt    DateTime?
+  lastSyncedAt        DateTime?
+  nextSyncAt          DateTime?
+  lastErrorCode       String?
+  lastErrorAt         DateTime?
+  disconnectedAt      DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accounts  BankAccountLink[]
+  syncJobs  BankSyncJob[]
+  authorizationAttempts BankAuthorizationAttempt[]
+
+  @@index([userId, status])
+  @@index([status, nextSyncAt])
+}
+
+model BankAccountLink {
+  id        String @id @default(uuid())
+  connectionId String
+  accountId String @unique
+  // Identificador da conta no provedor, cifrado em repouso.
+  providerAccountIdCiphertext String
+  // Hash estável da conta, usado para casar a mesma conta entre sessões.
+  providerAccountHash         String
+  displayName     String
+  // Apenas para apresentação; o IBAN completo nunca é guardado.
+  maskedIban      String?
+  // HMAC do IBAN normalizado, quando o provedor o devolve. Permite casar
+  // transferências entre contas próprias sem guardar o IBAN.
+  providerIbanHash String?
+  currency        String
+  accountType     String
+  lastTransactionSyncAt DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  connection   BankConnection    @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  account      Account           @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  transactions BankTransaction[]
+
+  @@unique([connectionId, providerAccountHash])
+  @@index([connectionId])
+  @@index([providerIbanHash])
+}
+
+model BankTransaction {
+  id            String @id @default(uuid())
+  userId        String
+  bankAccountLinkId String
+  // Referência estável do provedor (entry_reference), quando existir.
+  providerEntryReference String?
+  // Identificador não estável; nunca usar como chave lógica.
+  providerTransactionId  String?
+  dedupeKey     String
+  status        BankTransactionStatus
+  direction     BankTransactionDirection
+  // Montante sempre positivo; o sentido está em `direction`.
+  amount        Decimal @db.Decimal(12, 2)
+  currency      String
+  bookingDate   DateTime?
+  valueDate     DateTime?
+  transactionDate DateTime?
+  description   String
+  counterpartyName String?
+  counterpartyAccountHash String?
+  merchantCategoryCode String?
+  bankTransactionCode String?
+  classification BankTransactionClassification @default(unreviewed)
+  excludedFromAnalytics Boolean @default(false)
+  expenseId     String? @unique
+  incomeId      String? @unique
+  transferId    String?
+  // Payload de diagnóstico, cifrado e com política de retenção.
+  rawDataEncrypted Bytes?
+  firstSeenAt   DateTime @default(now())
+  lastSeenAt    DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bankAccountLink BankAccountLink  @relation(fields: [bankAccountLinkId], references: [id], onDelete: Cascade)
+  expense         Expense?         @relation(fields: [expenseId], references: [id], onDelete: SetNull)
+  income          Income?          @relation(fields: [incomeId], references: [id], onDelete: SetNull)
+  transfer        Transfer?        @relation(fields: [transferId], references: [id], onDelete: SetNull)
+
+  @@unique([bankAccountLinkId, dedupeKey])
+  @@index([userId, status, bookingDate])
+  @@index([userId, classification, bookingDate])
+  @@index([transferId])
+}
+
+model BankSyncJob {
+  id          String @id @default(uuid())
+  userId      String
+  connectionId String
+  trigger     BankSyncTrigger
+  status      BankSyncJobStatus @default(queued)
+  attemptCount Int @default(0)
+  startedAt   DateTime?
+  finishedAt  DateTime?
+  accountsProcessed   Int @default(0)
+  transactionsCreated Int @default(0)
+  transactionsUpdated Int @default(0)
+  transactionsSkipped Int @default(0)
+  errorCode   String?
+  // Detalhe sanitizado: nunca contém payload bancário nem dados do PSU.
+  errorDetailSanitized String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  connection BankConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+  @@index([connectionId, status])
 }
