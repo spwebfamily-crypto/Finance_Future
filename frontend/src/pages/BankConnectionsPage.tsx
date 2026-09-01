@@ -8,7 +8,7 @@ import { NoticeToast } from "../components/NoticeToast";
 import { PageHeader } from "../components/PageHeader";
 import { openBankingApi } from "../api/resources";
 import { errorMessage } from "../api/client";
-import type { BankConnectionSummary, BankRetention, BankSyncJob } from "../types";
+import type { BankConnectionSummary, BankInstitution, BankRetention, BankSyncJob } from "../types";
 
 const POLL_INTERVAL_MS = 3_000;
 
@@ -16,6 +16,7 @@ export function BankConnectionsPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [connections, setConnections] = useState<BankConnectionSummary[]>([]);
+  const [institutionLogos, setInstitutionLogos] = useState<Map<string, string>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState(
@@ -30,17 +31,37 @@ export function BankConnectionsPage() {
     [],
   );
 
+  // As ligações persistem apenas o identificador e o nome do banco. As marcas
+  // continuam a vir do catálogo oficial e seguro devolvido pelo provedor.
+  const loadInstitutionLogos = useCallback(async () => {
+    const results = await Promise.allSettled([
+      openBankingApi.institutions("PT", "personal"),
+      openBankingApi.institutions("PT", "business"),
+    ]);
+    const logos = new Map<string, string>();
+    for (const result of results) {
+      if (result.status !== "fulfilled") continue;
+      for (const institution of result.value as BankInstitution[]) {
+        if (institution.logoUrl) logos.set(institution.id, institution.logoUrl);
+      }
+    }
+    setInstitutionLogos(logos);
+  }, []);
+
   const load = useCallback(async () => {
     setIsLoading(true);
     setError("");
     try {
       setConnections(await openBankingApi.connections());
+      // A indisponibilidade momentânea do catálogo não impede a visualização
+      // das ligações já existentes; nesse caso é mostrado o fallback neutro.
+      void loadInstitutionLogos();
     } catch (requestError) {
       setError(errorMessage(requestError));
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [loadInstitutionLogos]);
 
   useEffect(() => {
     void load();
@@ -179,6 +200,7 @@ export function BankConnectionsPage() {
               <BankConnectionCard
                 key={connection.id}
                 connection={connection}
+                logoUrl={institutionLogos.get(connection.institutionId)}
                 busy={
                   busyId === connection.id ||
                   pendingJobs.some((job) => job.connectionId === connection.id)
@@ -206,6 +228,7 @@ export function BankConnectionsPage() {
               <BankConnectionCard
                 key={connection.id}
                 connection={connection}
+                logoUrl={institutionLogos.get(connection.institutionId)}
                 busy={false}
                 onSync={(target) => void sync(target)}
                 onReauthorize={(target) => void reauthorize(target)}

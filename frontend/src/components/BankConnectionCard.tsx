@@ -1,16 +1,19 @@
-import { Landmark, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
+import { BankLogo } from "./BankLogo";
 import { BankSyncStatus } from "./BankSyncStatus";
 import { Spinner } from "./States";
 import type { BankConnectionSummary } from "../types";
 
 export function BankConnectionCard({
   connection,
+  logoUrl,
   busy = false,
   onSync,
   onReauthorize,
   onDisconnect,
 }: {
   connection: BankConnectionSummary;
+  logoUrl?: string | null;
   busy?: boolean;
   onSync: (connection: BankConnectionSummary) => void;
   onReauthorize: (connection: BankConnectionSummary) => void;
@@ -25,9 +28,10 @@ export function BankConnectionCard({
   return (
     <article className="bank-connection-card">
       <header>
-        <span className="bank-connection-card__icon" aria-hidden="true">
-          <Landmark />
-        </span>
+        <BankLogo
+          className="bank-connection-card__icon"
+          logoUrl={logoUrl}
+        />
         <div>
           <h3>{connection.institutionName}</h3>
           <p>

@@ -1,5 +1,5 @@
-import { Building2 } from "lucide-react";
 import type { BankInstitution } from "../types";
+import { BankLogo } from "./BankLogo";
 
 /** Escolha do banco: pesquisa local sobre a lista devolvida pelo backend. */
 export function InstitutionPicker({
@@ -47,13 +47,10 @@ export function InstitutionPicker({
                 disabled={disabled}
                 onClick={() => onSelect(institution)}
               >
-                <span className="institution-item__logo" aria-hidden="true">
-                  {institution.logoUrl ? (
-                    <img src={institution.logoUrl} alt="" loading="lazy" />
-                  ) : (
-                    <Building2 aria-hidden="true" />
-                  )}
-                </span>
+                <BankLogo
+                  className="institution-item__logo"
+                  logoUrl={institution.logoUrl}
+                />
                 <span className="institution-item__name">{institution.name}</span>
                 <span className="institution-item__meta">{institution.country}</span>
               </button>
