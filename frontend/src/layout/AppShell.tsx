@@ -15,8 +15,8 @@ import { useAuth } from "../auth/AuthContext";
 import { Brand } from "../components/Brand";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { CommandPalette } from "../components/CommandPalette";
+import { EmailVerificationBanner } from "../components/EmailVerificationBanner";
 import {
-  preloadAccountDetailPage,
   preloadAccountsConnectPage,
   preloadAccountsPage,
   preloadBankConnectionsPage,
@@ -37,7 +37,6 @@ const navItems = [
 const secondaryLinks = [
   { to: "/accounts/connect", label: "Ligar banco", preload: preloadAccountsConnectPage },
   { to: "/accounts/connections", label: "Bancos ligados", preload: preloadBankConnectionsPage },
-  { to: "/accounts", label: "Detalhe de conta", preload: preloadAccountDetailPage },
   { to: "/privacy", label: "Privacidade bancária", preload: () => undefined },
 ];
 
@@ -224,6 +223,7 @@ export function AppShell() {
             <WifiOff aria-hidden="true" /> Sem ligação. A mostrar os últimos dados guardados.
           </div>
         )}
+        <EmailVerificationBanner />
         <AnimatePresence mode="popLayout" initial={false}>
           <motion.div
             className="route-stage"

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Flame } from "lucide-react";
 import type { DailyTotal } from "../types";
 import { EmptyState } from "./States";
+import { todayInputValue } from "../utils/format";
 
 interface SpendingHeatmapProps {
   month: string;
@@ -38,7 +39,7 @@ export function SpendingHeatmap({ month, byDay, currency }: SpendingHeatmapProps
 
   const leadingBlanks = cells.length ? weekdayIndex(cells[0]!.iso) : 0;
   const formatter = new Intl.DateTimeFormat("pt-PT", { day: "numeric", month: "long" });
-  const todayIso = new Date().toISOString().slice(0, 10);
+  const todayIso = todayInputValue();
 
   // Intensidade em 4 níveis; o pico do mês define o teto de cada escala.
   function intensity(amount: number) {

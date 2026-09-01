@@ -48,20 +48,23 @@ export function BankConnectionsPage() {
     setInstitutionLogos(logos);
   }, []);
 
-  const load = useCallback(async () => {
-    setIsLoading(true);
-    setError("");
-    try {
-      setConnections(await openBankingApi.connections());
-      // A indisponibilidade momentânea do catálogo não impede a visualização
-      // das ligações já existentes; nesse caso é mostrado o fallback neutro.
-      void loadInstitutionLogos();
-    } catch (requestError) {
-      setError(errorMessage(requestError));
-    } finally {
-      setIsLoading(false);
-    }
-  }, [loadInstitutionLogos]);
+  const load = useCallback(
+    async (showLoading = true) => {
+      if (showLoading) setIsLoading(true);
+      setError("");
+      try {
+        setConnections(await openBankingApi.connections());
+        // A indisponibilidade momentânea do catálogo não impede a visualização
+        // das ligações já existentes; nesse caso é mostrado o fallback neutro.
+        void loadInstitutionLogos();
+      } catch (requestError) {
+        setError(errorMessage(requestError));
+      } finally {
+        if (showLoading) setIsLoading(false);
+      }
+    },
+    [loadInstitutionLogos],
+  );
 
   useEffect(() => {
     void load();
@@ -73,12 +76,14 @@ export function BankConnectionsPage() {
     let cancelled = false;
     const poll = async () => {
       const remaining: Array<{ connectionId: string; jobId: string }> = [];
+      let hasFinishedJob = false;
       for (const job of pendingJobs) {
         try {
           const status: BankSyncJob = await openBankingApi.syncJob(job.jobId);
           if (status.status === "queued" || status.status === "running") {
             remaining.push(job);
           } else if (!cancelled) {
+            hasFinishedJob = true;
             setNotice(
               status.status === "completed"
                 ? "Sincronização concluída."
@@ -91,8 +96,10 @@ export function BankConnectionsPage() {
       }
       if (cancelled) return;
       setPendingJobs(remaining);
-      if (remaining.length) {
-        void load();
+      if (remaining.length || hasFinishedJob) {
+        // Atualiza os saldos e o estado da ligação sem substituir a página por
+        // um skeleton a cada ciclo de polling.
+        void load(false);
       }
     };
     const timer = window.setTimeout(poll, POLL_INTERVAL_MS);
@@ -120,7 +127,11 @@ export function BankConnectionsPage() {
     setBusyId(connection.id);
     setError("");
     try {
-      const authorization = await openBankingApi.reauthorize(connection.id);
+      const authorization = await openBankingApi.reauthorize(
+        connection.id,
+        "personal",
+        connection.institutionCountry,
+      );
       window.location.assign(authorization.authorizationUrl);
     } catch (requestError) {
       setError(errorMessage(requestError));

@@ -23,7 +23,18 @@ const storyContent = {
     ),
     description:
       "Crie a conta e conte-nos apenas o necessário para organizar a sua vida financeira.",
-    footer: "Pode rever os seus dados financeiros quando quiser.",
+    footer: "Enviamos um email para confirmar que a conta é sua.",
+  },
+  verify: {
+    eyebrow: "Confirmação de conta",
+    title: (
+      <>
+        Um email para <em>proteger a sua conta.</em>
+      </>
+    ),
+    description:
+      "A confirmação garante que só quem tem acesso a este email consegue recuperar a conta.",
+    footer: "Nunca partilhamos o seu email com terceiros.",
   },
 } as const;
 

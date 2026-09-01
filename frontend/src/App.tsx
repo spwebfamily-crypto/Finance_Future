@@ -7,6 +7,7 @@ import { ExpensesPage } from "./pages/ExpensesPage";
 import { LoginPage } from "./pages/LoginPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { RegisterPage } from "./pages/RegisterPage";
+import { VerifyEmailPage } from "./pages/VerifyEmailPage";
 import { LoadingState } from "./components/States";
 import { RouteTransitionOutlet } from "./components/RouteTransitionOutlet";
 import {
@@ -192,6 +193,9 @@ export default function App() {
           />
         </Route>
       </Route>
+
+      {/* Público: o link do email é aberto com ou sem sessão ativa no dispositivo. */}
+      <Route path="/verify-email" element={<VerifyEmailPage />} />
 
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="*" element={<NotFoundPage />} />

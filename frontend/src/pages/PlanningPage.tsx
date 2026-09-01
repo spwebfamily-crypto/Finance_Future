@@ -43,7 +43,7 @@ import type {
   RecurringIncome,
   SavingsGoal,
 } from "../types";
-import { formatCurrency, formatDate, todayInputValue } from "../utils/format";
+import { formatCurrency, formatDate, parseSignedMoney, todayInputValue } from "../utils/format";
 
 type DeleteTarget = {
   type: "income" | "goal" | "recurring" | "recurringIncome" | "debt";
@@ -84,11 +84,11 @@ const initialDebt = {
 };
 
 function currentMonth() {
-  return new Date().toISOString().slice(0, 7);
+  return todayInputValue().slice(0, 7);
 }
 
 function numberFromInput(value: string) {
-  return Number(value.replace(",", "."));
+  return parseSignedMoney(value);
 }
 
 function dateOnly(value: string | null | undefined) {
@@ -500,9 +500,12 @@ export function PlanningPage() {
       !Number.isFinite(annualInterestRate) ||
       annualInterestRate < 0 ||
       !Number.isFinite(monthlyPayment) ||
-      monthlyPayment < 0
-    )
+      monthlyPayment <= 0
+    ) {
+      if (Number.isFinite(monthlyPayment) && monthlyPayment <= 0)
+        setError("A prestação mensal deve ser superior a zero.");
       return;
+    }
     setIsSaving(true);
     try {
       const created = await debtApi.create({

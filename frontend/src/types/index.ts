@@ -4,6 +4,8 @@ export interface User {
   email: string;
   currency: string;
   timeZone?: string;
+  /** Ausente em sessões guardadas antes da verificação por email existir. */
+  emailVerified?: boolean;
 }
 
 // Type alias (e não interface) para ser atribuível a Record<string, unknown>.

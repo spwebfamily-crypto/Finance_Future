@@ -25,6 +25,7 @@ import { financialProfileApi } from "../api/resources";
 import { Brand } from "../components/Brand";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { ErrorState, LoadingState, Spinner } from "../components/States";
+import { parseMoney } from "../utils/format";
 import type {
   FinancialExperience,
   FinancialGoal,
@@ -147,48 +148,7 @@ const riskOptions: Array<{ value: RiskTolerance; label: string; copy: string }> 
   },
 ];
 
-export function parseMoney(value: string) {
-  const raw = value.trim().replace(/\u00a0/g, " ");
-  if (!raw || !/^\d+(?:[ .,]\d+)*$/.test(raw)) return Number.NaN;
-
-  const commaCount = (raw.match(/,/g) || []).length;
-  const dotCount = (raw.match(/\./g) || []).length;
-  let decimalSeparator: "," | "." | null = null;
-  if (commaCount && dotCount) {
-    decimalSeparator = raw.lastIndexOf(",") > raw.lastIndexOf(".") ? "," : ".";
-  } else {
-    const separator = commaCount ? "," : dotCount ? "." : null;
-    const count = commaCount || dotCount;
-    if (separator && count === 1) {
-      const decimalLength = raw.length - raw.lastIndexOf(separator) - 1;
-      if (decimalLength <= 2) decimalSeparator = separator;
-      else if (decimalLength !== 3) return Number.NaN;
-    }
-  }
-
-  const decimalIndex = decimalSeparator ? raw.lastIndexOf(decimalSeparator) : -1;
-  const integerPart = decimalIndex >= 0 ? raw.slice(0, decimalIndex) : raw;
-  const fraction = decimalIndex >= 0 ? raw.slice(decimalIndex + 1) : "";
-  if (decimalSeparator && !/^\d{1,2}$/.test(fraction)) return Number.NaN;
-
-  const groupingCharacters = [...new Set(integerPart.replace(/\d/g, "").split("").filter(Boolean))];
-  if (groupingCharacters.length > 1 || groupingCharacters[0] === decimalSeparator)
-    return Number.NaN;
-  const groups = groupingCharacters.length
-    ? integerPart.split(groupingCharacters[0])
-    : [integerPart];
-  if (
-    !/^\d+$/.test(groups[0]) ||
-    (groups.length > 1 &&
-      (!/^\d{1,3}$/.test(groups[0]) || groups.slice(1).some((group) => !/^\d{3}$/.test(group))))
-  ) {
-    return Number.NaN;
-  }
-
-  const normalized = `${groups.join("")}${fraction ? `.${fraction}` : ""}`;
-  const parsed = Number(normalized);
-  return Number.isFinite(parsed) ? parsed : Number.NaN;
-}
+export { parseMoney } from "../utils/format";
 
 function toMoneyInput(value: number) {
   return value ? String(value).replace(".", ",") : "0";

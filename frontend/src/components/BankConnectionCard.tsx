@@ -30,10 +30,7 @@ export function BankConnectionCard({
   return (
     <article className="bank-connection-card">
       <header>
-        <BankLogo
-          className="bank-connection-card__icon"
-          logoUrl={logoUrl}
-        />
+        <BankLogo className="bank-connection-card__icon" logoUrl={logoUrl} />
         <div>
           <h3>{connection.institutionName}</h3>
           <p>

@@ -50,6 +50,10 @@ export const refreshSchema = z.object({
   refreshToken: z.string().min(1),
 });
 
+export const verifyEmailSchema = z.object({
+  token: z.string().trim().length(64).regex(/^[a-f0-9]{64}$/, "Token de verificação inválido."),
+});
+
 const supportedTimeZones = new Set<string>(Intl.supportedValuesOf("timeZone"));
 
 export const profileUpdateSchema = z

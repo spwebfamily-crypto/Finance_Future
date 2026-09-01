@@ -55,6 +55,12 @@ export function saveSession(nextAccessToken: string, nextRefreshToken: string, u
   }
 }
 
+/** Atualiza só o utilizador guardado, mantendo os tokens da sessão atual. */
+export function saveStoredUser(user: User) {
+  if (typeof window === "undefined" || !storageAvailable(window.localStorage)) return;
+  window.localStorage.setItem(USER_KEY, JSON.stringify(user));
+}
+
 export function clearSession() {
   accessToken = null;
   if (typeof window === "undefined") return;

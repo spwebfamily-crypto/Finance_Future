@@ -17,6 +17,14 @@ const environmentSchema = z.object({
   RATE_LIMIT_WINDOW_MINUTES: z.coerce.number().int().min(1).max(1440).default(15),
   RATE_LIMIT_MAX: z.coerce.number().int().min(10).max(10_000).default(300),
   RENDER: z.enum(["true", "false"]).optional(),
+  // Brevo (emails transacionais). Sem chave, os emails são apenas registados
+  // no log — útil em desenvolvimento e testes, nunca envia nada para fora.
+  BREVO_API_KEY: z.preprocess(
+    (value) => (value === "" || value === undefined ? undefined : value),
+    z.string().min(1).optional(),
+  ),
+  EMAIL_FROM_ADDRESS: z.string().email().default("noreply@expensesnap.app"),
+  EMAIL_FROM_NAME: z.string().min(1).default("ExpenseSnap"),
 });
 
 const parsedEnv = environmentSchema.parse(process.env);

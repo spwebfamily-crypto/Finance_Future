@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { BankBalance } from "../components/BankBalance";
 import { BankTransactionList } from "../components/BankTransactionList";
@@ -58,7 +58,9 @@ export function AccountDetailPage() {
       const found = accounts.find((item) => item.id === accountId) ?? null;
       setAccount(found);
       setCategories(categoryList.map((category) => ({ id: category.id, name: category.name })));
-      if (found) {
+      setTransactions([]);
+      setPageCount(1);
+      if (found?.source === "bank") {
         const result = await openBankingApi.transactions({
           accountId,
           ...(status ? { status } : {}),
@@ -135,9 +137,9 @@ export function AccountDetailPage() {
         title={account.name}
         description="Movimentos importados e registados nesta conta."
         action={
-          <a className="button button--secondary" href="/accounts">
+          <Link className="button button--secondary" to="/accounts">
             <ArrowLeft aria-hidden="true" /> Voltar
-          </a>
+          </Link>
         }
       />
 

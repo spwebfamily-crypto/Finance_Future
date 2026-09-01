@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { env } from "../config.js";
@@ -12,9 +12,11 @@ interface PublicUserSource extends TokenUser {
   name: string;
   currency: string;
   timeZone?: string;
+  emailVerifiedAt?: Date | null;
 }
 
 const refreshLifetimeMs = 7 * 24 * 60 * 60 * 1_000;
+const verificationLifetimeMs = 24 * 60 * 60 * 1_000;
 
 export const hashPassword = (value: string) => bcrypt.hash(value, 12);
 export const verifyPassword = (value: string, hash: string) => bcrypt.compare(value, hash);
@@ -54,12 +56,21 @@ export function refreshExpiresAt() {
   return new Date(Date.now() + refreshLifetimeMs);
 }
 
+export function generateVerificationToken() {
+  return randomBytes(32).toString("hex");
+}
+
+export function verificationExpiresAt() {
+  return new Date(Date.now() + verificationLifetimeMs);
+}
+
 export function publicUser(user: PublicUserSource) {
   return {
     id: user.id,
     name: user.name,
     email: user.email,
     currency: user.currency,
+    emailVerified: Boolean(user.emailVerifiedAt),
     ...(user.timeZone ? { timeZone: user.timeZone } : {}),
   };
 }

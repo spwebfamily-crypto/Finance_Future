@@ -37,12 +37,12 @@ import { NoticeToast } from "../components/NoticeToast";
 import { AnimatedCurrency } from "../components/AnimatedCurrency";
 import { SpendingHeatmap } from "../components/SpendingHeatmap";
 import type { AnalyticsSummary, Budget, Category, SpendingLevelItem } from "../types";
-import { formatCurrency } from "../utils/format";
+import { formatCurrency, parseSignedMoney, todayInputValue } from "../utils/format";
 
 const palette = ["var(--brand)", "#8fbe5f", "#d5a443", "#698076", "#8d74b7", "#d97864"];
 
 function currentMonth() {
-  return new Date().toISOString().slice(0, 7);
+  return todayInputValue().slice(0, 7);
 }
 
 function monthLabel(month: string) {
@@ -120,12 +120,15 @@ export function DashboardPage() {
     [budgets, categories],
   );
   const selectedMonth = summary?.month || month;
-  const categoryData = (summary?.byCategory || []).map((item, index) => ({
-    ...item,
-    name: item.category.name,
-    fill: palette[index % palette.length],
-  }));
+  const categoryData = (summary?.byCategory || [])
+    .filter((item) => item.amount > 0)
+    .map((item, index) => ({
+      ...item,
+      name: item.category.name,
+      fill: palette[index % palette.length],
+    }));
   const trendData = trend.map((item) => ({ ...item, label: shortMonth(item.month) }));
+  const hasTrendData = trendData.some((item) => item.total > 0);
   const monthPulse = useMemo(() => {
     const monitored = levels.filter((item) => item.budget);
     const limit = monitored.reduce((total, item) => total + (item.budget?.monthlyLimit ?? 0), 0);
@@ -186,7 +189,7 @@ export function DashboardPage() {
 
   async function saveBudget(event: FormEvent) {
     event.preventDefault();
-    const monthlyLimit = Number(newLimit.replace(",", "."));
+    const monthlyLimit = parseSignedMoney(newLimit);
     if (!newCategoryId || !Number.isFinite(monthlyLimit) || monthlyLimit <= 0) return;
     setSaving(true);
     try {
@@ -204,7 +207,7 @@ export function DashboardPage() {
   }
 
   async function updateBudget(budget: Budget) {
-    const monthlyLimit = Number(editingLimit.replace(",", "."));
+    const monthlyLimit = parseSignedMoney(editingLimit);
     if (!Number.isFinite(monthlyLimit) || monthlyLimit <= 0) return;
     setSaving(true);
     try {
@@ -462,7 +465,7 @@ export function DashboardPage() {
                   <h2 id="trend-chart-title">Evolução mensal</h2>
                 </div>
               </div>
-              {trendData.length ? (
+              {hasTrendData ? (
                 <>
                   <div
                     className="dashboard-chart"

@@ -17,6 +17,7 @@ import {
   getRefreshToken,
   getStoredUser,
   saveSession,
+  saveStoredUser,
 } from "../api/token-store";
 import { clearOfflineCache } from "../api/offline-cache";
 import type { User } from "../types";
@@ -28,6 +29,8 @@ interface AuthContextValue {
   login: (email: string, password: string, destination?: string) => Promise<void>;
   register: (name: string, email: string, password: string, destination?: string) => Promise<void>;
   logout: () => void;
+  /** Sincroniza o utilizador em memória e em armazenamento (ex.: após verificar o email). */
+  applyUser: (user: User) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -106,9 +109,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [applySession],
   );
 
+  const applyUser = useCallback((nextUser: User) => {
+    saveStoredUser(nextUser);
+    setUser(nextUser);
+  }, []);
+
   const value = useMemo(
-    () => ({ user, isAuthenticated: Boolean(user), isInitializing, login, register, logout }),
-    [user, isInitializing, login, register, logout],
+    () => ({
+      user,
+      isAuthenticated: Boolean(user),
+      isInitializing,
+      login,
+      register,
+      logout,
+      applyUser,
+    }),
+    [user, isInitializing, login, register, logout, applyUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

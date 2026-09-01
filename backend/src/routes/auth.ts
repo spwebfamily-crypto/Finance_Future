@@ -5,20 +5,31 @@ import { prisma } from "../prisma.js";
 import { requireAuth, sendError } from "../middleware.js";
 import type { AuthenticatedRequest } from "../types.js";
 import {
+  generateVerificationToken,
   hashPassword,
   hashToken,
   publicUser,
   refreshExpiresAt,
   signAccessToken,
   signRefreshToken,
+  verificationExpiresAt,
   verifyPassword,
   verifyRefreshToken,
 } from "../lib/auth.js";
-import { loginSchema, profileUpdateSchema, refreshSchema, registerSchema } from "../validation.js";
+import { sendVerificationEmail } from "../services/emailService.js";
+import {
+  loginSchema,
+  profileUpdateSchema,
+  refreshSchema,
+  registerSchema,
+  verifyEmailSchema,
+} from "../validation.js";
 
 const router = Router();
 
-const authLimiter = rateLimit({
+// Exportado apenas para permitir reset entre testes; em produção o limite
+// acumula por IP durante a janela, como pretendido.
+export const authLimiter = rateLimit({
   windowMs: 15 * 60_000,
   limit: 10,
   standardHeaders: true,
@@ -69,6 +80,7 @@ router.post("/register", authLimiter, async (request, response, next) => {
     }
 
     const passwordHash = await hashPassword(input.password);
+    const verificationToken = generateVerificationToken();
     const result = await prisma.$transaction(async (transaction) => {
       const user = await transaction.user.create({
         data: {
@@ -76,11 +88,29 @@ router.post("/register", authLimiter, async (request, response, next) => {
           email: input.email,
           passwordHash,
           categories: { create: [...defaultCategories] },
+          verificationToken: {
+            create: {
+              tokenHash: hashToken(verificationToken),
+              expiresAt: verificationExpiresAt(),
+            },
+          },
         },
       });
       const tokens = await issueTokens(transaction, user);
       return { user, tokens };
     });
+
+    // A conta fica utilizável de imediato; o email é um reforço de confirmação.
+    // Uma falha de envio não deve bloquear o registo — há reenvio manual.
+    try {
+      await sendVerificationEmail({
+        name: result.user.name,
+        email: result.user.email,
+        token: verificationToken,
+      });
+    } catch (emailError) {
+      console.error("Falha ao enviar email de verificação:", emailError);
+    }
 
     return response.status(201).json({
       user: publicUser(result.user),
@@ -110,6 +140,98 @@ router.post("/login", authLimiter, async (request, response, next) => {
     return next(error);
   }
 });
+
+// Confirmação por link no email. É pública porque o utilizador ainda pode não
+// ter sessão aberta no dispositivo onde abre o link.
+router.post("/verify-email", authLimiter, async (request, response, next) => {
+  try {
+    const { token } = verifyEmailSchema.parse(request.body);
+    const stored = await prisma.emailVerificationToken.findUnique({
+      where: { tokenHash: hashToken(token) },
+      include: { user: true },
+    });
+
+    if (!stored || stored.expiresAt <= new Date()) {
+      return sendError(
+        response,
+        400,
+        "INVALID_VERIFICATION_TOKEN",
+        "O link de verificação é inválido ou expirou. Peça um novo na aplicação.",
+      );
+    }
+
+    if (stored.user.emailVerifiedAt) {
+      // Já verificado: idempotente, mas limpamos o token pendente se existir.
+      await prisma.emailVerificationToken.delete({ where: { id: stored.id } });
+      return response.json({ data: { user: publicUser(stored.user) } });
+    }
+
+    const [user] = await prisma.$transaction([
+      prisma.user.update({
+        where: { id: stored.userId },
+        data: { emailVerifiedAt: new Date() },
+      }),
+      prisma.emailVerificationToken.delete({ where: { id: stored.id } }),
+    ]);
+
+    return response.json({ data: { user: publicUser(user) } });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+// Reenvio do email de confirmação para a conta autenticada.
+router.post(
+  "/resend-verification",
+  requireAuth,
+  authLimiter,
+  async (request: AuthenticatedRequest, response, next) => {
+    try {
+      const user = await prisma.user.findUnique({ where: { id: request.user!.id } });
+      if (!user) {
+        return sendError(response, 404, "USER_NOT_FOUND", "A conta já não existe.");
+      }
+      if (user.emailVerifiedAt) {
+        return sendError(response, 409, "ALREADY_VERIFIED", "Este email já está verificado.");
+      }
+
+      const verificationToken = generateVerificationToken();
+      // Um único token ativo por utilizador: substituímos o anterior.
+      await prisma.emailVerificationToken.upsert({
+        where: { userId: user.id },
+        create: {
+          userId: user.id,
+          tokenHash: hashToken(verificationToken),
+          expiresAt: verificationExpiresAt(),
+        },
+        update: {
+          tokenHash: hashToken(verificationToken),
+          expiresAt: verificationExpiresAt(),
+        },
+      });
+
+      try {
+        await sendVerificationEmail({
+          name: user.name,
+          email: user.email,
+          token: verificationToken,
+        });
+      } catch (emailError) {
+        console.error("Falha ao reenviar email de verificação:", emailError);
+        return sendError(
+          response,
+          502,
+          "EMAIL_SEND_FAILED",
+          "Não foi possível enviar o email agora. Tente novamente em instantes.",
+        );
+      }
+
+      return response.json({ data: { ok: true } });
+    } catch (error) {
+      return next(error);
+    }
+  },
+);
 
 router.post("/refresh", async (request, response, next) => {
   try {

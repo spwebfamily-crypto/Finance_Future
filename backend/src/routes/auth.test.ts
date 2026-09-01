@@ -5,7 +5,7 @@ import jwt from "jsonwebtoken";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { errorHandler } from "../middleware.js";
 import { signRefreshToken } from "../lib/auth.js";
-import authRoutes from "./auth.js";
+import authRoutes, { authLimiter } from "./auth.js";
 
 const repositories = vi.hoisted(() => ({
   refreshTokenDeleteMany: vi.fn(),
@@ -15,7 +15,11 @@ const repositories = vi.hoisted(() => ({
   refreshTokenCreate: vi.fn(),
   refreshTokenFindUnique: vi.fn(),
   refreshTokenDelete: vi.fn(),
+  emailVerificationTokenFindUnique: vi.fn(),
+  emailVerificationTokenDelete: vi.fn(),
+  emailVerificationTokenUpsert: vi.fn(),
   transaction: vi.fn(),
+  transactionArray: vi.fn(),
 }));
 
 // bcrypt a custo 12 torna o suite lento; as provas de hash já existem em
@@ -28,6 +32,14 @@ vi.mock("../lib/auth.js", async (importOriginal) => {
     verifyPassword: async (value: string, hash: string) => hash === `hashed:${value}`,
   };
 });
+
+const emailMocks = vi.hoisted(() => ({
+  sendVerificationEmail: vi.fn(),
+}));
+
+vi.mock("../services/emailService.js", () => ({
+  sendVerificationEmail: emailMocks.sendVerificationEmail,
+}));
 
 vi.mock("../prisma.js", () => {
   const transactionClient = {
@@ -50,6 +62,11 @@ vi.mock("../prisma.js", () => {
         delete: repositories.refreshTokenDelete,
         deleteMany: repositories.refreshTokenDeleteMany,
       },
+      emailVerificationToken: {
+        findUnique: repositories.emailVerificationTokenFindUnique,
+        delete: repositories.emailVerificationTokenDelete,
+        upsert: repositories.emailVerificationTokenUpsert,
+      },
       $transaction: repositories.transaction.mockImplementation((input) =>
         typeof input === "function" ? input(transactionClient) : Promise.all(input),
       ),
@@ -67,6 +84,12 @@ function authorization() {
     expiresIn: "5m",
   });
   return `Bearer ${token}`;
+}
+
+// O authLimiter é um singleton de módulo: sem reset, as contagens de um
+// describe esgotam o limite dos seguintes (todos os pedidos vêm de 127.0.0.1).
+async function resetAuthLimiter() {
+  await authLimiter.resetKey("127.0.0.1");
 }
 
 describe("auth logout", () => {
@@ -263,13 +286,18 @@ describe("auth session (register, login, refresh)", () => {
     });
   });
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    await resetAuthLimiter();
     repositories.userFindUnique.mockReset();
     repositories.userCreate.mockReset();
     repositories.refreshTokenCreate.mockReset().mockResolvedValue({});
     repositories.refreshTokenFindUnique.mockReset();
     repositories.refreshTokenDelete.mockReset();
     repositories.refreshTokenDeleteMany.mockReset().mockResolvedValue({ count: 0 });
+    repositories.emailVerificationTokenFindUnique.mockReset();
+    repositories.emailVerificationTokenDelete.mockReset();
+    repositories.emailVerificationTokenUpsert.mockReset();
+    emailMocks.sendVerificationEmail.mockReset().mockResolvedValue(undefined);
     repositories.transaction.mockClear();
   });
 
@@ -399,5 +427,200 @@ describe("auth session (register, login, refresh)", () => {
     expect(response.status).toBe(401);
     expect(body.error.code).toBe("INVALID_REFRESH_TOKEN");
     expect(repositories.refreshTokenDelete).not.toHaveBeenCalled();
+  });
+
+  it("sends a verification email on register without blocking the response", async () => {
+    repositories.userFindUnique.mockResolvedValue(null);
+    repositories.userCreate.mockImplementation(async ({ data }) => ({
+      id: userId,
+      email: data.email,
+      name: data.name,
+      currency: "EUR",
+      emailVerifiedAt: null,
+    }));
+
+    const response = await fetch(`${baseUrl}/api/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "Rodrigo", email: "novo@example.com", password: "segredo-123" }),
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(201);
+    expect(body.user.emailVerified).toBe(false);
+    expect(emailMocks.sendVerificationEmail).toHaveBeenCalledOnce();
+    expect(emailMocks.sendVerificationEmail.mock.calls[0][0]).toMatchObject({
+      email: "novo@example.com",
+      name: "Rodrigo",
+    });
+  });
+});
+
+describe("auth email verification", () => {
+  let server: Server;
+  let baseUrl: string;
+  const validToken = "a".repeat(64);
+
+  beforeAll(async () => {
+    const app = express();
+    app.use(express.json());
+    app.use("/api/auth", authRoutes);
+    app.use(errorHandler);
+    await new Promise<void>((resolve) => {
+      server = app.listen(0, "127.0.0.1", resolve);
+    });
+    const address = server.address() as AddressInfo;
+    baseUrl = `http://127.0.0.1:${address.port}`;
+  });
+
+  afterAll(async () => {
+    await new Promise<void>((resolve, reject) => {
+      server.close((error) => (error ? reject(error) : resolve()));
+    });
+  });
+
+  beforeEach(async () => {
+    await resetAuthLimiter();
+    repositories.userFindUnique.mockReset();
+    repositories.userUpdate.mockReset();
+    repositories.emailVerificationTokenFindUnique.mockReset();
+    repositories.emailVerificationTokenDelete.mockReset();
+    repositories.emailVerificationTokenUpsert.mockReset();
+    emailMocks.sendVerificationEmail.mockReset().mockResolvedValue(undefined);
+  });
+
+  function postVerify(token: unknown) {
+    return fetch(`${baseUrl}/api/auth/verify-email`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token }),
+    });
+  }
+
+  it("verifies a valid, unexpired token and marks the user verified", async () => {
+    repositories.emailVerificationTokenFindUnique.mockResolvedValue({
+      id: "tok-1",
+      userId,
+      expiresAt: new Date(Date.now() + 60_000),
+      user: {
+        id: userId,
+        name: "Rodrigo",
+        email: "owner@example.com",
+        currency: "EUR",
+        emailVerifiedAt: null,
+      },
+    });
+    repositories.userUpdate.mockResolvedValue({
+      id: userId,
+      name: "Rodrigo",
+      email: "owner@example.com",
+      currency: "EUR",
+      emailVerifiedAt: new Date(),
+    });
+
+    const response = await postVerify(validToken);
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.data.user.emailVerified).toBe(true);
+    // O lookup é feito por hash, nunca pelo token em texto claro.
+    const where = repositories.emailVerificationTokenFindUnique.mock.calls[0][0].where;
+    expect(where.tokenHash).not.toBe(validToken);
+    expect(where.tokenHash).toMatch(/^[a-f0-9]{64}$/);
+    expect(repositories.emailVerificationTokenDelete).toHaveBeenCalledOnce();
+  });
+
+  it("rejects an unknown or expired token", async () => {
+    repositories.emailVerificationTokenFindUnique.mockResolvedValue(null);
+    const unknown = await postVerify(validToken);
+    expect(unknown.status).toBe(400);
+    expect((await unknown.json()).error.code).toBe("INVALID_VERIFICATION_TOKEN");
+
+    repositories.emailVerificationTokenFindUnique.mockResolvedValue({
+      id: "tok-1",
+      userId,
+      expiresAt: new Date(Date.now() - 1_000),
+      user: { id: userId, emailVerifiedAt: null },
+    });
+    const expired = await postVerify(validToken);
+    expect(expired.status).toBe(400);
+    expect(repositories.userUpdate).not.toHaveBeenCalled();
+  });
+
+  it("rejects a malformed token without hitting the database", async () => {
+    const response = await postVerify("curto");
+    expect(response.status).toBe(400);
+    expect((await response.json()).error.code).toBe("VALIDATION_ERROR");
+    expect(repositories.emailVerificationTokenFindUnique).not.toHaveBeenCalled();
+  });
+
+  it("is idempotent when the account is already verified", async () => {
+    repositories.emailVerificationTokenFindUnique.mockResolvedValue({
+      id: "tok-1",
+      userId,
+      expiresAt: new Date(Date.now() + 60_000),
+      user: {
+        id: userId,
+        name: "Rodrigo",
+        email: "owner@example.com",
+        currency: "EUR",
+        emailVerifiedAt: new Date(),
+      },
+    });
+
+    const response = await postVerify(validToken);
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.data.user.emailVerified).toBe(true);
+    expect(repositories.userUpdate).not.toHaveBeenCalled();
+    expect(repositories.emailVerificationTokenDelete).toHaveBeenCalledOnce();
+  });
+
+  it("resend requires authentication", async () => {
+    const response = await fetch(`${baseUrl}/api/auth/resend-verification`, { method: "POST" });
+    expect(response.status).toBe(401);
+    expect(repositories.emailVerificationTokenUpsert).not.toHaveBeenCalled();
+  });
+
+  it("resend replaces the pending token and sends a new email", async () => {
+    repositories.userFindUnique.mockResolvedValue({
+      id: userId,
+      name: "Rodrigo",
+      email: "owner@example.com",
+      currency: "EUR",
+      emailVerifiedAt: null,
+    });
+
+    const response = await fetch(`${baseUrl}/api/auth/resend-verification`, {
+      method: "POST",
+      headers: { Authorization: authorization() },
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.data.ok).toBe(true);
+    expect(repositories.emailVerificationTokenUpsert).toHaveBeenCalledOnce();
+    expect(emailMocks.sendVerificationEmail).toHaveBeenCalledOnce();
+  });
+
+  it("resend refuses an already verified account", async () => {
+    repositories.userFindUnique.mockResolvedValue({
+      id: userId,
+      name: "Rodrigo",
+      email: "owner@example.com",
+      currency: "EUR",
+      emailVerifiedAt: new Date(),
+    });
+
+    const response = await fetch(`${baseUrl}/api/auth/resend-verification`, {
+      method: "POST",
+      headers: { Authorization: authorization() },
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(409);
+    expect(body.error.code).toBe("ALREADY_VERIFIED");
+    expect(emailMocks.sendVerificationEmail).not.toHaveBeenCalled();
   });
 });

@@ -89,6 +89,17 @@ export const authApi = {
       auth: false,
       body: { refreshToken },
     }),
+  verifyEmail: async (token: string) => {
+    const payload = await apiRequest<ApiEnvelope<{ user: User }> | { user: User }>(
+      "/auth/verify-email",
+      { method: "POST", auth: false, body: { token } },
+    );
+    return unwrap(payload).user;
+  },
+  resendVerification: () =>
+    apiRequest<ApiEnvelope<{ ok: boolean }> | { ok: boolean }>("/auth/resend-verification", {
+      method: "POST",
+    }),
   me: () => unwrap(apiRequest<ApiEnvelope<User> | User>("/auth/me")),
   updateProfile: (input: UserProfileInput) =>
     unwrap(
@@ -423,13 +434,13 @@ export const openBankingApi = {
         ApiEnvelope<{ jobId: string; status: string }> | { jobId: string; status: string }
       >(`/open-banking/connections/${connectionId}/sync`, { method: "POST", cacheResponse: false }),
     ),
-  reauthorize: async (connectionId: string, psuType: PsuType = "personal") =>
+  reauthorize: async (connectionId: string, psuType: PsuType = "personal", country = "PT") =>
     unwrap(
       await apiRequest<ApiEnvelope<BankAuthorization> | BankAuthorization>(
         `/open-banking/connections/${connectionId}/reauthorize`,
         {
           method: "POST",
-          body: { psuType, returnPath: "/accounts/connections" },
+          body: { country, psuType, returnPath: "/accounts/connections" },
           cacheResponse: false,
         },
       ),

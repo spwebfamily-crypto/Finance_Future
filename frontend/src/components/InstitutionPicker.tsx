@@ -47,10 +47,7 @@ export function InstitutionPicker({
                 disabled={disabled}
                 onClick={() => onSelect(institution)}
               >
-                <BankLogo
-                  className="institution-item__logo"
-                  logoUrl={institution.logoUrl}
-                />
+                <BankLogo className="institution-item__logo" logoUrl={institution.logoUrl} />
                 <span className="institution-item__name">{institution.name}</span>
                 <span className="institution-item__meta">{institution.country}</span>
               </button>

@@ -25,7 +25,7 @@ import type {
   BankConnectionSummary,
   FinancialAccount,
 } from "../types";
-import { formatCurrency, formatDate, todayInputValue } from "../utils/format";
+import { formatCurrency, formatDate, parseSignedMoney, todayInputValue } from "../utils/format";
 
 const initialAccount = {
   name: "",
@@ -50,11 +50,12 @@ const accountLabels: Record<AccountType, string> = {
 };
 
 function amount(value: string) {
-  return Number(value.replace(",", "."));
+  return parseSignedMoney(value);
 }
 
 function isValidAccountBalance(value: string) {
-  return /^-?\d{1,10}(?:[.,]\d{1,2})?$/.test(value.trim());
+  const parsed = parseSignedMoney(value);
+  return Number.isFinite(parsed) && Math.abs(parsed) <= 9_999_999_999.99;
 }
 
 function AccountIcon({ type }: { type: AccountType }) {
@@ -508,6 +509,7 @@ export function AccountsPage() {
                   item.status !== "disconnected" &&
                   item.accounts.some((link) => link.accountId === account.id),
               );
+              const canSync = connection?.status === "active" || connection?.status === "error";
               return (
                 <article
                   className={`account-card-large account-card-large--${account.type}`}
@@ -547,7 +549,7 @@ export function AccountsPage() {
                     <small>{Math.min(100, cardUse * 100).toFixed(0)}% do limite utilizado</small>
                   )}
                   <div className="account-card-large__actions">
-                    {isLinked && connection && (
+                    {isLinked && connection && canSync && (
                       <button
                         type="button"
                         className="icon-button"
@@ -558,6 +560,11 @@ export function AccountsPage() {
                         <RefreshCw aria-hidden="true" />
                         <span>Sincronizar</span>
                       </button>
+                    )}
+                    {isLinked && connection && !canSync && connection.status !== "pending" && (
+                      <Link className="text-button" to="/accounts/connections">
+                        Gerir ligação
+                      </Link>
                     )}
                     {!isLinked && (
                       <button
@@ -570,15 +577,17 @@ export function AccountsPage() {
                         <span>Corrigir valor</span>
                       </button>
                     )}
-                    <button
-                      type="button"
-                      className="icon-button icon-button--danger"
-                      aria-label={`Remover conta ${account.name}`}
-                      title="Remover conta"
-                      onClick={() => setDeleteTarget(account)}
-                    >
-                      <Trash2 aria-hidden="true" />
-                    </button>
+                    {!isLinked && (
+                      <button
+                        type="button"
+                        className="icon-button icon-button--danger"
+                        aria-label={`Remover conta ${account.name}`}
+                        title="Remover conta"
+                        onClick={() => setDeleteTarget(account)}
+                      >
+                        <Trash2 aria-hidden="true" />
+                      </button>
+                    )}
                   </div>
                 </article>
               );

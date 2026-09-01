@@ -8,14 +8,15 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  passwordHash String
-  name         String
-  currency     String   @default("EUR")
-  timeZone     String   @default("Europe/Lisbon")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id              String    @id @default(uuid())
+  email           String    @unique
+  passwordHash    String
+  name            String
+  currency        String    @default("EUR")
+  timeZone        String    @default("Europe/Lisbon")
+  emailVerifiedAt DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   expenses         Expense[]
   incomes          Income[]
@@ -29,6 +30,7 @@ model User {
   debts            Debt[]
   notes            FinancialNote[]
   refreshTokens    RefreshToken[]
+  verificationToken EmailVerificationToken?
   financialProfile FinancialProfile?
 
   bankConnections         BankConnection[]
@@ -345,6 +347,20 @@ model RefreshToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([expiresAt])
+}
+
+// Um único token de verificação ativo por utilizador; reenviar substitui-o.
+// Apenas o hash SHA-256 é guardado, à semelhança dos refresh tokens.
+model EmailVerificationToken {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([expiresAt])
 }
 
