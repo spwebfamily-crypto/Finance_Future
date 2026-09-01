@@ -10,6 +10,7 @@ import type {
   ProviderAccount,
   ProviderBalance,
   ProviderTransaction,
+  ProviderSession,
 } from "./contracts.js";
 import { createOpenBankingProvider } from "./providerFactory.js";
 import { decryptSessionId } from "./authorizationService.js";
@@ -446,26 +447,33 @@ export async function runSyncJob(job: BankSyncJob): Promise<SyncOutcome> {
     return { ...counters, status: "failed", errorCode: "BANK_CONNECTION_NOT_FOUND" };
   }
 
-  try {
-    const provider = createOpenBankingProvider();
-    const sessionId = decryptSessionId(connection);
+  let session: ProviderSession | null = null;
+  let provider: ReturnType<typeof createOpenBankingProvider> | null = null;
+  let sessionId: string | null = null;
+  let syncError: unknown = null;
+  const successfulAccountIds: string[] = [];
 
-    const session = await provider.getSession(sessionId);
-    if (session.status !== "authorized") {
+  try {
+    provider = createOpenBankingProvider();
+    sessionId = decryptSessionId(connection);
+
+    const sessionResult = await provider.getSession(sessionId);
+    if (sessionResult.status !== "authorized") {
       await prisma.bankConnection.update({
         where: { id: connection.id },
         data: {
-          status: connectionStatusFor(session.status),
-          lastErrorCode: `PROVIDER_SESSION_${session.status.toUpperCase()}`,
+          status: connectionStatusFor(sessionResult.status),
+          lastErrorCode: `PROVIDER_SESSION_${sessionResult.status.toUpperCase()}`,
           lastErrorAt: new Date(),
         },
       });
       return {
         ...counters,
-        status: session.status === "pending" ? "partial" : "failed",
-        errorCode: session.status === "pending" ? null : "BANK_CONNECTION_REAUTH_REQUIRED",
+        status: sessionResult.status === "pending" ? "partial" : "failed",
+        errorCode: sessionResult.status === "pending" ? null : "BANK_CONNECTION_REAUTH_REQUIRED",
       };
     }
+    session = sessionResult;
 
     const consentExpired =
       session.consentExpiresAt && new Date(session.consentExpiresAt).getTime() <= Date.now();
@@ -482,33 +490,53 @@ export async function runSyncJob(job: BankSyncJob): Promise<SyncOutcome> {
     }
 
     for (const providerAccount of session.accounts.slice(0, MAX_ACCOUNTS_PER_SYNC)) {
-      await syncAccount(connection, provider, sessionId, providerAccount, counters);
+      try {
+        await syncAccount(connection, provider!, sessionId!, providerAccount, counters);
+        successfulAccountIds.push(providerAccount.providerAccountId);
+      } catch (accountError) {
+        // Log but continue with other accounts
+        console.error(
+          `[open-banking] Falha na sincronização da conta ${providerAccount.providerAccountId}:`,
+          accountError,
+        );
+        syncError = accountError;
+      }
     }
 
-    // Só depois de todas as contas: a materialização e o emparelhamento de
-    // transferências próprias precisam da visão completa da ligação.
-    const materialization = await materializeBookedTransactions(connection.userId);
-    const transfers = await matchInternalTransfers(connection.userId);
+    // Materialização e emparelhamento de transferências executam-se sempre
+    // para as contas que tiveram sucesso, mesmo que outras tenham falhado.
+    let materialization: MaterializationCounters | undefined;
+    let transfers: TransferMatchResult | undefined;
+    if (successfulAccountIds.length > 0) {
+      // Passamos o userId; o materialize filtra por status="booked" nas ligações
+      // que foram processadas com sucesso. Como o materialize usa bankAccountLinkId
+      // opcional, materializa tudo do utilizador — mas transações de contas que
+      // falharam não terão status="booked" novo, então não são afetadas.
+      materialization = await materializeBookedTransactions(connection.userId);
+      transfers = await matchInternalTransfers(connection.userId);
+    }
 
+    const finalStatus = syncError ? "partial" : "completed";
     await prisma.bankConnection.update({
       where: { id: connection.id },
       data: {
-        status: "active",
+        status: finalStatus === "completed" ? "active" : "error",
         lastSyncedAt: new Date(),
         nextSyncAt: new Date(Date.now() + config.syncIntervalMinutes * 60_000),
-        lastErrorCode: null,
-        lastErrorAt: null,
+        lastErrorCode: syncError ? sanitizedErrorCode(syncError) : null,
+        lastErrorAt: syncError ? new Date() : null,
       },
     });
 
     return {
       ...counters,
-      status: "completed",
-      errorCode: null,
+      status: finalStatus,
+      errorCode: syncError ? sanitizedErrorCode(syncError) : null,
       materialization,
       transfers,
     };
   } catch (error) {
+    // Erro antes do loop de contas (ex.: sessão, consentimento, provider init)
     const code = sanitizedErrorCode(error);
     const isConsentError =
       error instanceof ProviderError &&
@@ -520,7 +548,6 @@ export async function runSyncJob(job: BankSyncJob): Promise<SyncOutcome> {
     await prisma.bankConnection.update({
       where: { id: job.connectionId },
       data: {
-        // Falhas transitórias mantêm a ligação ativa: o job volta a ser agendado.
         status: isConsentError
           ? error.code === "consent_revoked"
             ? "reauth_required"

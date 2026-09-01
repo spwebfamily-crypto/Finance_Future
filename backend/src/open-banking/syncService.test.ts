@@ -500,10 +500,13 @@ describe("sync engine", () => {
 
     const outcome = await processSyncJob(job.id);
 
-    expect(outcome.status).toBe("failed");
+    // Com a nova lógica, a sincronização parcial ainda executa materialização
+    // para as contas bem-sucedidas, pelo que o status é "partial" (não "failed").
+    expect(outcome.status).toBe("partial");
     expect(outcome.accountsProcessed).toBe(1);
+    expect(outcome.materialization).toBeDefined();
     const updated = await prisma.bankConnection.findUnique({ where: { id: connection.id } });
-    expect(updated!.status).toBe("active");
+    expect(updated!.status).toBe("error"); // status "error" para ligação com erro parcial
     expect(updated!.lastErrorCode).toBe("PROVIDER_PROVIDER_UNAVAILABLE");
   });
 

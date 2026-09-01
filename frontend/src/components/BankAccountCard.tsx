@@ -44,6 +44,8 @@ export function BankAccountCard({
       <BankBalance
         currentBalance={account.currentBalance ?? account.openingBalance}
         availableBalance={isLinked ? account.availableBalance : null}
+        derivedBalance={account.derivedBalance}
+        balanceDelta={account.balanceDelta}
         balanceSource={account.balanceSource ?? "derived"}
         balanceAsOf={account.balanceAsOf ?? null}
         currency={account.currency ?? currency}

@@ -29,6 +29,8 @@ export function PrivacyPage() {
     void load();
   }, [load]);
 
+  const liveConnections = connections.filter((connection) => connection.status !== "disconnected");
+
   return (
     <div className="page page--privacy">
       <PageHeader
@@ -88,9 +90,9 @@ export function PrivacyPage() {
         </div>
         {isLoading ? (
           <LoadingState label="A carregar as ligações" />
-        ) : connections.length ? (
+        ) : liveConnections.length ? (
           <ul className="privacy-connections">
-            {connections.map((connection) => (
+            {liveConnections.map((connection) => (
               <li key={connection.id}>
                 <div>
                   <strong>{connection.institutionName}</strong>

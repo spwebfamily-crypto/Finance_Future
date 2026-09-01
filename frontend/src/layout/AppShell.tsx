@@ -17,7 +17,6 @@ import { ThemeToggle } from "../components/ThemeToggle";
 import { CommandPalette } from "../components/CommandPalette";
 import { EmailVerificationBanner } from "../components/EmailVerificationBanner";
 import {
-  preloadAccountsConnectPage,
   preloadAccountsPage,
   preloadBankConnectionsPage,
   preloadDashboardPage,
@@ -35,9 +34,8 @@ const navItems = [
 ];
 
 const secondaryLinks = [
-  { to: "/accounts/connect", label: "Ligar banco", preload: preloadAccountsConnectPage },
-  { to: "/accounts/connections", label: "Bancos ligados", preload: preloadBankConnectionsPage },
-  { to: "/privacy", label: "Privacidade bancária", preload: () => undefined },
+  { to: "/accounts/connections", label: "Bancos", preload: preloadBankConnectionsPage },
+  { to: "/privacy", label: "Privacidade", preload: () => undefined },
 ];
 
 function Navigation({ mobile = false }: { mobile?: boolean }) {

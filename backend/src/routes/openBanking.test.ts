@@ -81,8 +81,12 @@ vi.mock("../prisma.js", () => ({
         },
       ),
       findMany: repositories.connectionFindMany.mockImplementation(
-        async ({ where }: { where: { userId?: string } }) =>
-          repositories.connections.filter((connection) => connection.userId === where.userId),
+        async ({ where }: { where: { userId?: string; status?: { not?: string } } }) =>
+          repositories.connections.filter((connection) => {
+            if (connection.userId !== where.userId) return false;
+            if (where.status?.not && connection.status === where.status.not) return false;
+            return true;
+          }),
       ),
       findFirst: repositories.connectionFindFirst.mockImplementation(
         async ({ where }: { where: { id?: string; userId?: string } }) =>
@@ -407,13 +411,24 @@ describe("open banking institutions, authorization and callback", () => {
       institutionName: "Outra pessoa",
       accounts: [],
     });
+    repositories.connections.push({
+      id: "conn-disconnected",
+      userId,
+      provider: "fake",
+      institutionName: "Banco antigo",
+      status: "disconnected",
+      accounts: [],
+    });
 
     const response = await fetch(`${baseUrl}/api/open-banking/connections`, {
       headers: { Authorization: authorization() },
     });
     const body = await response.json();
 
-    expect(repositories.connectionFindMany.mock.calls[0]![0].where).toEqual({ userId });
+    expect(repositories.connectionFindMany.mock.calls[0]![0].where).toEqual({
+      userId,
+      status: { not: "disconnected" },
+    });
     expect(body.data).toHaveLength(1);
     expect(body.data[0]).toMatchObject({
       id: "conn-1",

@@ -247,7 +247,7 @@ export function ExpensesPage() {
       <PageHeader
         eyebrow="Arquivo"
         title="Despesas"
-        description="Todos os movimentos, organizados num só lugar."
+        description="Registos manuais e gastos das contas ligadas ao banco, no mesmo arquivo."
         action={
           <div className="page-actions">
             <Link className="button button--secondary" to="/categories">
@@ -461,7 +461,7 @@ export function ExpensesPage() {
             description={
               hasFilters
                 ? "Experimente alargar o período, pesquisar outro termo ou remover um filtro."
-                : "O primeiro registo é o início de uma visão mais clara."
+                : "Registe à mão ou ligue o banco: cada gasto contabilizado passa a despesa."
             }
             action={
               hasFilters ? (
@@ -469,15 +469,20 @@ export function ExpensesPage() {
                   Limpar filtros
                 </button>
               ) : (
-                <Link
-                  className="button button--primary"
-                  to="/expenses/new"
-                  onPointerEnter={preloadExpenseFormPage}
-                  onPointerDown={preloadExpenseFormPage}
-                  onFocus={preloadExpenseFormPage}
-                >
-                  <Plus aria-hidden="true" /> Registar primeira despesa
-                </Link>
+                <div className="empty-actions">
+                  <Link
+                    className="button button--primary"
+                    to="/expenses/new"
+                    onPointerEnter={preloadExpenseFormPage}
+                    onPointerDown={preloadExpenseFormPage}
+                    onFocus={preloadExpenseFormPage}
+                  >
+                    <Plus aria-hidden="true" /> Registar primeira despesa
+                  </Link>
+                  <Link className="button button--secondary" to="/accounts/connect">
+                    Ligar banco
+                  </Link>
+                </div>
               )
             }
           />
@@ -511,13 +516,16 @@ export function ExpensesPage() {
                     )}
                   </div>
                   <div className="expense-row__main">
-                    <span className="category-tag">
-                      <CategoryIcon
-                        icon={expense.category?.icon}
-                        categoryName={expense.category?.name}
-                      />
-                      {expense.category?.name || "Sem categoria"}
-                    </span>
+                    <div className="expense-row__tags">
+                      <span className="category-tag">
+                        <CategoryIcon
+                          icon={expense.category?.icon}
+                          categoryName={expense.category?.name}
+                        />
+                        {expense.category?.name || "Sem categoria"}
+                      </span>
+                      {expense.source === "bank" && <span className="expense-origin">Banco</span>}
+                    </div>
                     <h3>{expense.description}</h3>
                     <div className="expense-row__meta">
                       <span>

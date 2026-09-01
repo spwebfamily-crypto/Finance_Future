@@ -79,7 +79,7 @@ export function BankTransactionRow({
             disabled={busy}
             onChange={(event) => onToggleAnalytics(transaction, event.target.checked)}
           />
-          <span>Excluir das análises</span>
+          <span>Não contar como despesa</span>
         </label>
       </div>
     </article>

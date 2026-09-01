@@ -77,6 +77,9 @@ const expensePublicSelect = {
   account: {
     select: { id: true, name: true, type: true },
   },
+  bankTransaction: {
+    select: { id: true },
+  },
 } satisfies Prisma.ExpenseSelect;
 
 type PublicExpenseRecord = Prisma.ExpenseGetPayload<{ select: typeof expensePublicSelect }>;
@@ -85,6 +88,7 @@ function presentExpense(expense: PublicExpenseRecord) {
   const {
     receiptImageUrl: legacyReceiptUrl,
     receiptMimeType: storedMimeType,
+    bankTransaction,
     ...publicExpense
   } = expense;
   const hasReceipt = Boolean(storedMimeType || legacyReceiptUrl);
@@ -96,6 +100,7 @@ function presentExpense(expense: PublicExpenseRecord) {
         : null;
   return {
     ...publicExpense,
+    source: bankTransaction ? "bank" : "manual",
     amount: expense.amount.toFixed(2),
     receiptImageUrl: hasReceipt ? `/api/expenses/${expense.id}/receipt` : null,
     receiptMimeType,

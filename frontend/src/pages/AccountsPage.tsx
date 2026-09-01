@@ -58,6 +58,11 @@ function isValidAccountBalance(value: string) {
   return Number.isFinite(parsed) && Math.abs(parsed) <= 9_999_999_999.99;
 }
 
+function isVisibleAccount(account: FinancialAccount) {
+  if (account.source !== "bank") return true;
+  return Boolean(account.connectionStatus) && account.connectionStatus !== "disconnected";
+}
+
 function AccountIcon({ type }: { type: AccountType }) {
   if (type === "credit_card") return <CreditCard aria-hidden="true" />;
   if (type === "cash") return <Banknote aria-hidden="true" />;
@@ -118,7 +123,7 @@ export function AccountsPage() {
     if (!bankConnectionOutcome) return;
     setNotice(
       bankConnectionOutcome === "success"
-        ? "Banco ligado. A primeira sincronização começou."
+        ? "Banco ligado. A primeira sincronização começou — os gastos contabilizados passam a despesas."
         : "Não foi possível concluir a ligação ao banco. Tente novamente.",
     );
     const nextParams = new URLSearchParams(searchParams);
@@ -132,7 +137,7 @@ export function AccountsPage() {
     setError("");
     try {
       await openBankingApi.sync(connectionId);
-      setNotice("Sincronização pedida.");
+      setNotice("Sincronização pedida. Os gastos entram em Despesas quando terminar.");
     } catch (requestError) {
       setError(errorMessage(requestError));
     } finally {
@@ -141,13 +146,15 @@ export function AccountsPage() {
   }
 
   const currency = user?.currency || "EUR";
+  const visibleAccounts = useMemo(() => accounts.filter(isVisibleAccount), [accounts]);
+  const hasLinkedBank = visibleAccounts.some((account) => account.source === "bank");
   const totalBalance = useMemo(
     () =>
-      accounts.reduce(
+      visibleAccounts.reduce(
         (total, account) => total + (account.currentBalance ?? account.openingBalance),
         0,
       ),
-    [accounts],
+    [visibleAccounts],
   );
 
   async function createAccount(event: FormEvent) {
@@ -280,7 +287,7 @@ export function AccountsPage() {
       <PageHeader
         eyebrow="Dinheiro disponível"
         title="Contas e cartões"
-        description="Acompanhe saldos reais, cartões e transferências sem transformar uma transferência numa despesa."
+        description="Saldos, cartões e transferências. Os gastos das contas ligadas ao banco entram automaticamente nas despesas."
         action={
           <>
             <button
@@ -301,11 +308,21 @@ export function AccountsPage() {
           {error}
         </div>
       )}
+      <p className={`accounts-insight${hasLinkedBank ? "" : " accounts-insight--invite"}`}>
+        {hasLinkedBank ? (
+          <>
+            Os gastos contabilizados das contas ligadas já estão em{" "}
+            <Link to="/expenses">Despesas</Link>.
+          </>
+        ) : (
+          "Ligue o banco uma vez: os gastos passam a despesas sem as escrever à mão."
+        )}
+      </p>
       <section className="accounts-total">
         <span>Saldo combinado</span>
         <strong>{formatCurrency(totalBalance, currency)}</strong>
         <small>
-          {accounts.length} {accounts.length === 1 ? "conta" : "contas"} registadas
+          {visibleAccounts.length} {visibleAccounts.length === 1 ? "conta" : "contas"} registadas
         </small>
       </section>
 
@@ -317,7 +334,7 @@ export function AccountsPage() {
               <h2 id="account-create-title">Nova conta</h2>
             </div>
           </div>
-          <details className="planning-disclosure" open={accounts.length === 0}>
+          <details className="planning-disclosure" open={visibleAccounts.length === 0}>
             <summary>
               <span>Adicionar conta</span>
               <small>Conta bancária, dinheiro ou cartão.</small>
@@ -396,12 +413,12 @@ export function AccountsPage() {
             </div>
             <ArrowRightLeft aria-hidden="true" />
           </div>
-          <details className="planning-disclosure" open={accounts.length < 2}>
+          <details className="planning-disclosure" open={visibleAccounts.length < 2}>
             <summary>
               <span>Fazer transferência</span>
               <small>Mover dinheiro entre duas contas.</small>
             </summary>
-            {accounts.length < 2 && (
+            {visibleAccounts.length < 2 && (
               <p className="planning-disclosure__hint">
                 Crie pelo menos duas contas antes de fazer uma transferência.
               </p>
@@ -417,7 +434,7 @@ export function AccountsPage() {
                     }
                   >
                     <option value="">Escolher</option>
-                    {accounts.map((account) => (
+                    {visibleAccounts.map((account) => (
                       <option key={account.id} value={account.id}>
                         {account.name}
                       </option>
@@ -433,7 +450,7 @@ export function AccountsPage() {
                     }
                   >
                     <option value="">Escolher</option>
-                    {accounts.map((account) => (
+                    {visibleAccounts.map((account) => (
                       <option key={account.id} value={account.id}>
                         {account.name}
                       </option>
@@ -478,7 +495,7 @@ export function AccountsPage() {
               </label>
               <button
                 className="button button--primary"
-                disabled={isSaving || accounts.length < 2}
+                disabled={isSaving || visibleAccounts.length < 2}
                 type="submit"
               >
                 Transferir
@@ -496,8 +513,8 @@ export function AccountsPage() {
           </div>
         </div>
         <div className="account-cards">
-          {accounts.length ? (
-            accounts.map((account) => {
+          {visibleAccounts.length ? (
+            visibleAccounts.map((account) => {
               const balance = account.currentBalance ?? account.openingBalance;
               const cardUse =
                 account.type === "credit_card" && account.creditLimit
@@ -512,13 +529,13 @@ export function AccountsPage() {
               const canSync = connection?.status === "active" || connection?.status === "error";
               return (
                 <article
-                  className={`account-card-large account-card-large--${account.type}`}
+                  className={`account-card-large account-card-large--${account.type}${isLinked ? " account-card-large--linked" : ""}`}
                   key={account.id}
                 >
                   <span className="account-card-large__icon">
                     <AccountIcon type={account.type} />
                   </span>
-                  <div>
+                  <div className="account-card-large__identity">
                     <p>{accountLabels[account.type]}</p>
                     <h3>
                       <Link to={`/accounts/${account.id}`}>{account.name}</Link>
@@ -528,26 +545,44 @@ export function AccountsPage() {
                     >
                       {isLinked ? "Ligada ao banco" : "Manual"}
                     </span>
+                    {(isLinked || cardUse !== null) && (
+                      <div className="account-card-large__meta">
+                        {isLinked &&
+                          account.availableBalance !== null &&
+                          account.availableBalance !== undefined && (
+                            <span>
+                              Disponível{" "}
+                              {formatCurrency(
+                                account.availableBalance,
+                                account.currency ?? currency,
+                              )}
+                            </span>
+                          )}
+                        {isLinked &&
+                          typeof account.derivedBalance === "number" &&
+                          typeof account.balanceDelta === "number" &&
+                          Math.abs(account.balanceDelta) >= 0.01 && (
+                            <span className="account-card-large__delta">
+                              Na app{" "}
+                              {formatCurrency(account.derivedBalance, account.currency ?? currency)}{" "}
+                              · diferença{" "}
+                              {formatCurrency(account.balanceDelta, account.currency ?? currency)}
+                            </span>
+                          )}
+                        {isLinked && (
+                          <span>
+                            {account.lastSyncedAt
+                              ? `Atualizado ${new Date(account.lastSyncedAt).toLocaleString("pt-PT")}`
+                              : "Ainda sem sincronização"}
+                          </span>
+                        )}
+                        {cardUse !== null && (
+                          <span>{Math.min(100, cardUse * 100).toFixed(0)}% do limite</span>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <strong>{formatCurrency(balance, account.currency ?? currency)}</strong>
-                  {isLinked &&
-                    account.availableBalance !== null &&
-                    account.availableBalance !== undefined && (
-                      <small>
-                        Disponível:{" "}
-                        {formatCurrency(account.availableBalance, account.currency ?? currency)}
-                      </small>
-                    )}
-                  {isLinked && (
-                    <small>
-                      {account.lastSyncedAt
-                        ? `Última atualização: ${new Date(account.lastSyncedAt).toLocaleString("pt-PT")}`
-                        : "Ainda sem sincronização"}
-                    </small>
-                  )}
-                  {cardUse !== null && (
-                    <small>{Math.min(100, cardUse * 100).toFixed(0)}% do limite utilizado</small>
-                  )}
                   <div className="account-card-large__actions">
                     {isLinked && connection && canSync && (
                       <button
@@ -594,7 +629,8 @@ export function AccountsPage() {
             })
           ) : (
             <p className="accounts-empty">
-              Crie a primeira conta acima para começar a acompanhar o seu saldo.
+              Crie uma conta ou ligue o banco para começar a acompanhar o saldo. Os gastos ligados
+              passam a despesas.
             </p>
           )}
         </div>

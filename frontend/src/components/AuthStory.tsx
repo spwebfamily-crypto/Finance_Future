@@ -1,5 +1,6 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { ShieldCheck } from "lucide-react";
+import { AuthFlowVisual } from "./AuthFlowVisual";
 import { Brand } from "./Brand";
 
 const storyContent = {
@@ -56,6 +57,7 @@ export function AuthStory({ variant }: { variant: keyof typeof storyContent }) {
           <p className="auth-story__headline">{content.title}</p>
           <p>{content.description}</p>
         </div>
+        <AuthFlowVisual />
       </motion.div>
       <div className="auth-story__footer">
         <ShieldCheck size={16} aria-hidden="true" /> {content.footer}

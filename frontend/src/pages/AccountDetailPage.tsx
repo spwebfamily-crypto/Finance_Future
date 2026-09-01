@@ -102,9 +102,12 @@ export function AccountDetailPage() {
     try {
       await openBankingApi.reviewTransaction(transaction.id, {
         excludedFromAnalytics: excluded,
-        classification: excluded ? "ignored" : undefined,
       });
-      setNotice(excluded ? "Movimento excluído das análises." : "Movimento volta às análises.");
+      setNotice(
+        excluded
+          ? "Este movimento deixou de contar como despesa."
+          : "Este gasto voltou às despesas.",
+      );
       await load();
     } catch (requestError) {
       setError(errorMessage(requestError));
@@ -135,7 +138,11 @@ export function AccountDetailPage() {
       <PageHeader
         eyebrow={account.source === "bank" ? "Conta ligada ao banco" : "Conta manual"}
         title={account.name}
-        description="Movimentos importados e registados nesta conta."
+        description={
+          account.source === "bank"
+            ? "Cada gasto contabilizado entra nas despesas. Pendentes e transferências próprias ficam de fora."
+            : "Saldo e movimentos desta conta."
+        }
         action={
           <Link className="button button--secondary" to="/accounts">
             <ArrowLeft aria-hidden="true" /> Voltar
@@ -147,6 +154,8 @@ export function AccountDetailPage() {
         <BankBalance
           currentBalance={account.currentBalance ?? account.openingBalance}
           availableBalance={account.source === "bank" ? account.availableBalance : null}
+          derivedBalance={account.derivedBalance}
+          balanceDelta={account.balanceDelta}
           balanceSource={account.balanceSource ?? "derived"}
           balanceAsOf={account.balanceAsOf ?? null}
           currency={currency}
@@ -164,6 +173,12 @@ export function AccountDetailPage() {
           <div>
             <p className="eyebrow">Movimentos</p>
             <h2 id="movements-title">Histórico da conta</h2>
+            {account.source === "bank" && (
+              <p className="section-heading__note">
+                Débitos contabilizados aparecem em Despesas. Use a categoria para os organizar, ou
+                exclua o que não quiser contar.
+              </p>
+            )}
           </div>
         </div>
 

@@ -51,6 +51,12 @@ function presentAccount(account: PublicAccount) {
 interface AccountBalanceView {
   currentBalance: number;
   availableBalance: number | null;
+  /** Saldo calculado a partir de movimentos (openingBalance + incomes − expenses ± transfers) */
+  derivedBalance: number;
+  /** Saldo reportado pelo banco (provider), se disponível */
+  providerBalance: number | null;
+  /** Diferença provider − derived (positivo = banco mostra mais) */
+  balanceDelta: number | null;
   balanceSource: "derived" | "provider";
   balanceAsOf: Date | null;
   connectionStatus: string | null;
@@ -58,18 +64,48 @@ interface AccountBalanceView {
 }
 
 /**
- * Contas ligadas usam o snapshot do banco como fonte principal: os movimentos
- * não voltam a ser somados. Contas manuais continuam com o saldo derivado.
+ * Para contas ligadas (source="bank"): mostra o saldo do banco como principal,
+ * mas inclui também o saldo derivado e o delta para reconciliação visual.
+ * Se o banco não devolve saldo, usa o derivado (com openingBalance semeado
+ * do primeiro saldo do banco, se ainda for 0).
+ * Para contas manuais: só o derivado.
  */
-function balanceView(account: PublicAccount, derivedBalance: Prisma.Decimal): AccountBalanceView {
+async function balanceView(
+  account: PublicAccount,
+  derivedBalance: Prisma.Decimal,
+  activity: Prisma.Decimal,
+): Promise<AccountBalanceView> {
   const connection = account.bankAccountLink?.connection ?? null;
-  const snapshot = account.providerCurrentBalance;
   const isLinked = account.source === "bank";
+  const providerSnapshot = account.providerCurrentBalance;
+  const providerAvailable = account.providerAvailableBalance;
 
-  if (isLinked && snapshot !== null) {
+  // Se for conta de banco e o openingBalance ainda é 0 (padrão), semeia com o
+  // primeiro snapshot do banco disponível. Isto evita que o derivado fique
+  // estruturalmente errado (0 + movimentos apenas da janela de importação).
+  let effectiveOpening = account.openingBalance;
+  let effectiveDerived = derivedBalance;
+  if (isLinked && effectiveOpening.isZero() && providerSnapshot !== null) {
+    effectiveOpening = providerSnapshot.sub(activity);
+    effectiveDerived = effectiveOpening.add(activity);
+    // Persiste o openingBalance semeado para futuras leituras.
+    await prisma.account.update({
+      where: { id: account.id },
+      data: { openingBalance: effectiveOpening },
+    });
+  }
+
+  const derivedNum = effectiveDerived.toDecimalPlaces(2).toNumber();
+  const providerNum = providerSnapshot?.toDecimalPlaces(2).toNumber() ?? null;
+  const delta = providerNum !== null ? providerNum - derivedNum : null;
+
+  if (isLinked && providerSnapshot !== null) {
     return {
-      currentBalance: snapshot.toDecimalPlaces(2).toNumber(),
-      availableBalance: account.providerAvailableBalance?.toDecimalPlaces(2).toNumber() ?? null,
+      currentBalance: providerNum!,
+      availableBalance: providerAvailable?.toDecimalPlaces(2).toNumber() ?? null,
+      derivedBalance: derivedNum,
+      providerBalance: providerNum,
+      balanceDelta: delta,
       balanceSource: "provider",
       balanceAsOf: account.providerBalanceUpdatedAt,
       connectionStatus: connection?.status ?? null,
@@ -78,8 +114,11 @@ function balanceView(account: PublicAccount, derivedBalance: Prisma.Decimal): Ac
   }
 
   return {
-    currentBalance: derivedBalance.toDecimalPlaces(2).toNumber(),
+    currentBalance: derivedNum,
     availableBalance: null,
+    derivedBalance: derivedNum,
+    providerBalance: null,
+    balanceDelta: null,
     balanceSource: "derived",
     balanceAsOf: null,
     connectionStatus: connection?.status ?? null,
@@ -92,15 +131,15 @@ function sum(values: Prisma.Decimal[]) {
 }
 
 function activityBalance(account: {
-  incomes: Array<{ amount: Prisma.Decimal }>;
-  expenses: Array<{ amount: Prisma.Decimal }>;
-  outgoingTransfers: Array<{ amount: Prisma.Decimal }>;
-  incomingTransfers: Array<{ amount: Prisma.Decimal }>;
+  incomes?: Array<{ amount: Prisma.Decimal }>;
+  expenses?: Array<{ amount: Prisma.Decimal }>;
+  outgoingTransfers?: Array<{ amount: Prisma.Decimal }>;
+  incomingTransfers?: Array<{ amount: Prisma.Decimal }>;
 }) {
-  return sum(account.incomes.map((income) => income.amount))
-    .sub(sum(account.expenses.map((expense) => expense.amount)))
-    .sub(sum(account.outgoingTransfers.map((transfer) => transfer.amount)))
-    .add(sum(account.incomingTransfers.map((transfer) => transfer.amount)));
+  return sum(account.incomes?.map((income) => income.amount) ?? [])
+    .sub(sum(account.expenses?.map((expense) => expense.amount) ?? []))
+    .sub(sum(account.outgoingTransfers?.map((transfer) => transfer.amount) ?? []))
+    .add(sum(account.incomingTransfers?.map((transfer) => transfer.amount) ?? []));
 }
 
 router.get("/", async (request: AuthenticatedRequest, response, next) => {
@@ -116,12 +155,18 @@ router.get("/", async (request: AuthenticatedRequest, response, next) => {
       },
       orderBy: [{ type: "asc" }, { name: "asc" }],
     });
-    return response.json({
-      data: accounts.map((account) => ({
-        ...presentAccount(account),
-        ...balanceView(account, account.openingBalance.add(activityBalance(account))),
-      })),
-    });
+    const accountsWithBalance = await Promise.all(
+      accounts.map(async (account) => {
+        const activity = activityBalance(account);
+        const derived = account.openingBalance.add(activity);
+        const balance = await balanceView(account, derived, activity);
+        return {
+          ...presentAccount(account),
+          ...balance,
+        };
+      }),
+    );
+    return response.json({ data: accountsWithBalance });
   } catch (error) {
     return next(error);
   }
@@ -134,11 +179,15 @@ router.post("/", async (request: AuthenticatedRequest, response, next) => {
       data: { ...input, creditLimit: input.creditLimit ?? null, userId: request.user!.id },
       select: accountSelect,
     });
+    const presented = presentAccount(account);
     return response.status(201).json({
       data: {
-        ...presentAccount(account),
-        currentBalance: presentAccount(account).openingBalance,
+        ...presented,
+        currentBalance: presented.openingBalance,
         availableBalance: null,
+        derivedBalance: presented.openingBalance,
+        providerBalance: null,
+        balanceDelta: null,
         balanceSource: "derived",
         balanceAsOf: null,
         connectionStatus: null,

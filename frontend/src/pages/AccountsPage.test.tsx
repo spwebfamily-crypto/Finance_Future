@@ -88,6 +88,6 @@ describe("AccountsPage account actions", () => {
 
     await waitFor(() => expect(api.remove).toHaveBeenCalledWith("account-1"));
     expect(await screen.findByText("Conta removida.")).toBeInTheDocument();
-    expect(screen.getByText(/Crie a primeira conta acima/)).toBeInTheDocument();
+    expect(screen.getByText(/Crie uma conta ou ligue o banco/)).toBeInTheDocument();
   });
 });

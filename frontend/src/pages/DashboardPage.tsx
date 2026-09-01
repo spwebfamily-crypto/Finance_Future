@@ -27,7 +27,7 @@ import {
   YAxis,
 } from "recharts";
 import { Link } from "react-router-dom";
-import { analyticsApi, budgetApi, categoryApi } from "../api/resources";
+import { accountApi, analyticsApi, budgetApi, categoryApi } from "../api/resources";
 import { errorMessage } from "../api/client";
 import { EmptyState, ErrorState, Spinner } from "../components/States";
 import { PageHeader } from "../components/PageHeader";
@@ -85,23 +85,34 @@ export function DashboardPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingLimit, setEditingLimit] = useState("");
   const [budgetDeleteTarget, setBudgetDeleteTarget] = useState<Budget | null>(null);
+  const [hasLinkedBank, setHasLinkedBank] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const [nextSummary, nextLevels, nextTrend, nextBudgets, nextCategories] = await Promise.all([
-        analyticsApi.summary(month),
-        analyticsApi.levels(month),
-        analyticsApi.trend(6, month),
-        budgetApi.list(),
-        categoryApi.list(),
-      ]);
+      const [nextSummary, nextLevels, nextTrend, nextBudgets, nextCategories, accounts] =
+        await Promise.all([
+          analyticsApi.summary(month),
+          analyticsApi.levels(month),
+          analyticsApi.trend(6, month),
+          budgetApi.list(),
+          categoryApi.list(),
+          accountApi.list().catch(() => []),
+        ]);
       setSummary(nextSummary);
       setLevels(nextLevels);
       setTrend(nextTrend.series);
       setBudgets(nextBudgets);
       setCategories(nextCategories);
+      setHasLinkedBank(
+        accounts.some(
+          (account) =>
+            account.source === "bank" &&
+            account.connectionStatus &&
+            account.connectionStatus !== "disconnected",
+        ),
+      );
     } catch (requestError) {
       setError(errorMessage(requestError));
     } finally {
@@ -244,7 +255,7 @@ export function DashboardPage() {
       <PageHeader
         eyebrow={`Visão geral / ${selectedMonth.replace("-", ".")}`}
         title="O seu mês, num relance"
-        description="Totais, tendências e limites sem distrações."
+        description="Totais, tendências e limites. Os gastos do banco entram neste mês."
         action={
           <label className="month-picker">
             <span>Mês em análise</span>
@@ -313,13 +324,20 @@ export function DashboardPage() {
                 <small>Ver vencimentos, metas e alertas.</small>
               </div>
             </Link>
-            <Link className="dashboard-shortcut dashboard-shortcut--account" to="/accounts">
+            <Link
+              className="dashboard-shortcut dashboard-shortcut--account"
+              to={hasLinkedBank ? "/accounts" : "/accounts/connect"}
+            >
               <span>
                 <Landmark aria-hidden="true" />
               </span>
               <div>
-                <strong>Ver contas</strong>
-                <small>Conferir o saldo e transferir dinheiro.</small>
+                <strong>{hasLinkedBank ? "Ver contas" : "Ligar banco"}</strong>
+                <small>
+                  {hasLinkedBank
+                    ? "Gastos do banco já estão neste total."
+                    : "Os gastos entram sozinhos nas despesas."}
+                </small>
               </div>
             </Link>
           </section>
@@ -329,6 +347,11 @@ export function DashboardPage() {
               <h2 id="total-title">
                 <AnimatedCurrency value={summary.total} currency={currency} />
               </h2>
+              <p className="dashboard-total__source">
+                {hasLinkedBank
+                  ? "Inclui os gastos das contas ligadas ao banco."
+                  : "Ligue um banco para os gastos contabilizados entrarem sozinhos."}
+              </p>
             </div>
             <div
               className={`dashboard-total__compare ${summary.changeAmount > 0 ? "is-up" : "is-down"}`}

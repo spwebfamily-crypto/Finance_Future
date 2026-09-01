@@ -325,4 +325,29 @@ describe("expense listing pagination", () => {
     expect(body.error.code).toBe("VALIDATION_ERROR");
     expect(repositories.expenseFindMany).not.toHaveBeenCalled();
   });
+
+  it("marks a bank-originated expense without leaking the movement identifier", async () => {
+    repositories.expenseFindMany.mockResolvedValue([
+      { ...presentedExpense, bankTransaction: { id: "bank-tx-1" } },
+    ]);
+
+    const response = await fetch(`${baseUrl}/api/expenses`, {
+      headers: { Authorization: authorization() },
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.data[0].source).toBe("bank");
+    expect(body.data[0].bankTransaction).toBeUndefined();
+  });
+
+  it("marks a manual expense as manual", async () => {
+    const response = await fetch(`${baseUrl}/api/expenses`, {
+      headers: { Authorization: authorization() },
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.data[0].source).toBe("manual");
+  });
 });

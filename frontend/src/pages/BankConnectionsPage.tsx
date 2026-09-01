@@ -21,7 +21,7 @@ export function BankConnectionsPage() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState(
     searchParams.get("bankConnection") === "success"
-      ? "Banco ligado. A primeira sincronização começou."
+      ? "Banco ligado. A primeira sincronização começou — os gastos contabilizados passam a despesas."
       : "",
   );
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -86,7 +86,7 @@ export function BankConnectionsPage() {
             hasFinishedJob = true;
             setNotice(
               status.status === "completed"
-                ? "Sincronização concluída."
+                ? "Sincronização concluída. Os gastos contabilizados já estão em Despesas."
                 : `Sincronização terminada com o estado ${status.status}.`,
             );
           }
@@ -115,7 +115,7 @@ export function BankConnectionsPage() {
     try {
       const job = await openBankingApi.sync(connection.id);
       setPendingJobs((jobs) => [...jobs, { connectionId: connection.id, jobId: job.jobId }]);
-      setNotice("Sincronização pedida.");
+      setNotice("Sincronização pedida. Os gastos entram em Despesas quando terminar.");
     } catch (requestError) {
       setError(errorMessage(requestError));
     } finally {
@@ -174,16 +174,15 @@ export function BankConnectionsPage() {
     );
   }
 
-  const active = connections.filter((connection) => connection.status !== "disconnected");
-  const disconnected = connections.filter((connection) => connection.status === "disconnected");
+  const live = connections.filter((connection) => connection.status !== "disconnected");
 
   return (
     <div className="page page--connections">
       <NoticeToast message={notice} onClose={() => setNotice("")} />
       <PageHeader
-        eyebrow="Open Banking"
+        eyebrow="Bancos"
         title="Bancos ligados"
-        description="Veja o estado do consentimento, renove o acesso, sincronize movimentos ou desligue o banco."
+        description="Sincronize para trazer gastos como despesas. Renove o acesso ou desligue quando quiser."
         action={
           <button
             type="button"
@@ -205,9 +204,9 @@ export function BankConnectionsPage() {
         <h2 id="active-connections" className="section-title">
           Ligações ativas
         </h2>
-        {active.length ? (
+        {live.length ? (
           <div className="bank-connection-grid">
-            {active.map((connection) => (
+            {live.map((connection) => (
               <BankConnectionCard
                 key={connection.id}
                 connection={connection}
@@ -224,31 +223,11 @@ export function BankConnectionsPage() {
           </div>
         ) : (
           <p className="accounts-empty">
-            Ainda não tem bancos ligados. Ligue um banco para importar saldos e movimentos.
+            Ainda não tem bancos ligados. Ligue um banco para importar saldos — cada gasto
+            contabilizado passa a despesa.
           </p>
         )}
       </section>
-
-      {disconnected.length > 0 && (
-        <section aria-labelledby="closed-connections">
-          <h2 id="closed-connections" className="section-title">
-            Ligações encerradas
-          </h2>
-          <div className="bank-connection-grid">
-            {disconnected.map((connection) => (
-              <BankConnectionCard
-                key={connection.id}
-                connection={connection}
-                logoUrl={institutionLogos.get(connection.institutionId)}
-                busy={false}
-                onSync={(target) => void sync(target)}
-                onReauthorize={(target) => void reauthorize(target)}
-                onDisconnect={(target) => setDisconnectTarget(target)}
-              />
-            ))}
-          </div>
-        </section>
-      )}
 
       <DisconnectBankDialog
         open={Boolean(disconnectTarget)}

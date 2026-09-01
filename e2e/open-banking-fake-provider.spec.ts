@@ -59,6 +59,10 @@ test("liga um banco, sincroniza, categoriza e desliga conservando os dados", asy
   // O separador de milhares depende da ICU do navegador: aceita-se 1.250,30 e 1250,30.
   await expect(page.getByText(/1\.?250,30/).first()).toBeVisible();
 
+  await page.goto("/expenses");
+  await expect(page.getByText("Compra Continente")).toBeVisible();
+  await expect(page.locator(".expense-origin", { hasText: "Banco" })).toBeVisible();
+
   await page.goto("/accounts/connections");
   await expect(page.getByRole("heading", { name: "Bancos ligados" })).toBeVisible();
   await expect(page.getByText("Ligação ativa")).toBeVisible();

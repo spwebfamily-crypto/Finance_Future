@@ -8,6 +8,8 @@ export interface MaterializationCounters {
   incomesCreated: number;
   refundsDetected: number;
   skipped: number;
+  categoryCreated: number;
+  dematerialized: number;
 }
 
 /**
@@ -31,27 +33,57 @@ function dayDifference(left: Date, right: Date) {
   return Math.abs(left.getTime() - right.getTime()) / 86_400_000;
 }
 
-async function defaultCategoryId(userId: string): Promise<string | null> {
-  const category =
-    (await prisma.category.findFirst({
-      where: { userId, name: "Outros" },
-      select: { id: true },
-    })) ??
-    (await prisma.category.findFirst({
-      where: { userId, isDefault: true },
-      select: { id: true },
-    })) ??
-    (await prisma.category.findFirst({ where: { userId }, select: { id: true } }));
-  return category?.id ?? null;
+/** Garante que existe uma categoria fallback ("Outros" ou a primeira do utilizador). */
+async function getOrCreateFallbackCategoryId(
+  userId: string,
+): Promise<{ id: string; created: boolean }> {
+  const outros = await prisma.category.findFirst({
+    where: { userId, name: "Outros" },
+    select: { id: true },
+  });
+  if (outros) return { id: outros.id, created: false };
+
+  const def = await prisma.category.findFirst({
+    where: { userId, isDefault: true },
+    select: { id: true },
+  });
+  if (def) return { id: def.id, created: false };
+
+  const any = await prisma.category.findFirst({ where: { userId }, select: { id: true } });
+  if (any) return { id: any.id, created: false };
+
+  const created = await prisma.category.create({
+    data: { userId, name: "Outros", icon: "sparkles", isDefault: true },
+  });
+  return { id: created.id, created: true };
 }
 
-async function removeMaterialization(transaction: BankTransaction) {
-  if (transaction.expenseId) await prisma.expense.delete({ where: { id: transaction.expenseId } });
-  if (transaction.incomeId) await prisma.income.delete({ where: { id: transaction.incomeId } });
-  await prisma.bankTransaction.update({
-    where: { id: transaction.id },
-    data: { expenseId: null, incomeId: null },
-  });
+/** Obtém ID de categoria, criando fallback se necessário. */
+async function defaultCategoryId(userId: string): Promise<{ id: string; created: boolean }> {
+  return getOrCreateFallbackCategoryId(userId);
+}
+
+/**
+ * Remove a materialização existente de um movimento e limpa a referência no
+ * BankTransaction. Devolve `true` se algo foi removido.
+ */
+async function removeMaterialization(transaction: BankTransaction): Promise<boolean> {
+  let removed = false;
+  if (transaction.expenseId) {
+    await prisma.expense.delete({ where: { id: transaction.expenseId } });
+    removed = true;
+  }
+  if (transaction.incomeId) {
+    await prisma.income.delete({ where: { id: transaction.incomeId } });
+    removed = true;
+  }
+  if (removed) {
+    await prisma.bankTransaction.update({
+      where: { id: transaction.id },
+      data: { expenseId: null, incomeId: null },
+    });
+  }
+  return removed;
 }
 
 /**
@@ -189,6 +221,8 @@ export async function materializeBookedTransactions(
     incomesCreated: 0,
     refundsDetected: 0,
     skipped: 0,
+    categoryCreated: 0,
+    dematerialized: 0,
   };
 
   const transactions = await prisma.bankTransaction.findMany({
@@ -203,32 +237,47 @@ export async function materializeBookedTransactions(
   let categoryId: string | null = null;
 
   for (const transaction of transactions as BankTransaction[]) {
+    // 1) Transferência própria emparelhada — nunca materializa, mas garante que
+    // não tenha despesa/rendimento órfão.
     if (transaction.classification === "internal_transfer") {
-      // Transferência própria: não é despesa nem rendimento.
-      counters.skipped += 1;
-      continue;
-    }
-    if (transaction.classification === "ignored" || transaction.excludedFromAnalytics) {
+      const removed = await removeMaterialization(transaction);
+      if (removed) counters.dematerialized += 1;
       counters.skipped += 1;
       continue;
     }
 
+    // 2) Utilizador pediu para ignorar/excluir — remove materialização existente.
+    if (transaction.classification === "ignored" || transaction.excludedFromAnalytics) {
+      const removed = await removeMaterialization(transaction);
+      if (removed) counters.dematerialized += 1;
+      counters.skipped += 1;
+      continue;
+    }
+
+    // 3) Débito = despesa
     if (transaction.direction === "debit") {
       if (transaction.transferId) {
+        // Já emparelhado como transferência (mas classification não internal_transfer?).
+        // Remove materialização órfã se houver.
+        const removed = await removeMaterialization(transaction);
+        if (removed) counters.dematerialized += 1;
         counters.skipped += 1;
         continue;
       }
-      if (!categoryId) categoryId = await defaultCategoryId(userId);
       if (!categoryId) {
-        counters.skipped += 1;
-        continue;
+        const fallback = await defaultCategoryId(userId);
+        categoryId = fallback.id;
+        if (fallback.created) counters.categoryCreated += 1;
       }
       const created = await materializeExpense(transaction, categoryId);
       if (created) counters.expensesCreated += 1;
       continue;
     }
 
+    // 4) Crédito = rendimento (exceto se já for transferência)
     if (transaction.transferId) {
+      const removed = await removeMaterialization(transaction);
+      if (removed) counters.dematerialized += 1;
       counters.skipped += 1;
       continue;
     }

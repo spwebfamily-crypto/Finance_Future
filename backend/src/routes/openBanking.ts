@@ -33,6 +33,7 @@ import { FakeOpenBankingProvider } from "../open-banking/fakeOpenBankingProvider
 import { createOpenBankingProvider } from "../open-banking/providerFactory.js";
 import { hasActiveJob, processSyncJob } from "../open-banking/syncService.js";
 import { disconnectConnection, replaceSession } from "../open-banking/disconnectService.js";
+import { materializeBookedTransactions } from "../open-banking/materialize.js";
 
 /**
  * Open Banking está sempre atrás de feature flag. Com a flag desligada as rotas
@@ -261,7 +262,7 @@ router.get(
   async (request: AuthenticatedRequest, response, next) => {
     try {
       const connections = await prisma.bankConnection.findMany({
-        where: { userId: request.user!.id },
+        where: { userId: request.user!.id, status: { not: "disconnected" } },
         select: {
           id: true,
           institutionId: true,
@@ -619,6 +620,13 @@ router.patch(
         if (!category) throw bankError(404, "CATEGORY_NOT_FOUND");
       }
 
+      const nextClassification =
+        input.excludedFromAnalytics === true
+          ? "ignored"
+          : input.excludedFromAnalytics === false && !input.classification
+            ? "unreviewed"
+            : input.classification;
+
       const updated = await prisma.$transaction(async (client) => {
         if (input.categoryId && transaction.expenseId) {
           // A categoria da despesa é atualizada na mesma transação de base de dados.
@@ -631,7 +639,7 @@ router.patch(
         return client.bankTransaction.update({
           where: { id: transaction.id },
           data: {
-            ...(input.classification ? { classification: input.classification } : {}),
+            ...(nextClassification ? { classification: nextClassification } : {}),
             ...(input.excludedFromAnalytics !== undefined
               ? { excludedFromAnalytics: input.excludedFromAnalytics }
               : {}),
@@ -644,6 +652,9 @@ router.patch(
           },
         });
       });
+
+      // Gastos contabilizados voltam a despesa (ou saem delas) de imediato.
+      await materializeBookedTransactions(request.user!.id);
 
       return response.json({ data: updated });
     } catch (error) {

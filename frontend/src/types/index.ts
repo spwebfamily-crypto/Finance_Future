@@ -43,6 +43,7 @@ export interface Expense {
   location: string;
   amount: string | number;
   date: string;
+  source?: "manual" | "bank";
   receiptImageUrl?: string | null;
   receiptMimeType?: "application/pdf" | "image/*" | null;
   createdAt?: string;
@@ -160,6 +161,9 @@ export interface FinancialAccount {
   creditLimit?: number | null;
   currentBalance?: number;
   availableBalance?: number | null;
+  derivedBalance?: number;
+  providerBalance?: number | null;
+  balanceDelta?: number | null;
   balanceSource?: BalanceSource;
   balanceAsOf?: string | null;
   connectionStatus?: BankConnectionStatus | null;

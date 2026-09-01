@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Landmark, WifiOff } from "lucide-react";
+import { ArrowRight, Landmark, ShieldCheck, WifiOff } from "lucide-react";
 import { BankConsentNotice } from "../components/BankConsentNotice";
 import { InstitutionPicker } from "../components/InstitutionPicker";
-import { LoadingState } from "../components/States";
+import { LoadingState, Spinner } from "../components/States";
 import { PageHeader } from "../components/PageHeader";
 import { openBankingApi } from "../api/resources";
 import { errorMessage } from "../api/client";
@@ -73,7 +73,6 @@ export function AccountsConnectPage() {
         psuType,
         returnPath: "/accounts",
       });
-      // O utilizador é encaminhado para o ambiente do próprio banco.
       window.location.assign(authorization.authorizationUrl);
     } catch (requestError) {
       setError(errorMessage(requestError));
@@ -92,10 +91,34 @@ export function AccountsConnectPage() {
   return (
     <div className="page page--connect">
       <PageHeader
-        eyebrow="Open Banking"
+        eyebrow="Ligar banco"
         title="Ligar um banco"
-        description="Escolha o banco, confirme o consentimento no ambiente do próprio banco e as contas passam a atualizar-se sozinhas."
+        description="Autorize a leitura no próprio banco. Cada gasto contabilizado passa a despesa — no arquivo, no painel e nos limites."
       />
+
+      <ol className="connect-steps" aria-label="Como funciona">
+        <li className={selected ? "is-done" : "is-current"}>
+          <span>1</span>
+          <div>
+            <strong>Escolha o banco</strong>
+            <small>Só leitura de saldos e movimentos.</small>
+          </div>
+        </li>
+        <li className={selected ? "is-current" : ""}>
+          <span>2</span>
+          <div>
+            <strong>Confirme no banco</strong>
+            <small>A palavra-passe nunca passa por aqui.</small>
+          </div>
+        </li>
+        <li>
+          <span>3</span>
+          <div>
+            <strong>Gastos viram despesas</strong>
+            <small>Ficam no arquivo no instante da sincronização.</small>
+          </div>
+        </li>
+      </ol>
 
       {error && (
         <div className="form-alert form-alert--page" role="alert">
@@ -112,31 +135,31 @@ export function AccountsConnectPage() {
         </p>
       )}
 
-      <div className="connect-grid">
-        <section className="accounts-panel" aria-labelledby="psu-title">
-          <div className="section-heading">
+      <div className="connect-layout">
+        <section className="accounts-panel accounts-panel--quiet" aria-labelledby="psu-title">
+          <div className="connect-toolbar">
             <div>
-              <p className="eyebrow">Tipo de conta</p>
-              <h2 id="psu-title">Conta pessoal ou empresarial</h2>
+              <p className="eyebrow">Banco</p>
+              <h2 id="psu-title">Onde está o dinheiro</h2>
             </div>
-          </div>
-          <div className="segmented-control" role="group" aria-label="Tipo de conta">
-            <button
-              type="button"
-              className={psuType === "personal" ? "is-active" : ""}
-              aria-pressed={psuType === "personal"}
-              onClick={() => setPsuType("personal")}
-            >
-              Pessoal
-            </button>
-            <button
-              type="button"
-              className={psuType === "business" ? "is-active" : ""}
-              aria-pressed={psuType === "business"}
-              onClick={() => setPsuType("business")}
-            >
-              Empresarial
-            </button>
+            <div className="segmented-control" role="group" aria-label="Tipo de conta">
+              <button
+                type="button"
+                className={psuType === "personal" ? "is-active" : ""}
+                aria-pressed={psuType === "personal"}
+                onClick={() => setPsuType("personal")}
+              >
+                Pessoal
+              </button>
+              <button
+                type="button"
+                className={psuType === "business" ? "is-active" : ""}
+                aria-pressed={psuType === "business"}
+                onClick={() => setPsuType("business")}
+              >
+                Empresarial
+              </button>
+            </div>
           </div>
 
           {institutions.length ? (
@@ -155,31 +178,36 @@ export function AccountsConnectPage() {
           )}
         </section>
 
-        <section className="accounts-panel" aria-labelledby="consent-title">
-          <div className="section-heading">
-            <div>
-              <p className="eyebrow">Consentimento</p>
-              <h2 id="consent-title">O que vai autorizar</h2>
-            </div>
-          </div>
+        <aside className="connect-aside">
           <BankConsentNotice institutionName={selected?.name} />
-          <button
-            type="button"
-            className="button button--accent"
-            disabled={!selected || isSubmitting || !isOnline}
-            onClick={() => void continueInBank()}
-          >
-            Continuar no banco
-          </button>
-          {!selected && <p className="planning-disclosure__hint">Escolha primeiro o banco.</p>}
-          <button
-            type="button"
-            className="button button--secondary"
-            onClick={() => navigate("/accounts")}
-          >
-            Voltar às contas
-          </button>
-        </section>
+          <div className="connect-cta">
+            <button
+              type="button"
+              className="button button--accent button--wide"
+              disabled={!selected || isSubmitting || !isOnline}
+              onClick={() => void continueInBank()}
+            >
+              {isSubmitting ? (
+                <Spinner label="A abrir o banco" />
+              ) : (
+                <>
+                  Continuar no banco <ArrowRight aria-hidden="true" />
+                </>
+              )}
+            </button>
+            {!selected && <p className="planning-disclosure__hint">Escolha primeiro o banco.</p>}
+            <p className="connect-cta__trust">
+              <ShieldCheck aria-hidden="true" /> Só leitura. Pode desligar quando quiser.
+            </p>
+            <button
+              type="button"
+              className="button button--ghost button--wide"
+              onClick={() => navigate("/accounts")}
+            >
+              Voltar às contas
+            </button>
+          </div>
+        </aside>
       </div>
     </div>
   );
