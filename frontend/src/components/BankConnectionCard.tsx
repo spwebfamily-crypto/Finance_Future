@@ -22,7 +22,10 @@ export function BankConnectionCard({
   const needsReauth =
     connection.status === "reauth_required" ||
     connection.status === "expired" ||
-    connection.status === "revoked";
+    connection.status === "revoked" ||
+    // Uma ligação em erro não pode ser sincronizada de novo com segurança: a
+    // renovação cria uma nova sessão sem apagar os dados já importados.
+    connection.status === "error";
   const canSync = connection.status === "active";
 
   return (

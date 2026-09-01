@@ -11,6 +11,9 @@ const labels: Record<BankConnectionStatus, string> = {
   error: "Erro na última sincronização",
 };
 
+const errorRecoveryHint =
+  "Não foi possível concluir a leitura do banco. Renove o acesso para criar uma nova sessão segura.";
+
 /**
  * Estado da ligação. Nunca se escreve "tempo real": o texto é sempre sobre a
  * última atualização conhecida.
@@ -39,6 +42,7 @@ export function BankSyncStatus({
     <p className={`bank-status bank-status--${status}`}>
       {icon}
       <span>{labels[status]}</span>
+      {status === "error" && !compact && <small>{errorRecoveryHint}</small>}
       {!compact && lastSyncedAt && (
         <small>Última atualização: {new Date(lastSyncedAt).toLocaleString("pt-PT")}</small>
       )}
