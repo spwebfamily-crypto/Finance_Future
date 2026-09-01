@@ -27,7 +27,7 @@ import type {
 const CONSENT_VALIDITY_DAYS = 90;
 const MAX_ACCOUNTS_PER_SESSION = 25;
 const INSTITUTIONS_CACHE_MS = 60 * 60 * 1000;
-const ALLOWED_AUTH_HOSTS = ["auth.enablebanking.com"];
+const ALLOWED_AUTH_HOSTS = ["auth.enablebanking.com", "tilisy.enablebanking.com"];
 
 interface RawAspsp {
   name?: unknown;
