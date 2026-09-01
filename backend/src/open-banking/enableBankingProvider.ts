@@ -188,7 +188,10 @@ export class EnableBankingProvider implements OpenBankingProvider {
         // Uma conta inacessível não impede a sincronização das restantes.
       }
     }
-    return this.toSession(response, accounts);
+    // `GET /sessions/{session_id}` não devolve o próprio `session_id`; ele já
+    // está no caminho do pedido. Mantê-lo como fallback evita rejeitar uma
+    // sessão autorizada cuja resposta segue o formato oficial do provedor.
+    return this.toSession(response, accounts, sessionId);
   }
 
   async getAccount(input: ProviderAccountContext): Promise<ProviderAccount> {
@@ -248,8 +251,12 @@ export class EnableBankingProvider implements OpenBankingProvider {
     });
   }
 
-  private toSession(raw: RawSession, accounts: RawAccount[]): ProviderSession {
-    const sessionId = typeof raw.session_id === "string" ? raw.session_id : null;
+  private toSession(
+    raw: RawSession,
+    accounts: RawAccount[],
+    fallbackSessionId: string | null = null,
+  ): ProviderSession {
+    const sessionId = typeof raw.session_id === "string" ? raw.session_id : fallbackSessionId;
     if (!sessionId) throw new ProviderError("provider_invalid_response");
     const validUntil = raw.access?.valid_until;
     return {

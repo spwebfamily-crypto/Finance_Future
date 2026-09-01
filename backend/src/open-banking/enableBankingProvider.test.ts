@@ -176,6 +176,32 @@ describe("enable banking authorization", () => {
       expect(session.status).toBe(expected);
     }
   });
+
+  it("uses the requested session id when GET /sessions omits it", async () => {
+    const { provider, calls } = stubRequest(({ path }) => {
+      if (path === "/sessions/sess-1") {
+        return {
+          status: "AUTHORIZED",
+          aspsp: { name: "Banco Demo", country: "PT" },
+          psu_type: "personal",
+          access: { valid_until: "2026-11-29T12:00:00Z" },
+          accounts_data: [{ uid: account.uid, identification_hash: account.identification_hash }],
+        };
+      }
+      if (path === `/accounts/${account.uid}/details`) return account;
+      throw new Error(`Pedido inesperado: ${path}`);
+    });
+
+    const session = await provider.getSession("sess-1");
+
+    expect(session.providerSessionId).toBe("sess-1");
+    expect(session.status).toBe("authorized");
+    expect(session.accounts).toHaveLength(1);
+    expect(calls.map((call) => call.path)).toEqual([
+      "/sessions/sess-1",
+      `/accounts/${account.uid}/details`,
+    ]);
+  });
 });
 
 describe("enable banking balances and transactions", () => {
