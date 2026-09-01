@@ -161,7 +161,7 @@ export async function enableBankingRequest<T>(
         parsed && typeof parsed === "object" && "error" in parsed
           ? (parsed as { error?: unknown }).error
           : null;
-      console.error("[Enable Banking debug]", response.status, debugCode);
+      console.error("[Enable Banking debug]", path, response.status, debugCode);
       throw mapEnableBankingError(response.status, parsed);
     }
     return parsed as T;

@@ -158,6 +158,7 @@ export class EnableBankingProvider implements OpenBankingProvider {
       },
     });
 
+    console.error("[Enable Banking debug] /auth response", JSON.stringify(response));
     return {
       authorizationUrl: requireHttps(response.url, ALLOWED_AUTH_HOSTS),
       providerAuthorizationId:
