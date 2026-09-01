@@ -6695,21 +6695,30 @@ h3 {
   background: var(--brand-soft);
 }
 
-.institution-item__logo {
+.bank-logo {
   display: grid;
-  width: 2rem;
-  height: 2rem;
   place-items: center;
   overflow: hidden;
   color: var(--brand);
   background: var(--surface);
-  border-radius: var(--radius-sm);
 }
 
-.institution-item__logo img {
+.bank-logo img {
   width: 100%;
   height: 100%;
   object-fit: contain;
+}
+
+.institution-item__logo {
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-sm);
+  border: 0.0625rem solid color-mix(in srgb, var(--line) 72%, transparent);
+}
+
+.institution-item--selected .institution-item__logo {
+  background: var(--surface);
+  border-color: color-mix(in srgb, var(--brand) 35%, var(--line));
 }
 
 .institution-item__name {
@@ -6867,8 +6876,9 @@ h3 {
   width: 2.5rem;
   height: 2.5rem;
   place-items: center;
-  color: var(--brand);
-  background: var(--brand-soft);
+  color: var(--brand-dark);
+  background: var(--surface-soft);
+  border: 0.0625rem solid color-mix(in srgb, var(--brand) 16%, var(--line));
   border-radius: var(--radius-md);
 }
 
