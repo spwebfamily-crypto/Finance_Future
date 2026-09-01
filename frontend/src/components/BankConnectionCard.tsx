@@ -22,11 +22,10 @@ export function BankConnectionCard({
   const needsReauth =
     connection.status === "reauth_required" ||
     connection.status === "expired" ||
-    connection.status === "revoked" ||
-    // Uma ligação em erro não pode ser sincronizada de novo com segurança: a
-    // renovação cria uma nova sessão sem apagar os dados já importados.
-    connection.status === "error";
-  const canSync = connection.status === "active";
+    connection.status === "revoked";
+  // Um erro não significa necessariamente que o consentimento deixou de ser
+  // válido. Primeiro permite-se repetir a leitura usando a mesma sessão.
+  const canSync = connection.status === "active" || connection.status === "error";
 
   return (
     <article className="bank-connection-card">
@@ -44,7 +43,11 @@ export function BankConnectionCard({
         </div>
       </header>
 
-      <BankSyncStatus status={connection.status} lastSyncedAt={connection.lastSyncedAt} />
+      <BankSyncStatus
+        status={connection.status}
+        lastSyncedAt={connection.lastSyncedAt}
+        errorCode={connection.error?.code}
+      />
 
       {connection.consentExpiresAt && (
         <p className="bank-connection-card__consent">
@@ -72,7 +75,7 @@ export function BankConnectionCard({
             disabled={busy}
           >
             {busy ? <Spinner label="A sincronizar" /> : <RefreshCw aria-hidden="true" />}
-            <span>Sincronizar</span>
+            <span>{connection.status === "error" ? "Tentar novamente" : "Sincronizar"}</span>
           </button>
         )}
         <button

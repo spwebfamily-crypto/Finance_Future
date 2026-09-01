@@ -12,7 +12,7 @@ const labels: Record<BankConnectionStatus, string> = {
 };
 
 const errorRecoveryHint =
-  "Não foi possível concluir a leitura do banco. Renove o acesso para criar uma nova sessão segura.";
+  "Não foi possível concluir a leitura do banco. Tente sincronizar novamente; se persistir, renove o acesso.";
 
 /**
  * Estado da ligação. Nunca se escreve "tempo real": o texto é sempre sobre a
@@ -21,10 +21,12 @@ const errorRecoveryHint =
 export function BankSyncStatus({
   status,
   lastSyncedAt,
+  errorCode,
   compact = false,
 }: {
   status: BankConnectionStatus;
   lastSyncedAt?: string | null;
+  errorCode?: string | null;
   compact?: boolean;
 }) {
   const icon =
@@ -42,7 +44,12 @@ export function BankSyncStatus({
     <p className={`bank-status bank-status--${status}`}>
       {icon}
       <span>{labels[status]}</span>
-      {status === "error" && !compact && <small>{errorRecoveryHint}</small>}
+      {status === "error" && !compact && (
+        <>
+          <small>{errorRecoveryHint}</small>
+          {errorCode && <small>Código de diagnóstico: {errorCode}</small>}
+        </>
+      )}
       {!compact && lastSyncedAt && (
         <small>Última atualização: {new Date(lastSyncedAt).toLocaleString("pt-PT")}</small>
       )}

@@ -397,7 +397,14 @@ router.post(
       if (connection.status === "revoked" || connection.status === "expired") {
         throw bankError(409, "BANK_CONNECTION_EXPIRED");
       }
-      if (connection.status !== "active" && connection.status !== "reauth_required") {
+      // Uma falha de sincronização não invalida, por si só, o consentimento.
+      // Permitir uma nova tentativa evita obrigar o utilizador a autorizar o
+      // banco novamente quando a indisponibilidade foi apenas temporária.
+      if (
+        connection.status !== "active" &&
+        connection.status !== "reauth_required" &&
+        connection.status !== "error"
+      ) {
         throw bankError(409, "BANK_CONNECTION_REAUTH_REQUIRED");
       }
 

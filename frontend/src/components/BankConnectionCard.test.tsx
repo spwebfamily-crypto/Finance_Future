@@ -20,21 +20,24 @@ const failedConnection: BankConnectionSummary = {
 };
 
 describe("BankConnectionCard", () => {
-  it("offers safe recovery for a failed synchronization without disconnecting", async () => {
+  it("allows a failed synchronization to be retried without disconnecting", async () => {
     const onReauthorize = vi.fn();
+    const onSync = vi.fn();
     const user = userEvent.setup();
 
     render(
       <BankConnectionCard
         connection={failedConnection}
-        onSync={() => undefined}
+        onSync={onSync}
         onReauthorize={onReauthorize}
         onDisconnect={() => undefined}
       />,
     );
 
     expect(screen.getByText(/Não foi possível concluir a leitura do banco/i)).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Renovar acesso" }));
-    expect(onReauthorize).toHaveBeenCalledWith(failedConnection);
+    expect(screen.getByText("Código de diagnóstico: SYNC_FAILED")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Tentar novamente" }));
+    expect(onSync).toHaveBeenCalledWith(failedConnection);
+    expect(onReauthorize).not.toHaveBeenCalled();
   });
 });
