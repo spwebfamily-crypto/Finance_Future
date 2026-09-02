@@ -90,4 +90,29 @@ describe("AccountsPage account actions", () => {
     expect(await screen.findByText("Conta removida.")).toBeInTheDocument();
     expect(screen.getByText(/Crie uma conta ou ligue o banco/)).toBeInTheDocument();
   });
+
+  it("keeps balances in different currencies separate", async () => {
+    api.list.mockResolvedValueOnce([
+      { ...account, currency: "EUR" },
+      {
+        ...account,
+        id: "account-usd",
+        name: "Conta USD",
+        currency: "USD",
+        currentBalance: 80,
+      },
+    ]);
+
+    render(
+      <MemoryRouter>
+        <AccountsPage />
+      </MemoryRouter>,
+    );
+
+    expect((await screen.findAllByText(/125,00/)).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/80,00/).length).toBeGreaterThan(0);
+    const combined = screen.getByText("Saldo combinado").closest("section");
+    expect(combined).toHaveTextContent("€");
+    expect(combined).toHaveTextContent("US$");
+  });
 });

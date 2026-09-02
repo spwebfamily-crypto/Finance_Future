@@ -48,8 +48,9 @@ export function normalizeCurrency(value: unknown): string | null {
 export function mapBalanceType(value: unknown): ProviderBalanceKind {
   switch (value) {
     case "CLBD":
-    case "PRCD":
       return "closing_booked";
+    case "PRCD":
+      return "previously_closed_booked";
     case "CLAV":
       return "closing_available";
     case "ITBD":

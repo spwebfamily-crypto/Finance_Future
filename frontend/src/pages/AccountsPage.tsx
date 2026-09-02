@@ -40,6 +40,7 @@ const initialTransfer = {
   description: "",
   date: todayInputValue(),
 };
+const SYNC_POLL_INTERVAL_MS = 1_500;
 
 const accountLabels: Record<AccountType, string> = {
   current: "À ordem",
@@ -78,6 +79,9 @@ export function AccountsPage() {
   const [transfers, setTransfers] = useState<AccountTransfer[]>([]);
   const [connections, setConnections] = useState<BankConnectionSummary[]>([]);
   const [syncingConnectionId, setSyncingConnectionId] = useState<string | null>(null);
+  const [pendingSyncJobs, setPendingSyncJobs] = useState<
+    Array<{ connectionId: string; jobId: string }>
+  >([]);
   const [accountForm, setAccountForm] = useState(initialAccount);
   const [transferForm, setTransferForm] = useState(initialTransfer);
   const [isLoading, setIsLoading] = useState(true);
@@ -117,6 +121,37 @@ export function AccountsPage() {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    if (!pendingSyncJobs.length) return;
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      const remaining: typeof pendingSyncJobs = [];
+      let completed = false;
+      for (const pending of pendingSyncJobs) {
+        try {
+          const job = await openBankingApi.syncJob(pending.jobId);
+          if (job.status === "queued" || job.status === "running") remaining.push(pending);
+          else if (job.status === "completed") completed = true;
+          else if (!cancelled)
+            setError("A sincronização bancária não foi concluída. Tente novamente.");
+        } catch {
+          if (!cancelled) setError("Não foi possível confirmar a sincronização bancária.");
+        }
+      }
+      if (cancelled) return;
+      setPendingSyncJobs(remaining);
+      if (!remaining.length) setSyncingConnectionId(null);
+      if (completed) {
+        setNotice("Sincronização concluída. Saldos e movimentos foram atualizados.");
+        void load();
+      }
+    }, SYNC_POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [pendingSyncJobs, load]);
+
   // Resultado do callback do banco: `?bankConnection=success|error&reason=...`.
   const bankConnectionOutcome = searchParams.get("bankConnection");
   useEffect(() => {
@@ -136,11 +171,11 @@ export function AccountsPage() {
     setSyncingConnectionId(connectionId);
     setError("");
     try {
-      await openBankingApi.sync(connectionId);
-      setNotice("Sincronização pedida. Os gastos entram em Despesas quando terminar.");
+      const job = await openBankingApi.sync(connectionId);
+      setPendingSyncJobs((jobs) => [...jobs, { connectionId, jobId: job.jobId }]);
+      setNotice("A sincronizar saldos e movimentos…");
     } catch (requestError) {
       setError(errorMessage(requestError));
-    } finally {
       setSyncingConnectionId(null);
     }
   }
@@ -148,14 +183,17 @@ export function AccountsPage() {
   const currency = user?.currency || "EUR";
   const visibleAccounts = useMemo(() => accounts.filter(isVisibleAccount), [accounts]);
   const hasLinkedBank = visibleAccounts.some((account) => account.source === "bank");
-  const totalBalance = useMemo(
-    () =>
-      visibleAccounts.reduce(
-        (total, account) => total + (account.currentBalance ?? account.openingBalance),
-        0,
-      ),
-    [visibleAccounts],
-  );
+  const balancesByCurrency = useMemo(() => {
+    const totals = new Map<string, number>();
+    for (const account of visibleAccounts) {
+      const accountCurrency = account.currency || currency;
+      totals.set(
+        accountCurrency,
+        (totals.get(accountCurrency) ?? 0) + (account.currentBalance ?? account.openingBalance),
+      );
+    }
+    return [...totals.entries()];
+  }, [currency, visibleAccounts]);
 
   async function createAccount(event: FormEvent) {
     event.preventDefault();
@@ -320,7 +358,15 @@ export function AccountsPage() {
       </p>
       <section className="accounts-total">
         <span>Saldo combinado</span>
-        <strong>{formatCurrency(totalBalance, currency)}</strong>
+        <div className="accounts-total__values">
+          {balancesByCurrency.length ? (
+            balancesByCurrency.map(([accountCurrency, total]) => (
+              <strong key={accountCurrency}>{formatCurrency(total, accountCurrency)}</strong>
+            ))
+          ) : (
+            <strong>{formatCurrency(0, currency)}</strong>
+          )}
+        </div>
         <small>
           {visibleAccounts.length} {visibleAccounts.length === 1 ? "conta" : "contas"} registadas
         </small>

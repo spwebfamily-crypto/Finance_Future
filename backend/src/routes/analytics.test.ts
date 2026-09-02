@@ -12,6 +12,8 @@ const repositories = vi.hoisted(() => ({
   categoryFindMany: vi.fn(),
   budgetFindMany: vi.fn(),
   expenseFindMany: vi.fn(),
+  incomeFindMany: vi.fn(),
+  transferFindMany: vi.fn(),
 }));
 
 vi.mock("../prisma.js", () => ({
@@ -20,6 +22,8 @@ vi.mock("../prisma.js", () => ({
     category: { findMany: repositories.categoryFindMany },
     budget: { findMany: repositories.budgetFindMany },
     expense: { findMany: repositories.expenseFindMany },
+    income: { findMany: repositories.incomeFindMany },
+    transfer: { findMany: repositories.transferFindMany },
   },
 }));
 
@@ -69,6 +73,8 @@ describe("analytics daily summary", () => {
       ]);
     repositories.budgetFindMany.mockReset().mockResolvedValue([]);
     repositories.expenseFindMany.mockReset();
+    repositories.incomeFindMany.mockReset().mockResolvedValue([]);
+    repositories.transferFindMany.mockReset().mockResolvedValue([]);
   });
 
   it("groups current-month expenses by UTC calendar day", async () => {
@@ -107,6 +113,70 @@ describe("analytics daily summary", () => {
       categoryId: true,
       amount: true,
       date: true,
+    });
+  });
+
+  it("returns today's expenses, income and transfers as one clear movement list", async () => {
+    repositories.expenseFindMany.mockResolvedValueOnce([
+      {
+        id: "expense-1",
+        description: "Supermercado",
+        amount: new Prisma.Decimal("24.50"),
+        date: new Date("2026-09-02T00:00:00.000Z"),
+        createdAt: new Date("2026-09-02T10:00:00.000Z"),
+        category: { name: "Alimentação", icon: "utensils" },
+        account: { name: "Conta à ordem", source: "bank" },
+        bankTransaction: { id: "bank-transaction-1" },
+      },
+    ]);
+    repositories.incomeFindMany.mockResolvedValueOnce([
+      {
+        id: "income-1",
+        description: "Reembolso",
+        amount: new Prisma.Decimal("10.00"),
+        date: new Date("2026-09-02T00:00:00.000Z"),
+        createdAt: new Date("2026-09-02T11:00:00.000Z"),
+        account: { name: "Conta à ordem", source: "bank" },
+        bankTransaction: { id: "bank-transaction-2" },
+      },
+    ]);
+    repositories.transferFindMany.mockResolvedValueOnce([
+      {
+        id: "transfer-1",
+        description: null,
+        amount: new Prisma.Decimal("50.00"),
+        date: new Date("2026-09-02T00:00:00.000Z"),
+        createdAt: new Date("2026-09-02T09:00:00.000Z"),
+        fromAccount: { name: "Conta à ordem" },
+        toAccount: { name: "Poupança" },
+        bankTransactions: [],
+      },
+    ]);
+
+    const response = await fetch(`${baseUrl}/api/analytics/today`, {
+      headers: { Authorization: authorization() },
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.data).toMatchObject({
+      expenseTotal: 24.5,
+      incomeTotal: 10,
+      netTotal: -14.5,
+    });
+    expect(body.data.items.map((item: { type: string }) => item.type)).toEqual([
+      "income",
+      "expense",
+      "transfer",
+    ]);
+    expect(body.data.items[1]).toMatchObject({
+      description: "Supermercado",
+      source: "bank",
+      categoryName: "Alimentação",
+    });
+    expect(repositories.expenseFindMany.mock.calls[0][0].where.date).toEqual({
+      gte: expect.any(Date),
+      lt: expect.any(Date),
     });
   });
 });

@@ -21,6 +21,7 @@ export type ProviderBalanceKind =
   | "interim_available"
   | "expected"
   | "opening_booked"
+  | "previously_closed_booked"
   | "other";
 
 /** Tipos de conta normalizados a partir de `cash_account_type` (ISO 20022). */

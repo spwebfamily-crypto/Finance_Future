@@ -26,11 +26,19 @@ async function userContext(userId: string) {
     select: { timeZone: true, currency: true },
   });
   const timeZone = user?.timeZone ?? "Europe/Lisbon";
+  const now = new Date();
+  const monthContext = currentMonthContext(now, timeZone);
   return {
-    ...currentMonthContext(new Date(), timeZone),
+    ...monthContext,
+    today: `${monthContext.month}-${String(monthContext.elapsedDays).padStart(2, "0")}`,
     timeZone,
     currency: user?.currency ?? "EUR",
   };
+}
+
+function dateBounds(day: string) {
+  const start = new Date(`${day}T00:00:00.000Z`);
+  return { start, end: new Date(start.getTime() + 86_400_000) };
 }
 
 function validateSelectedMonth(
@@ -55,6 +63,110 @@ async function categoriesAndBudgets(userId: string) {
   ]);
   return { categories, budgets: new Map(budgets.map((budget) => [budget.categoryId, budget])) };
 }
+
+router.get("/today", async (request: AuthenticatedRequest, response, next) => {
+  try {
+    const context = await userContext(request.user!.id);
+    const { start, end } = dateBounds(context.today);
+    const [expenses, incomes, transfers] = await Promise.all([
+      prisma.expense.findMany({
+        where: { userId: request.user!.id, date: { gte: start, lt: end } },
+        select: {
+          id: true,
+          description: true,
+          amount: true,
+          date: true,
+          createdAt: true,
+          category: { select: { name: true, icon: true } },
+          account: { select: { name: true, source: true } },
+          bankTransaction: { select: { id: true } },
+        },
+      }),
+      prisma.income.findMany({
+        where: { userId: request.user!.id, date: { gte: start, lt: end } },
+        select: {
+          id: true,
+          description: true,
+          amount: true,
+          date: true,
+          createdAt: true,
+          account: { select: { name: true, source: true } },
+          bankTransaction: { select: { id: true } },
+        },
+      }),
+      prisma.transfer.findMany({
+        where: { userId: request.user!.id, date: { gte: start, lt: end } },
+        select: {
+          id: true,
+          description: true,
+          amount: true,
+          date: true,
+          createdAt: true,
+          fromAccount: { select: { name: true } },
+          toAccount: { select: { name: true } },
+          bankTransactions: { select: { id: true }, take: 1 },
+        },
+      }),
+    ]);
+
+    const expenseTotal = sum(expenses.map((item) => item.amount));
+    const incomeTotal = sum(incomes.map((item) => item.amount));
+    const items = [
+      ...expenses.map((item) => ({
+        id: item.id,
+        type: "expense" as const,
+        description: item.description,
+        amount: moneyNumber(item.amount),
+        date: item.date,
+        createdAt: item.createdAt,
+        accountName: item.account?.name ?? null,
+        categoryName: item.category.name,
+        categoryIcon: item.category.icon,
+        source: item.bankTransaction || item.account?.source === "bank" ? "bank" : "manual",
+      })),
+      ...incomes.map((item) => ({
+        id: item.id,
+        type: "income" as const,
+        description: item.description,
+        amount: moneyNumber(item.amount),
+        date: item.date,
+        createdAt: item.createdAt,
+        accountName: item.account?.name ?? null,
+        categoryName: null,
+        categoryIcon: null,
+        source: item.bankTransaction || item.account?.source === "bank" ? "bank" : "manual",
+      })),
+      ...transfers.map((item) => ({
+        id: item.id,
+        type: "transfer" as const,
+        description: item.description || `Transferência para ${item.toAccount.name}`,
+        amount: moneyNumber(item.amount),
+        date: item.date,
+        createdAt: item.createdAt,
+        accountName: `${item.fromAccount.name} → ${item.toAccount.name}`,
+        categoryName: null,
+        categoryIcon: null,
+        source: item.bankTransactions.length ? ("bank" as const) : ("manual" as const),
+      })),
+    ]
+      .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime())
+      .map(({ createdAt: _createdAt, ...item }) => item);
+
+    return response.json({
+      data: {
+        date: context.today,
+        timeZone: context.timeZone,
+        currency: context.currency,
+        expenseTotal: moneyNumber(expenseTotal),
+        incomeTotal: moneyNumber(incomeTotal),
+        netTotal: moneyNumber(incomeTotal.sub(expenseTotal)),
+        items,
+      },
+    });
+  } catch (error) {
+    return next(error);
+  }
+});
 
 router.get("/summary", async (request: AuthenticatedRequest, response, next) => {
   try {

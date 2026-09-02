@@ -221,6 +221,10 @@ describe("enable banking balances and transactions", () => {
           balance_type: "XPCD",
           balance_amount: { currency: "EUR", amount: "1170.00" },
         },
+        {
+          balance_type: "PRCD",
+          balance_amount: { currency: "EUR", amount: "1200.00" },
+        },
       ],
     }));
 
@@ -232,6 +236,12 @@ describe("enable banking balances and transactions", () => {
       { kind: "closing_booked", amount: "1250.30", currency: "EUR", referenceDate: "2026-08-30" },
       { kind: "closing_available", amount: "1180.30", currency: "EUR", referenceDate: null },
       { kind: "expected", amount: "1170.00", currency: "EUR", referenceDate: null },
+      {
+        kind: "previously_closed_booked",
+        amount: "1200.00",
+        currency: "EUR",
+        referenceDate: null,
+      },
     ]);
   });
 

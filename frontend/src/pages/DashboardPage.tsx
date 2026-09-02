@@ -11,8 +11,10 @@ import {
   Pencil,
   Plus,
   ReceiptText,
+  Repeat2,
   ShieldCheck,
   Trash2,
+  WalletCards,
 } from "lucide-react";
 import {
   Bar,
@@ -36,7 +38,14 @@ import { ConfirmDialog } from "../components/ConfirmDialog";
 import { NoticeToast } from "../components/NoticeToast";
 import { AnimatedCurrency } from "../components/AnimatedCurrency";
 import { SpendingHeatmap } from "../components/SpendingHeatmap";
-import type { AnalyticsSummary, Budget, Category, SpendingLevelItem } from "../types";
+import type {
+  AnalyticsSummary,
+  Budget,
+  Category,
+  FinancialAccount,
+  SpendingLevelItem,
+  TodaySummary,
+} from "../types";
 import { formatCurrency, parseSignedMoney, todayInputValue } from "../utils/format";
 
 const palette = ["var(--brand)", "#8fbe5f", "#d5a443", "#698076", "#8d74b7", "#d97864"];
@@ -72,6 +81,8 @@ export function DashboardPage() {
   const reduceMotion = useReducedMotion();
   const [month, setMonth] = useState(currentMonth);
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
+  const [today, setToday] = useState<TodaySummary | null>(null);
+  const [accounts, setAccounts] = useState<FinancialAccount[]>([]);
   const [levels, setLevels] = useState<SpendingLevelItem[]>([]);
   const [trend, setTrend] = useState<{ month: string; total: number }[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
@@ -91,22 +102,32 @@ export function DashboardPage() {
     setLoading(true);
     setError("");
     try {
-      const [nextSummary, nextLevels, nextTrend, nextBudgets, nextCategories, accounts] =
-        await Promise.all([
-          analyticsApi.summary(month),
-          analyticsApi.levels(month),
-          analyticsApi.trend(6, month),
-          budgetApi.list(),
-          categoryApi.list(),
-          accountApi.list().catch(() => []),
-        ]);
+      const [
+        nextSummary,
+        nextToday,
+        nextLevels,
+        nextTrend,
+        nextBudgets,
+        nextCategories,
+        nextAccounts,
+      ] = await Promise.all([
+        analyticsApi.summary(month),
+        analyticsApi.today(),
+        analyticsApi.levels(month),
+        analyticsApi.trend(6, month),
+        budgetApi.list(),
+        categoryApi.list(),
+        accountApi.list().catch(() => []),
+      ]);
       setSummary(nextSummary);
+      setToday(nextToday);
       setLevels(nextLevels);
       setTrend(nextTrend.series);
       setBudgets(nextBudgets);
       setCategories(nextCategories);
+      setAccounts(nextAccounts);
       setHasLinkedBank(
-        accounts.some(
+        nextAccounts.some(
           (account) =>
             account.source === "bank" &&
             account.connectionStatus &&
@@ -125,6 +146,26 @@ export function DashboardPage() {
   }, [load]);
 
   const currency = summary?.currency || "EUR";
+  const visibleAccounts = useMemo(
+    () =>
+      accounts.filter(
+        (account) =>
+          account.source !== "bank" ||
+          (Boolean(account.connectionStatus) && account.connectionStatus !== "disconnected"),
+      ),
+    [accounts],
+  );
+  const accountTotals = useMemo(() => {
+    const totals = new Map<string, number>();
+    for (const account of visibleAccounts) {
+      const accountCurrency = account.currency || currency;
+      totals.set(
+        accountCurrency,
+        (totals.get(accountCurrency) ?? 0) + (account.currentBalance ?? account.openingBalance),
+      );
+    }
+    return [...totals.entries()];
+  }, [currency, visibleAccounts]);
   const unbudgetedCategories = useMemo(
     () =>
       categories.filter((category) => !budgets.some((budget) => budget.categoryId === category.id)),
@@ -253,9 +294,9 @@ export function DashboardPage() {
     <div className="page page--dashboard">
       <NoticeToast message={notice} onClose={() => setNotice("")} />
       <PageHeader
-        eyebrow={`Visão geral / ${selectedMonth.replace("-", ".")}`}
-        title="O seu mês, num relance"
-        description="Totais, tendências e limites. Os gastos do banco entram neste mês."
+        eyebrow="Visão geral"
+        title="Hoje, sem complicações"
+        description="Veja o movimento do dia, os saldos e o mês no mesmo lugar."
         action={
           <label className="month-picker">
             <span>Mês em análise</span>
@@ -341,6 +382,107 @@ export function DashboardPage() {
               </div>
             </Link>
           </section>
+          {today && (
+            <section className="today-overview" aria-labelledby="today-title">
+              <div className="today-overview__summary">
+                <div className="section-heading today-overview__heading">
+                  <div>
+                    <p className="eyebrow">Movimento do dia</p>
+                    <h2 id="today-title">Hoje</h2>
+                  </div>
+                  <Link className="text-button" to="/expenses">
+                    Ver todos
+                  </Link>
+                </div>
+                <div className="today-metrics">
+                  <article>
+                    <span>Entradas</span>
+                    <strong className="is-positive">
+                      +{formatCurrency(today.incomeTotal, today.currency)}
+                    </strong>
+                  </article>
+                  <article>
+                    <span>Saídas</span>
+                    <strong className="is-negative">
+                      −{formatCurrency(today.expenseTotal, today.currency)}
+                    </strong>
+                  </article>
+                  <article className="today-metrics__net">
+                    <span>Resultado do dia</span>
+                    <strong className={today.netTotal >= 0 ? "is-positive" : "is-negative"}>
+                      {today.netTotal > 0 ? "+" : ""}
+                      {formatCurrency(today.netTotal, today.currency)}
+                    </strong>
+                  </article>
+                </div>
+                <div className="today-balance">
+                  <span className="today-balance__icon" aria-hidden="true">
+                    <WalletCards />
+                  </span>
+                  <div>
+                    <span>Saldo das contas</span>
+                    {accountTotals.length ? (
+                      <div className="today-balance__values">
+                        {accountTotals.map(([accountCurrency, total]) => (
+                          <strong key={accountCurrency}>
+                            {formatCurrency(total, accountCurrency)}
+                          </strong>
+                        ))}
+                      </div>
+                    ) : (
+                      <Link to="/accounts/connect">Adicionar ou ligar uma conta</Link>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="today-overview__activity">
+                <div className="today-overview__activity-title">
+                  <span>Atividade</span>
+                  <small>
+                    {today.items.length} {today.items.length === 1 ? "movimento" : "movimentos"}
+                  </small>
+                </div>
+                {today.items.length ? (
+                  <ul className="today-activity-list">
+                    {today.items.slice(0, 6).map((item) => (
+                      <li key={`${item.type}-${item.id}`}>
+                        <span className={`today-activity-list__icon is-${item.type}`}>
+                          {item.type === "expense" ? (
+                            <ArrowDownRight aria-hidden="true" />
+                          ) : item.type === "income" ? (
+                            <ArrowUpRight aria-hidden="true" />
+                          ) : (
+                            <Repeat2 aria-hidden="true" />
+                          )}
+                        </span>
+                        <div>
+                          <strong>{item.description}</strong>
+                          <small>
+                            {[
+                              item.categoryName,
+                              item.accountName,
+                              item.source === "bank" ? "Banco" : null,
+                            ]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </small>
+                        </div>
+                        <strong className={`today-activity-list__amount is-${item.type}`}>
+                          {item.type === "expense" ? "−" : item.type === "income" ? "+" : ""}
+                          {formatCurrency(item.amount, today.currency)}
+                        </strong>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="today-empty">
+                    <p>Ainda não há movimentos hoje.</p>
+                    <Link to="/expenses/new">Registar uma despesa</Link>
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
           <section className="dashboard-total" aria-labelledby="total-title">
             <div>
               <p className="eyebrow">Total em {monthLabel(selectedMonth)}</p>

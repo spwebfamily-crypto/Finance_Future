@@ -226,7 +226,7 @@ describe("dedupe keys", () => {
 });
 
 describe("balance selection", () => {
-  it("prefers closing booked for the current balance and closing available for the available one", () => {
+  it("prefers the latest interim balances over end-of-day snapshots", () => {
     const selected = selectBalances([
       { kind: "interim_available", amount: "90.00", currency: "EUR", referenceDate: null },
       { kind: "closing_available", amount: "95.00", currency: "EUR", referenceDate: null },
@@ -234,8 +234,18 @@ describe("balance selection", () => {
       { kind: "closing_booked", amount: "100.00", currency: "EUR", referenceDate: "2026-08-30" },
     ]);
 
-    expect(selected.current?.toFixed(2)).toBe("100.00");
-    expect(selected.available?.toFixed(2)).toBe("95.00");
+    expect(selected.current?.toFixed(2)).toBe("99.00");
+    expect(selected.available?.toFixed(2)).toBe("90.00");
+  });
+
+  it("uses the provider instant balance when it is available", () => {
+    const selected = selectBalances([
+      { kind: "closing_booked", amount: "100.00", currency: "EUR", referenceDate: null },
+      { kind: "interim_booked", amount: "95.00", currency: "EUR", referenceDate: null },
+      { kind: "expected", amount: "92.50", currency: "EUR", referenceDate: null },
+    ]);
+
+    expect(selected.current?.toFixed(2)).toBe("92.50");
   });
 
   it("falls back to interim booked when there is no closing balance", () => {
@@ -244,6 +254,20 @@ describe("balance selection", () => {
     ]);
     expect(selected.current?.toFixed(2)).toBe("12.34");
     expect(selected.available).toBeNull();
+  });
+
+  it("uses a previously closed balance only when no current booked snapshot exists", () => {
+    const selected = selectBalances([
+      {
+        kind: "previously_closed_booked",
+        amount: "80.00",
+        currency: "EUR",
+        referenceDate: "2026-08-29",
+      },
+      { kind: "closing_booked", amount: "100.00", currency: "EUR", referenceDate: "2026-08-30" },
+    ]);
+
+    expect(selected.current?.toFixed(2)).toBe("100.00");
   });
 });
 

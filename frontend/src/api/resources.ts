@@ -19,6 +19,7 @@ import type {
   Budget,
   BudgetInput,
   AnalyticsSummary,
+  TodaySummary,
   SpendingLevelItem,
   AnalyticsTrend,
   FinancialProfile,
@@ -194,6 +195,8 @@ export const budgetApi = {
 };
 
 export const analyticsApi = {
+  today: async () =>
+    unwrap(await apiRequest<ApiEnvelope<TodaySummary> | TodaySummary>("/analytics/today")),
   summary: async (month: string) =>
     unwrap(
       await apiRequest<ApiEnvelope<AnalyticsSummary> | AnalyticsSummary>(

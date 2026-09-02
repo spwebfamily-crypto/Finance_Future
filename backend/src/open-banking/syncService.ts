@@ -195,21 +195,23 @@ function accountTypeFor(type: string): "current" | "savings" | "cash" | "credit_
   }
 }
 
-/** Escolhe o saldo contabilístico e o disponível a partir dos snapshots do banco. */
+/** Escolhe o saldo mais atual e o disponível a partir dos snapshots do banco. */
 export function selectBalances(balances: ProviderBalance[]) {
-  const booked =
-    balances.find((balance) => balance.kind === "closing_booked") ??
+  const current =
+    balances.find((balance) => balance.kind === "expected") ??
     balances.find((balance) => balance.kind === "interim_booked") ??
+    balances.find((balance) => balance.kind === "closing_booked") ??
+    balances.find((balance) => balance.kind === "previously_closed_booked") ??
     balances.find((balance) => balance.kind === "opening_booked") ??
     null;
   const available =
-    balances.find((balance) => balance.kind === "closing_available") ??
     balances.find((balance) => balance.kind === "interim_available") ??
+    balances.find((balance) => balance.kind === "closing_available") ??
     null;
   return {
-    current: booked ? new Prisma.Decimal(booked.amount) : null,
+    current: current ? new Prisma.Decimal(current.amount) : null,
     available: available ? new Prisma.Decimal(available.amount) : null,
-    currency: booked?.currency ?? available?.currency ?? null,
+    currency: current?.currency ?? available?.currency ?? null,
   };
 }
 

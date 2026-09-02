@@ -296,6 +296,28 @@ export interface AnalyticsSummary {
   byCategory: CategorySummary[];
 }
 
+export interface TodayActivityItem {
+  id: string;
+  type: "expense" | "income" | "transfer";
+  description: string;
+  amount: number;
+  date: string;
+  accountName: string | null;
+  categoryName: string | null;
+  categoryIcon: string | null;
+  source: "manual" | "bank";
+}
+
+export interface TodaySummary {
+  date: string;
+  timeZone: string;
+  currency: string;
+  expenseTotal: number;
+  incomeTotal: number;
+  netTotal: number;
+  items: TodayActivityItem[];
+}
+
 export interface DailyTotal {
   day: string;
   total: number;
