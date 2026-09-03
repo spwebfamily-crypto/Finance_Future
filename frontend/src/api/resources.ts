@@ -84,12 +84,14 @@ export const authApi = {
       auth: false,
       body: { name: name.trim(), email: email.trim().toLowerCase(), password },
     }),
-  logout: (refreshToken: string) =>
-    apiRequest<{ ok: boolean }>("/auth/logout", {
-      method: "POST",
-      auth: false,
-      body: { refreshToken },
-    }),
+  logout: async (refreshToken: string) =>
+    unwrap(
+      await apiRequest<ApiEnvelope<{ ok: true }>>("/auth/logout", {
+        method: "POST",
+        auth: false,
+        body: { refreshToken },
+      }),
+    ),
   verifyEmail: async (token: string) => {
     const payload = await apiRequest<ApiEnvelope<{ user: User }> | { user: User }>(
       "/auth/verify-email",
@@ -97,11 +99,29 @@ export const authApi = {
     );
     return unwrap(payload).user;
   },
-  resendVerification: () =>
-    apiRequest<ApiEnvelope<{ ok: boolean }> | { ok: boolean }>("/auth/resend-verification", {
-      method: "POST",
-    }),
-  me: () => unwrap(apiRequest<ApiEnvelope<User> | User>("/auth/me")),
+  resendVerification: async () =>
+    unwrap(
+      await apiRequest<ApiEnvelope<{ ok: true }>>("/auth/resend-verification", {
+        method: "POST",
+      }),
+    ),
+  me: async () => unwrap(await apiRequest<ApiEnvelope<User> | User>("/auth/me")),
+  forgotPassword: async (email: string) =>
+    unwrap(
+      await apiRequest<ApiEnvelope<{ ok: true }>>("/auth/forgot-password", {
+        method: "POST",
+        auth: false,
+        body: { email: email.trim().toLowerCase() },
+      }),
+    ),
+  resetPassword: async (token: string, password: string) =>
+    unwrap(
+      await apiRequest<ApiEnvelope<{ ok: true }>>("/auth/reset-password", {
+        method: "POST",
+        auth: false,
+        body: { token, password },
+      }),
+    ),
   updateProfile: (input: UserProfileInput) =>
     unwrap(
       apiRequest<ApiEnvelope<User> | User>("/auth/me", {

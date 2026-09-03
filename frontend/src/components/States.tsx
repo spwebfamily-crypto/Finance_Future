@@ -2,11 +2,18 @@ import { AlertCircle, Inbox, RotateCcw } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Brand } from "./Brand";
 
-export function Spinner({ label = "A carregar" }: { label?: string }) {
+export function Spinner({
+  label = "A carregar",
+  hideLabel = false,
+}: {
+  label?: string;
+  hideLabel?: boolean;
+}) {
+  const text = label.trim() || "A carregar";
   return (
     <span className="spinner" role="status">
       <span aria-hidden="true" />
-      {label}
+      {hideLabel ? <span className="sr-only">{text}</span> : text}
     </span>
   );
 }

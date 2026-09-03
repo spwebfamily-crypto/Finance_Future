@@ -5,9 +5,11 @@ import { prisma } from "../prisma.js";
 import { requireAuth, sendError } from "../middleware.js";
 import type { AuthenticatedRequest } from "../types.js";
 import {
+  generatePasswordResetToken,
   generateVerificationToken,
   hashPassword,
   hashToken,
+  passwordResetExpiresAt,
   publicUser,
   refreshExpiresAt,
   signAccessToken,
@@ -16,12 +18,15 @@ import {
   verifyPassword,
   verifyRefreshToken,
 } from "../lib/auth.js";
-import { sendVerificationEmail } from "../services/emailService.js";
+import { sendPasswordResetEmail, sendVerificationEmail } from "../services/emailService.js";
+import { env } from "../config.js";
 import {
+  forgotPasswordSchema,
   loginSchema,
   profileUpdateSchema,
   refreshSchema,
   registerSchema,
+  resetPasswordSchema,
   verifyEmailSchema,
 } from "../validation.js";
 
@@ -32,6 +37,32 @@ const router = Router();
 export const authLimiter = rateLimit({
   windowMs: 15 * 60_000,
   limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: {
+      code: "RATE_LIMITED",
+      message: "Demasiadas tentativas. Tente novamente dentro de alguns minutos.",
+    },
+  },
+});
+
+export const forgotPasswordLimiter = rateLimit({
+  windowMs: 15 * 60_000,
+  limit: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: {
+      code: "RATE_LIMITED",
+      message: "Demasiadas tentativas. Tente novamente dentro de alguns minutos.",
+    },
+  },
+});
+
+export const refreshLimiter = rateLimit({
+  windowMs: 15 * 60_000,
+  limit: 30,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -233,7 +264,88 @@ router.post(
   },
 );
 
-router.post("/refresh", async (request, response, next) => {
+router.post("/forgot-password", forgotPasswordLimiter, async (request, response, next) => {
+  try {
+    const input = forgotPasswordSchema.parse(request.body);
+
+    // Sem Brevo em produção a funcionalidade não existe: 503 para todos os
+    // pedidos (sem enumerar contas) e nunca se devolve o token.
+    if (env.NODE_ENV === "production" && !env.BREVO_API_KEY) {
+      return sendError(
+        response,
+        503,
+        "EMAIL_UNAVAILABLE",
+        "O envio de email não está disponível neste momento. Tente mais tarde.",
+      );
+    }
+    const user = await prisma.user.findUnique({ where: { email: input.email } });
+    if (!user) {
+      return response.json({ data: { ok: true } });
+    }
+
+    const resetToken = generatePasswordResetToken();
+    await prisma.passwordResetToken.upsert({
+      where: { userId: user.id },
+      create: {
+        userId: user.id,
+        tokenHash: hashToken(resetToken),
+        expiresAt: passwordResetExpiresAt(),
+      },
+      update: {
+        tokenHash: hashToken(resetToken),
+        expiresAt: passwordResetExpiresAt(),
+      },
+    });
+
+    try {
+      await sendPasswordResetEmail({
+        name: user.name,
+        email: user.email,
+        token: resetToken,
+      });
+    } catch (emailError) {
+      console.error("Falha ao enviar email de reposição de palavra-passe:", emailError);
+    }
+
+    return response.json({ data: { ok: true } });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.post("/reset-password", authLimiter, async (request, response, next) => {
+  try {
+    const { token, password } = resetPasswordSchema.parse(request.body);
+    const stored = await prisma.passwordResetToken.findUnique({
+      where: { tokenHash: hashToken(token) },
+    });
+
+    if (!stored || stored.expiresAt <= new Date()) {
+      return sendError(
+        response,
+        400,
+        "INVALID_RESET_TOKEN",
+        "O link de reposição é inválido ou expirou. Peça um novo na aplicação.",
+      );
+    }
+
+    const passwordHash = await hashPassword(password);
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: stored.userId },
+        data: { passwordHash },
+      }),
+      prisma.passwordResetToken.delete({ where: { id: stored.id } }),
+      prisma.refreshToken.deleteMany({ where: { userId: stored.userId } }),
+    ]);
+
+    return response.json({ data: { ok: true } });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.post("/refresh", refreshLimiter, async (request, response, next) => {
   try {
     const { refreshToken } = refreshSchema.parse(request.body);
     let payload: ReturnType<typeof verifyRefreshToken>;

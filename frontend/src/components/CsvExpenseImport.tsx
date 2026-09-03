@@ -118,7 +118,7 @@ export function CsvExpenseImport({ categories, accounts, onImported }: CsvExpens
   const [isOpen, setIsOpen] = useState(false);
   const [fallbackCategoryId, setFallbackCategoryId] = useState("");
   const [accountId, setAccountId] = useState("");
-  const [location, setLocation] = useState("Importacao CSV");
+    const [location, setLocation] = useState("Importação CSV");
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [fileName, setFileName] = useState("");
   const [error, setError] = useState("");
@@ -143,13 +143,13 @@ export function CsvExpenseImport({ categories, accounts, onImported }: CsvExpens
       const table = parseCsv(String(reader.result || "").replace(/^\uFEFF/, ""));
       if (table.length < 2) {
         setRows([]);
-        setError("O ficheiro precisa de uma linha de cabecalho e pelo menos um movimento.");
+        setError("O ficheiro precisa de uma linha de cabeçalho e pelo menos um movimento.");
         return;
       }
       const map = buildHeaderMap(table[0]);
       if (map.date < 0 || map.description < 0 || map.amount < 0) {
         setRows([]);
-        setError("Nao foram encontradas as colunas Data, Descricao e Valor.");
+        setError("Não foram encontradas as colunas Data, Descrição e Valor.");
         return;
       }
       const parsed = table.slice(1).flatMap((source) => {
@@ -172,15 +172,15 @@ export function CsvExpenseImport({ categories, accounts, onImported }: CsvExpens
       if (!parsed.length) {
         setRows([]);
         setError(
-          "Nao foi possivel ler movimentos validos. Confirme o formato das datas e valores.",
+          "Não foi possível ler movimentos válidos. Confirme o formato das datas e valores.",
         );
         return;
       }
       setRows(parsed.slice(0, 250));
       setFileName(file.name);
-      if (parsed.length > 250) setError("A importacao foi limitada aos primeiros 250 movimentos.");
+      if (parsed.length > 250) setError("A importação foi limitada aos primeiros 250 movimentos.");
     };
-    reader.onerror = () => setError("Nao foi possivel ler este ficheiro.");
+    reader.onerror = () => setError("Não foi possível ler este ficheiro.");
     reader.readAsText(file, "UTF-8");
   }
 
@@ -194,7 +194,7 @@ export function CsvExpenseImport({ categories, accounts, onImported }: CsvExpens
     try {
       const items: ExpenseInput[] = rows.map((row) => ({
         description: row.description,
-        location: row.location || location || "Importacao CSV",
+        location: row.location || location || "Importação CSV",
         amount: row.amount,
         date: row.date,
         categoryId: row.categoryId || fallbackCategoryId,
@@ -226,10 +226,10 @@ export function CsvExpenseImport({ categories, accounts, onImported }: CsvExpens
     <section className="csv-import" aria-labelledby="csv-import-title">
       <div className="csv-import__heading">
         <div>
-          <p className="eyebrow">Importacao segura</p>
+          <p className="eyebrow">Importação segura</p>
           <h2 id="csv-import-title">Extrato em CSV</h2>
           <p>
-            O ficheiro e revisto antes do registo. Valores negativos sao tratados como despesas.
+            O ficheiro é revisto antes do registo. Valores negativos são tratados como despesas.
           </p>
         </div>
         <button
@@ -239,7 +239,7 @@ export function CsvExpenseImport({ categories, accounts, onImported }: CsvExpens
             reset();
             setIsOpen(false);
           }}
-          aria-label="Fechar importacao"
+          aria-label="Fechar importação"
         >
           <X aria-hidden="true" />
         </button>
@@ -295,7 +295,7 @@ export function CsvExpenseImport({ categories, accounts, onImported }: CsvExpens
         <>
           <div className="csv-import__preview">
             <p>
-              <strong>{rows.length}</strong> movimentos prontos para revisao
+              <strong>{rows.length}</strong> movimentos prontos para revisão
             </p>
             <ol>
               {rows.slice(0, 5).map((row, index) => (
@@ -318,7 +318,7 @@ export function CsvExpenseImport({ categories, accounts, onImported }: CsvExpens
               <Spinner label="A importar" />
             ) : (
               <>
-                <Upload aria-hidden="true" /> Confirmar importacao
+                <Upload aria-hidden="true" /> Confirmar importação
               </>
             )}
           </button>

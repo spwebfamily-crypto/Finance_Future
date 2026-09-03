@@ -5,8 +5,10 @@ import {
   cleanupOpenBankingData,
   claimConnection,
   findDueConnectionIds,
+  hasActiveJob,
   processDueConnections,
   processSyncJob,
+  reclaimStaleRunningJobs,
 } from "./syncService.js";
 import { encryptString } from "./crypto.js";
 import { fakeOpenBankingStore, FakeOpenBankingProvider } from "./fakeOpenBankingProvider.js";
@@ -179,6 +181,130 @@ describe("scheduled synchronisation", () => {
     expect(second?.status).toBe("completed");
     expect(second?.transactionsCreated).toBe(1);
     expect(await prisma.bankTransaction.count({ where: { userId } })).toBe(1);
+  });
+});
+
+describe("stale running jobs", () => {
+  it("treats running jobs older than 20 minutes as inactive", async () => {
+    const connection = await seedConnection({ nextSyncAt: new Date(Date.now() - 60_000) });
+    await prisma.bankSyncJob.create({
+      data: {
+        userId,
+        connectionId: connection.id,
+        trigger: "scheduled",
+        status: "running",
+        startedAt: new Date(Date.now() - 21 * 60_000),
+      },
+    });
+
+    expect(await hasActiveJob(connection.id as string)).toBe(false);
+  });
+
+  it("still treats a recently started running job as active", async () => {
+    const connection = await seedConnection({ nextSyncAt: new Date(Date.now() - 60_000) });
+    await prisma.bankSyncJob.create({
+      data: {
+        userId,
+        connectionId: connection.id,
+        trigger: "manual",
+        status: "running",
+        startedAt: new Date(Date.now() - 60_000),
+      },
+    });
+
+    expect(await hasActiveJob(connection.id as string)).toBe(true);
+  });
+
+  it("reclaims stale running jobs as failed", async () => {
+    const connection = await seedConnection({ nextSyncAt: new Date(Date.now() - 60_000) });
+    const stale = await prisma.bankSyncJob.create({
+      data: {
+        userId,
+        connectionId: connection.id,
+        trigger: "scheduled",
+        status: "running",
+        startedAt: new Date(Date.now() - 21 * 60_000),
+      },
+    });
+    const fresh = await prisma.bankSyncJob.create({
+      data: {
+        userId,
+        connectionId: connection.id,
+        trigger: "manual",
+        status: "running",
+        startedAt: new Date(Date.now() - 60_000),
+      },
+    });
+
+    expect(await reclaimStaleRunningJobs()).toBe(1);
+    expect((await prisma.bankSyncJob.findUnique({ where: { id: stale.id } }))!.status).toBe(
+      "failed",
+    );
+    expect((await prisma.bankSyncJob.findUnique({ where: { id: fresh.id } }))!.status).toBe(
+      "running",
+    );
+  });
+
+  it("lets processDueConnections reclaim a stuck job and enqueue a new sync", async () => {
+    const connection = await seedConnection({ nextSyncAt: new Date(Date.now() - 60_000) });
+    const sessionId = provider.seedSession({
+      institutionId: "PT|Banco Demonstração",
+      accounts: [
+        {
+          providerAccountId: "acc-1",
+          providerAccountHash: "hash-1",
+          displayName: "Conta",
+          currency: "EUR",
+          balances: [],
+          pages: [
+            [
+              {
+                entryReference: "r1",
+                status: "booked",
+                direction: "debit",
+                amount: "10.00",
+                currency: "EUR",
+                bookingDate: "2026-08-01",
+                valueDate: null,
+                transactionDate: null,
+                description: "Movimento",
+                counterpartyName: null,
+                counterpartyAccountHash: null,
+                merchantCategoryCode: null,
+                bankTransactionCode: null,
+                providerTransactionId: null,
+              },
+            ],
+          ],
+        },
+      ],
+    });
+    await prisma.bankConnection.update({
+      where: { id: connection.id as string },
+      data: { providerSessionCiphertext: encryptString(sessionId) },
+    });
+    const stale = await prisma.bankSyncJob.create({
+      data: {
+        userId,
+        connectionId: connection.id as string,
+        trigger: "scheduled",
+        status: "running",
+        startedAt: new Date(Date.now() - 21 * 60_000),
+      },
+    });
+
+    const result = await processDueConnections(10);
+
+    expect(result.claimed).toBe(1);
+    expect(result.completed).toBe(1);
+    expect((await prisma.bankSyncJob.findUnique({ where: { id: stale.id } }))!.status).toBe(
+      "failed",
+    );
+    expect(
+      await prisma.bankSyncJob.count({
+        where: { connectionId: connection.id as string, status: "completed" },
+      }),
+    ).toBe(1);
   });
 });
 

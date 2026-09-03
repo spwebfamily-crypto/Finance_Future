@@ -1,11 +1,21 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ShieldCheck } from "lucide-react";
-import { LoadingState } from "../components/States";
+import { ErrorState, LoadingState } from "../components/States";
 import { PageHeader } from "../components/PageHeader";
 import { openBankingApi } from "../api/resources";
 import { errorMessage } from "../api/client";
-import type { BankConnectionSummary } from "../types";
+import type { BankConnectionStatus, BankConnectionSummary } from "../types";
+
+const connectionStatusLabels: Record<BankConnectionStatus, string> = {
+  pending: "Aguarda confirmação no banco",
+  active: "Ligação ativa",
+  reauth_required: "É preciso voltar a autorizar",
+  expired: "Consentimento expirado",
+  revoked: "Consentimento revogado",
+  disconnected: "Banco desligado",
+  error: "Erro na última sincronização",
+};
 
 /** Centro de privacidade: bancos ligados, dados guardados e como os apagar. */
 export function PrivacyPage() {
@@ -39,10 +49,17 @@ export function PrivacyPage() {
         description="O que é guardado, para que serve e como revogar ou eliminar o acesso."
       />
 
-      {error && (
-        <div className="form-alert form-alert--page" role="alert">
-          {error}
-        </div>
+      {error && !connections.length ? (
+        <ErrorState message={error} onRetry={() => void load()} />
+      ) : (
+        error && (
+          <div className="form-alert form-alert--page" role="alert">
+            {error}
+            <button className="button button--secondary button--small" type="button" onClick={() => void load()}>
+              Tentar novamente
+            </button>
+          </div>
+        )
       )}
 
       <section className="accounts-panel" aria-labelledby="privacy-data">
@@ -90,14 +107,14 @@ export function PrivacyPage() {
         </div>
         {isLoading ? (
           <LoadingState label="A carregar as ligações" />
-        ) : liveConnections.length ? (
+        ) : error && !connections.length ? null : liveConnections.length ? (
           <ul className="privacy-connections">
             {liveConnections.map((connection) => (
               <li key={connection.id}>
                 <div>
                   <strong>{connection.institutionName}</strong>
                   <p>
-                    Estado: {connection.status}
+                    Estado: {connectionStatusLabels[connection.status]}
                     {connection.lastSyncedAt
                       ? ` · Última sincronização: ${new Date(connection.lastSyncedAt).toLocaleString("pt-PT")}`
                       : " · Ainda sem sincronização"}

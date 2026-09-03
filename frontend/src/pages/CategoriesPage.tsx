@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Check, Edit3, FolderPlus, LockKeyhole, Plus, Trash2, X } from "lucide-react";
 import { categoryApi } from "../api/resources";
@@ -54,6 +54,8 @@ export function CategoriesPage() {
   const [error, setError] = useState("");
   const [formError, setFormError] = useState("");
   const [notice, setNotice] = useState("");
+  const nameRef = useRef<HTMLInputElement>(null);
+  const editingNameRef = useRef<HTMLInputElement>(null);
 
   const loadCategories = useCallback(async () => {
     setIsLoading(true);
@@ -76,6 +78,7 @@ export function CategoriesPage() {
     setFormError("");
     if (!name.trim()) {
       setFormError("Dê um nome à nova categoria.");
+      nameRef.current?.focus();
       return;
     }
     setIsSaving(true);
@@ -93,13 +96,18 @@ export function CategoriesPage() {
   }
 
   function startEditing(category: Category) {
+    setFormError("");
     setEditingId(category.id);
     setEditingName(category.name);
     setEditingIcon(categoryIconName(category.icon, category.name));
   }
 
   async function saveEdit(category: Category) {
-    if (!editingName.trim()) return;
+    if (!editingName.trim()) {
+      setFormError("Dê um nome à categoria.");
+      editingNameRef.current?.focus();
+      return;
+    }
     setIsSaving(true);
     setError("");
     try {
@@ -151,19 +159,25 @@ export function CategoriesPage() {
           </p>
           <form className="stack-form" onSubmit={createCategory} noValidate>
             {formError && (
-              <div className="form-alert" role="alert">
+              <div className="form-alert" role="alert" id="category-name-error">
                 {formError}
               </div>
             )}
             <label className="field">
               <span>Nome da categoria</span>
               <input
+                ref={nameRef}
                 type="text"
                 name="name"
                 value={name}
-                onChange={(event) => setName(event.target.value)}
+                onChange={(event) => {
+                  setName(event.target.value);
+                  setFormError("");
+                }}
                 placeholder="Ex.: Casa"
                 maxLength={40}
+                aria-invalid={Boolean(formError) && !name.trim()}
+                aria-describedby={formError && !name.trim() ? "category-name-error" : undefined}
               />
             </label>
             <div className="field">
@@ -237,10 +251,15 @@ export function CategoriesPage() {
                           <label>
                             <span className="sr-only">Nome</span>
                             <input
+                              ref={editingNameRef}
                               value={editingName}
-                              onChange={(event) => setEditingName(event.target.value)}
+                              onChange={(event) => {
+                                setEditingName(event.target.value);
+                                setFormError("");
+                              }}
                               maxLength={40}
                               aria-label={`Nome de ${category.name}`}
+                              aria-invalid={Boolean(formError) && !editingName.trim()}
                             />
                           </label>
                         </div>

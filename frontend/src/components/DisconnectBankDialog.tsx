@@ -23,6 +23,7 @@ export function DisconnectBankDialog({
   const [retention, setRetention] = useState<BankRetention>("keep_imported");
   const [confirmation, setConfirmation] = useState("");
   const cancelRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
   const keepId = useId();
   const deleteId = useId();
@@ -31,9 +32,47 @@ export function DisconnectBankDialog({
     if (!open) return;
     setRetention("keep_imported");
     setConfirmation("");
+    const previouslyFocused =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const frame = window.requestAnimationFrame(() => cancelRef.current?.focus());
-    return () => window.cancelAnimationFrame(frame);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      if (previouslyFocused?.isConnected) previouslyFocused.focus();
+    };
   }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !busy) {
+        event.preventDefault();
+        onCancel();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const focusable = Array.from(
+        dialogRef.current?.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      );
+      if (!focusable.length) {
+        event.preventDefault();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+      if (event.shiftKey && (active === first || !dialogRef.current?.contains(active))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [busy, onCancel, open]);
 
   const requiresConfirmation = retention === "delete_imported";
   const canConfirm =
@@ -44,12 +83,17 @@ export function DisconnectBankDialog({
       {open && (
         <motion.div
           className="dialog-backdrop"
+          role="presentation"
           initial={reduceMotion ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={reduceMotion ? undefined : { opacity: 0 }}
           transition={{ duration: reduceMotion ? 0 : 0.12 }}
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !busy) onCancel();
+          }}
         >
           <motion.div
+            ref={dialogRef}
             className="confirm-dialog"
             role="dialog"
             aria-modal="true"

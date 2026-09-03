@@ -16,10 +16,14 @@ function escapeHtml(value: string) {
     .replace(/'/g, "&#39;");
 }
 
-const BRAND_GREEN = "#236e57";
-const BRAND_ACCENT = "#c9f277";
+const BRAND_GREEN = "#007a55";
+const BRAND_ACCENT = "#bbf451";
 
-function emailShell(title: string, bodyHtml: string) {
+function emailShell(
+  title: string,
+  bodyHtml: string,
+  footer = "Se não criou uma conta ExpenseSnap, pode ignorar este email.",
+) {
   return `<!doctype html>
 <html lang="pt">
   <body style="margin:0;padding:0;background:#f4f6f4;">
@@ -36,7 +40,7 @@ function emailShell(title: string, bodyHtml: string) {
           ${bodyHtml}
         </div>
         <div style="padding:20px 32px 28px;border-top:1px solid #eef2ee;color:#8a948d;font-size:12px;line-height:1.5;">
-          Se não criou uma conta ExpenseSnap, pode ignorar este email.
+          ${footer}
         </div>
       </div>
     </div>
@@ -87,10 +91,17 @@ export function buildVerificationEmail(params: { name: string; verifyUrl: string
   };
 }
 
+const BREVO_TIMEOUT_MS = 15_000;
+
 export async function sendEmail(email: OutboundEmail): Promise<void> {
-  // Sem chave da Brevo não há envio real: regista-se no log para permitir
-  // desenvolvimento e testes sem depender de um serviço externo.
+  // Sem chave da Brevo não há envio real. Em desenvolvimento o corpo vai para
+  // o log (útil para copiar o link). Em produção não se regista o corpo nem o
+  // token — os logs do Render não devem vazar links de verificação/reposição.
   if (!env.BREVO_API_KEY) {
+    if (env.NODE_ENV === "production") {
+      console.info("[email] BREVO_API_KEY ausente — email não enviado.");
+      return;
+    }
     console.info(
       `[email] BREVO_API_KEY ausente — email não enviado.\n` +
         `  Para: ${email.to}\n` +
@@ -100,21 +111,30 @@ export async function sendEmail(email: OutboundEmail): Promise<void> {
     return;
   }
 
-  const response = await fetch("https://api.brevo.com/v3/smtp/email", {
-    method: "POST",
-    headers: {
-      "api-key": env.BREVO_API_KEY,
-      "content-type": "application/json",
-      accept: "application/json",
-    },
-    body: JSON.stringify({
-      sender: { name: env.EMAIL_FROM_NAME, email: env.EMAIL_FROM_ADDRESS },
-      to: [{ email: email.to }],
-      subject: email.subject,
-      htmlContent: email.html,
-      textContent: email.text,
-    }),
-  });
+  let response: Response;
+  try {
+    response = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: {
+        "api-key": env.BREVO_API_KEY,
+        "content-type": "application/json",
+        accept: "application/json",
+      },
+      body: JSON.stringify({
+        sender: { name: env.EMAIL_FROM_NAME, email: env.EMAIL_FROM_ADDRESS },
+        to: [{ email: email.to }],
+        subject: email.subject,
+        htmlContent: email.html,
+        textContent: email.text,
+      }),
+      signal: AbortSignal.timeout(BREVO_TIMEOUT_MS),
+    });
+  } catch (error) {
+    if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")) {
+      throw new Error("A Brevo não respondeu a tempo (15s).");
+    }
+    throw error;
+  }
 
   if (!response.ok) {
     const detail = await response.text().catch(() => "");
@@ -131,5 +151,59 @@ export async function sendVerificationEmail(params: {
 }): Promise<void> {
   const verifyUrl = `${env.FRONTEND_ORIGIN}/verify-email?token=${encodeURIComponent(params.token)}`;
   const content = buildVerificationEmail({ name: params.name, verifyUrl });
+  await sendEmail({ to: params.email, ...content });
+}
+
+export function buildPasswordResetEmail(params: { name: string; resetUrl: string }) {
+  const firstName = escapeHtml(params.name.split(/\s+/)[0] ?? params.name);
+  const resetUrl = escapeHtml(params.resetUrl);
+
+  const html = emailShell(
+    `Redefina a sua palavra-passe, ${firstName}`,
+    `
+          <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#3c4a42;">
+            Recebemos um pedido para repor a palavra-passe da sua conta. Clique no
+            botão abaixo para escolher uma nova.
+          </p>
+          <div style="text-align:center;margin:0 0 24px;">
+            <a
+              href="${resetUrl}"
+              style="display:inline-block;background:${BRAND_GREEN};color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;padding:14px 32px;border-radius:12px;"
+            >Definir nova palavra-passe</a>
+          </div>
+          <p style="margin:0;font-size:13px;line-height:1.6;color:#8a948d;">
+            Ou copie este link para o navegador:<br />
+            <a href="${resetUrl}" style="color:${BRAND_GREEN};word-break:break-all;">${resetUrl}</a>
+          </p>
+          <p style="margin:20px 0 0;font-size:13px;color:#8a948d;">Este link expira em 1 hora.</p>
+        `,
+    "Se não pediu a reposição da palavra-passe, pode ignorar este email.",
+  );
+
+  const text = [
+    `Olá ${params.name},`,
+    "",
+    "Recebemos um pedido para repor a palavra-passe da sua conta ExpenseSnap:",
+    params.resetUrl,
+    "",
+    "Este link expira em 1 hora.",
+    "",
+    "Se não pediu a reposição da palavra-passe, pode ignorar este email.",
+  ].join("\n");
+
+  return {
+    subject: "Redefina a sua palavra-passe — ExpenseSnap",
+    text,
+    html,
+  };
+}
+
+export async function sendPasswordResetEmail(params: {
+  name: string;
+  email: string;
+  token: string;
+}): Promise<void> {
+  const resetUrl = `${env.FRONTEND_ORIGIN}/reset-password?token=${encodeURIComponent(params.token)}`;
+  const content = buildPasswordResetEmail({ name: params.name, resetUrl });
   await sendEmail({ to: params.email, ...content });
 }

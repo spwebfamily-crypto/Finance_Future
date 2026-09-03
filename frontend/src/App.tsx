@@ -1,12 +1,14 @@
-import { lazy, Suspense } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { lazy, Suspense, useEffect } from "react";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { GuestRoute, ProtectedRoute } from "./auth/ProtectedRoute";
 import { AppShell } from "./layout/AppShell";
 import { CategoriesPage } from "./pages/CategoriesPage";
 import { ExpensesPage } from "./pages/ExpensesPage";
+import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { LoginPage } from "./pages/LoginPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { RegisterPage } from "./pages/RegisterPage";
+import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import { VerifyEmailPage } from "./pages/VerifyEmailPage";
 import { LoadingState } from "./components/States";
 import { RouteTransitionOutlet } from "./components/RouteTransitionOutlet";
@@ -89,13 +91,51 @@ const routeFallback = (
   </div>
 );
 
+const routeTitles: Record<string, string> = {
+  "/login": "Entrar",
+  "/register": "Criar conta",
+  "/forgot-password": "Recuperar palavra-passe",
+  "/reset-password": "Nova palavra-passe",
+  "/verify-email": "Verificar email",
+  "/onboarding": "Começar",
+  "/dashboard": "Hoje",
+  "/expenses": "Movimentos",
+  "/expenses/new": "Nova despesa",
+  "/categories": "Categorias",
+  "/planning": "Plano",
+  "/accounts": "Contas",
+  "/accounts/connect": "Ligar banco",
+  "/accounts/connections": "Bancos",
+  "/privacy": "Privacidade",
+  "/investments": "Investir",
+};
+
+function titleForPath(pathname: string) {
+  if (routeTitles[pathname]) return `${routeTitles[pathname]} · ExpenseSnap`;
+  if (/^\/expenses\/[^/]+\/edit$/.test(pathname)) return "Editar despesa · ExpenseSnap";
+  if (/^\/accounts\/[^/]+$/.test(pathname)) return "Conta · ExpenseSnap";
+  if (pathname === "/") return "ExpenseSnap";
+  return "Página não encontrada · ExpenseSnap";
+}
+
+function RouteDocumentTitle() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    document.title = titleForPath(pathname);
+  }, [pathname]);
+  return null;
+}
+
 export default function App() {
   return (
-    <Routes>
+    <>
+      <RouteDocumentTitle />
+      <Routes>
       <Route element={<GuestRoute />}>
         <Route element={<RouteTransitionOutlet className="guest-route-stage" />}>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         </Route>
       </Route>
 
@@ -196,9 +236,11 @@ export default function App() {
 
       {/* Público: o link do email é aberto com ou sem sessão ativa no dispositivo. */}
       <Route path="/verify-email" element={<VerifyEmailPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
 
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
+    </>
   );
 }

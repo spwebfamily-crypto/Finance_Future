@@ -5,7 +5,8 @@ import jwt from "jsonwebtoken";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { errorHandler } from "../middleware.js";
 import { signRefreshToken } from "../lib/auth.js";
-import authRoutes, { authLimiter } from "./auth.js";
+import { env } from "../config.js";
+import authRoutes, { authLimiter, forgotPasswordLimiter, refreshLimiter } from "./auth.js";
 
 const repositories = vi.hoisted(() => ({
   refreshTokenDeleteMany: vi.fn(),
@@ -18,6 +19,9 @@ const repositories = vi.hoisted(() => ({
   emailVerificationTokenFindUnique: vi.fn(),
   emailVerificationTokenDelete: vi.fn(),
   emailVerificationTokenUpsert: vi.fn(),
+  passwordResetTokenFindUnique: vi.fn(),
+  passwordResetTokenDelete: vi.fn(),
+  passwordResetTokenUpsert: vi.fn(),
   transaction: vi.fn(),
   transactionArray: vi.fn(),
 }));
@@ -35,10 +39,12 @@ vi.mock("../lib/auth.js", async (importOriginal) => {
 
 const emailMocks = vi.hoisted(() => ({
   sendVerificationEmail: vi.fn(),
+  sendPasswordResetEmail: vi.fn(),
 }));
 
 vi.mock("../services/emailService.js", () => ({
   sendVerificationEmail: emailMocks.sendVerificationEmail,
+  sendPasswordResetEmail: emailMocks.sendPasswordResetEmail,
 }));
 
 vi.mock("../prisma.js", () => {
@@ -67,6 +73,11 @@ vi.mock("../prisma.js", () => {
         delete: repositories.emailVerificationTokenDelete,
         upsert: repositories.emailVerificationTokenUpsert,
       },
+      passwordResetToken: {
+        findUnique: repositories.passwordResetTokenFindUnique,
+        delete: repositories.passwordResetTokenDelete,
+        upsert: repositories.passwordResetTokenUpsert,
+      },
       $transaction: repositories.transaction.mockImplementation((input) =>
         typeof input === "function" ? input(transactionClient) : Promise.all(input),
       ),
@@ -90,6 +101,14 @@ function authorization() {
 // describe esgotam o limite dos seguintes (todos os pedidos vêm de 127.0.0.1).
 async function resetAuthLimiter() {
   await authLimiter.resetKey("127.0.0.1");
+}
+
+async function resetForgotPasswordLimiter() {
+  await forgotPasswordLimiter.resetKey("127.0.0.1");
+}
+
+async function resetRefreshLimiter() {
+  await refreshLimiter.resetKey("127.0.0.1");
 }
 
 describe("auth logout", () => {
@@ -288,6 +307,7 @@ describe("auth session (register, login, refresh)", () => {
 
   beforeEach(async () => {
     await resetAuthLimiter();
+    await resetRefreshLimiter();
     repositories.userFindUnique.mockReset();
     repositories.userCreate.mockReset();
     repositories.refreshTokenCreate.mockReset().mockResolvedValue({});
@@ -427,6 +447,26 @@ describe("auth session (register, login, refresh)", () => {
     expect(response.status).toBe(401);
     expect(body.error.code).toBe("INVALID_REFRESH_TOKEN");
     expect(repositories.refreshTokenDelete).not.toHaveBeenCalled();
+  });
+
+  it("rate-limits refresh attempts per IP", async () => {
+    const refreshToken = signRefreshToken({ id: userId, email: "owner@example.com" });
+    repositories.refreshTokenFindUnique.mockResolvedValue(null);
+
+    let lastStatus = 0;
+    let lastBody: { error?: { code?: string } } = {};
+    for (let attempt = 0; attempt < 31; attempt += 1) {
+      const response = await fetch(`${baseUrl}/api/auth/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refreshToken }),
+      });
+      lastStatus = response.status;
+      lastBody = await response.json();
+    }
+
+    expect(lastStatus).toBe(429);
+    expect(lastBody.error?.code).toBe("RATE_LIMITED");
   });
 
   it("sends a verification email on register without blocking the response", async () => {
@@ -622,5 +662,172 @@ describe("auth email verification", () => {
     expect(response.status).toBe(409);
     expect(body.error.code).toBe("ALREADY_VERIFIED");
     expect(emailMocks.sendVerificationEmail).not.toHaveBeenCalled();
+  });
+});
+
+describe("auth password reset", () => {
+  let server: Server;
+  let baseUrl: string;
+  const validToken = "b".repeat(64);
+
+  beforeAll(async () => {
+    const app = express();
+    app.use(express.json());
+    app.use("/api/auth", authRoutes);
+    app.use(errorHandler);
+    await new Promise<void>((resolve) => {
+      server = app.listen(0, "127.0.0.1", resolve);
+    });
+    const address = server.address() as AddressInfo;
+    baseUrl = `http://127.0.0.1:${address.port}`;
+  });
+
+  afterAll(async () => {
+    await new Promise<void>((resolve, reject) => {
+      server.close((error) => (error ? reject(error) : resolve()));
+    });
+  });
+
+  beforeEach(async () => {
+    await resetAuthLimiter();
+    await resetForgotPasswordLimiter();
+    repositories.userFindUnique.mockReset();
+    repositories.userUpdate.mockReset();
+    repositories.refreshTokenDeleteMany.mockReset().mockResolvedValue({ count: 1 });
+    repositories.passwordResetTokenFindUnique.mockReset();
+    repositories.passwordResetTokenDelete.mockReset().mockResolvedValue({});
+    repositories.passwordResetTokenUpsert.mockReset().mockResolvedValue({});
+    emailMocks.sendPasswordResetEmail.mockReset().mockResolvedValue(undefined);
+  });
+
+  function postForgot(email: unknown) {
+    return fetch(`${baseUrl}/api/auth/forgot-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  function postReset(body: unknown) {
+    return fetch(`${baseUrl}/api/auth/reset-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  }
+
+  it("always returns 200 for an unknown email without sending mail", async () => {
+    repositories.userFindUnique.mockResolvedValue(null);
+
+    const response = await postForgot("nobody@example.com");
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.data.ok).toBe(true);
+    expect(repositories.passwordResetTokenUpsert).not.toHaveBeenCalled();
+    expect(emailMocks.sendPasswordResetEmail).not.toHaveBeenCalled();
+    expect(JSON.stringify(body)).not.toMatch(/token/i);
+  });
+
+  it("replaces the token and emails a known user without leaking the token", async () => {
+    repositories.userFindUnique.mockResolvedValue({
+      id: userId,
+      name: "Rodrigo",
+      email: "owner@example.com",
+    });
+
+    const response = await postForgot("owner@example.com");
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.data.ok).toBe(true);
+    expect(repositories.passwordResetTokenUpsert).toHaveBeenCalledOnce();
+    expect(emailMocks.sendPasswordResetEmail).toHaveBeenCalledOnce();
+    expect(emailMocks.sendPasswordResetEmail.mock.calls[0][0]).toMatchObject({
+      email: "owner@example.com",
+      name: "Rodrigo",
+    });
+    expect(emailMocks.sendPasswordResetEmail.mock.calls[0][0].token).toMatch(/^[a-f0-9]{64}$/);
+    expect(JSON.stringify(body)).not.toContain(
+      emailMocks.sendPasswordResetEmail.mock.calls[0][0].token,
+    );
+  });
+
+  it("resets a valid token, updates the password and revokes all sessions", async () => {
+    repositories.passwordResetTokenFindUnique.mockResolvedValue({
+      id: "reset-1",
+      userId,
+      expiresAt: new Date(Date.now() + 60_000),
+    });
+    repositories.userUpdate.mockResolvedValue({ id: userId });
+
+    const response = await postReset({ token: validToken, password: "nova-senha-123" });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.data.ok).toBe(true);
+    const where = repositories.passwordResetTokenFindUnique.mock.calls[0][0].where;
+    expect(where.tokenHash).not.toBe(validToken);
+    expect(where.tokenHash).toMatch(/^[a-f0-9]{64}$/);
+    expect(repositories.userUpdate.mock.calls[0][0].data.passwordHash).toBe(
+      "hashed:nova-senha-123",
+    );
+    expect(repositories.passwordResetTokenDelete).toHaveBeenCalledOnce();
+    expect(repositories.refreshTokenDeleteMany).toHaveBeenCalledWith({ where: { userId } });
+  });
+
+  it("rejects an expired or unknown reset token", async () => {
+    repositories.passwordResetTokenFindUnique.mockResolvedValue(null);
+    const unknown = await postReset({ token: validToken, password: "nova-senha-123" });
+    expect(unknown.status).toBe(400);
+    expect((await unknown.json()).error.code).toBe("INVALID_RESET_TOKEN");
+
+    repositories.passwordResetTokenFindUnique.mockResolvedValue({
+      id: "reset-1",
+      userId,
+      expiresAt: new Date(Date.now() - 1_000),
+    });
+    const expired = await postReset({ token: validToken, password: "nova-senha-123" });
+    expect(expired.status).toBe(400);
+    expect((await expired.json()).error.code).toBe("INVALID_RESET_TOKEN");
+    expect(repositories.userUpdate).not.toHaveBeenCalled();
+    expect(repositories.refreshTokenDeleteMany).not.toHaveBeenCalled();
+  });
+
+  it("rejects a malformed token or short password without hitting the database", async () => {
+    const shortToken = await postReset({ token: "curto", password: "nova-senha-123" });
+    expect(shortToken.status).toBe(400);
+    expect((await shortToken.json()).error.code).toBe("VALIDATION_ERROR");
+
+    const shortPassword = await postReset({ token: validToken, password: "1234567" });
+    expect(shortPassword.status).toBe(400);
+    expect(repositories.passwordResetTokenFindUnique).not.toHaveBeenCalled();
+  });
+
+  it("returns EMAIL_UNAVAILABLE in production without Brevo and never leaks a token", async () => {
+    const previousEnv = env.NODE_ENV;
+    const previousKey = env.BREVO_API_KEY;
+    (env as { NODE_ENV: string }).NODE_ENV = "production";
+    delete (env as { BREVO_API_KEY?: string }).BREVO_API_KEY;
+
+    try {
+      repositories.userFindUnique.mockResolvedValue({
+        id: userId,
+        name: "Rodrigo",
+        email: "owner@example.com",
+      });
+
+      const response = await postForgot("owner@example.com");
+      const body = await response.json();
+
+      expect(response.status).toBe(503);
+      expect(body.error.code).toBe("EMAIL_UNAVAILABLE");
+      expect(JSON.stringify(body)).not.toMatch(/[a-f0-9]{64}/);
+      expect(repositories.passwordResetTokenUpsert).not.toHaveBeenCalled();
+      expect(emailMocks.sendPasswordResetEmail).not.toHaveBeenCalled();
+    } finally {
+      (env as { NODE_ENV: typeof previousEnv }).NODE_ENV = previousEnv;
+      if (previousKey) (env as { BREVO_API_KEY?: string }).BREVO_API_KEY = previousKey;
+    }
   });
 });

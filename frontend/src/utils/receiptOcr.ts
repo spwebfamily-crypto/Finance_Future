@@ -1,5 +1,5 @@
 import type { Category } from "../types";
-import { localOcrOptions } from "./localOcr";
+import { ensureLocalOcrAssets, localOcrOptions } from "./localOcr";
 
 async function raceWithAbort<T>(operation: Promise<T>, signal?: AbortSignal): Promise<T> {
   if (!signal) return operation;
@@ -776,6 +776,8 @@ export async function readReceiptFile(
   onProgress?.(0.01, "A preparar a leitura local…");
   const prepared = await prepareImageForOcr(file);
   try {
+    signal?.throwIfAborted();
+    await ensureLocalOcrAssets();
     signal?.throwIfAborted();
     const { default: Tesseract } = await import("tesseract.js");
     signal?.throwIfAborted();

@@ -14,15 +14,19 @@ export function RegisterPage() {
   const nameRef = useRef<HTMLInputElement>(null);
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
+  const confirmPasswordRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<{
     name?: string;
     email?: string;
     password?: string;
+    confirmPassword?: string;
   }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -31,15 +35,31 @@ export function RegisterPage() {
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setError("");
-    const nextErrors: { name?: string; email?: string; password?: string } = {};
+    const nextErrors: {
+      name?: string;
+      email?: string;
+      password?: string;
+      confirmPassword?: string;
+    } = {};
     if (name.trim().length < 2) nextErrors.name = "Introduza pelo menos 2 caracteres.";
     if (!email.trim()) nextErrors.email = "Introduza o seu email.";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
       nextErrors.email = "Introduza um email válido.";
     if (password.length < 8) nextErrors.password = "Use pelo menos 8 caracteres.";
+    else if (password.length > 128) nextErrors.password = "Use no máximo 128 caracteres.";
+    if (!confirmPassword) nextErrors.confirmPassword = "Confirme a palavra-passe.";
+    else if (password !== confirmPassword)
+      nextErrors.confirmPassword = "As palavras-passe não coincidem.";
     setFieldErrors(nextErrors);
-    if (nextErrors.name || nextErrors.email || nextErrors.password) {
-      (nextErrors.name ? nameRef : nextErrors.email ? emailRef : passwordRef).current?.focus();
+    if (nextErrors.name || nextErrors.email || nextErrors.password || nextErrors.confirmPassword) {
+      (nextErrors.name
+        ? nameRef
+        : nextErrors.email
+          ? emailRef
+          : nextErrors.password
+            ? passwordRef
+            : confirmPasswordRef
+      ).current?.focus();
       return;
     }
     setIsSubmitting(true);
@@ -150,13 +170,18 @@ export function RegisterPage() {
                   name="password"
                   autoComplete="new-password"
                   minLength={8}
+                  maxLength={128}
                   required
                   value={password}
                   onChange={(event) => {
                     setPassword(event.target.value);
-                    setFieldErrors((current) => ({ ...current, password: undefined }));
+                    setFieldErrors((current) => ({
+                      ...current,
+                      password: undefined,
+                      confirmPassword: undefined,
+                    }));
                   }}
-                  placeholder="Mínimo de 8 caracteres"
+                  placeholder="Entre 8 e 128 caracteres"
                   aria-invalid={Boolean(fieldErrors.password)}
                   aria-describedby={
                     fieldErrors.password ? "register-password-error password-help" : "password-help"
@@ -176,7 +201,49 @@ export function RegisterPage() {
                   {fieldErrors.password}
                 </small>
               )}
-              <small id="password-help">Use 8 ou mais caracteres.</small>
+              <small id="password-help">Use entre 8 e 128 caracteres.</small>
+            </label>
+            <label className="field">
+              <span>Confirmar palavra-passe</span>
+              <span className="field__control field__control--password">
+                <LockKeyhole aria-hidden="true" />
+                <input
+                  ref={confirmPasswordRef}
+                  type={showConfirmPassword ? "text" : "password"}
+                  name="confirmPassword"
+                  autoComplete="new-password"
+                  minLength={8}
+                  maxLength={128}
+                  required
+                  value={confirmPassword}
+                  onChange={(event) => {
+                    setConfirmPassword(event.target.value);
+                    setFieldErrors((current) => ({ ...current, confirmPassword: undefined }));
+                  }}
+                  placeholder="Repita a palavra-passe"
+                  aria-invalid={Boolean(fieldErrors.confirmPassword)}
+                  aria-describedby={
+                    fieldErrors.confirmPassword ? "register-confirm-error" : undefined
+                  }
+                />
+                <button
+                  className="field__action"
+                  type="button"
+                  onClick={() => setShowConfirmPassword((current) => !current)}
+                  aria-label={
+                    showConfirmPassword
+                      ? "Ocultar confirmação da palavra-passe"
+                      : "Mostrar confirmação da palavra-passe"
+                  }
+                >
+                  {showConfirmPassword ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
+                </button>
+              </span>
+              {fieldErrors.confirmPassword && (
+                <small className="field__error" id="register-confirm-error">
+                  {fieldErrors.confirmPassword}
+                </small>
+              )}
             </label>
             <button
               className="button button--primary button--wide"

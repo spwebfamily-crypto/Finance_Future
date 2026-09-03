@@ -29,6 +29,7 @@ test("permite registar uma conta e criar uma despesa com fotografia", async ({ p
   await page.getByLabel("Email").fill(email);
   // getByLabel("Palavra-passe") colide com o botão "Mostrar palavra-passe".
   await page.locator('input[name="password"]').fill("Teste-E2E-2026!");
+  await page.locator('input[name="confirmPassword"]').fill("Teste-E2E-2026!");
 
   await Promise.all([
     page.waitForURL(/\/onboarding(?:\?.*)?$/),

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useReducedMotion } from "framer-motion";
 import {
   AlertTriangle,
@@ -48,7 +48,14 @@ import type {
 } from "../types";
 import { formatCurrency, parseSignedMoney, todayInputValue } from "../utils/format";
 
-const palette = ["var(--brand)", "#8fbe5f", "#d5a443", "#698076", "#8d74b7", "#d97864"];
+const palette = [
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
+  "var(--primary)",
+];
 
 function currentMonth() {
   return todayInputValue().slice(0, 7);
@@ -97,11 +104,27 @@ export function DashboardPage() {
   const [editingLimit, setEditingLimit] = useState("");
   const [budgetDeleteTarget, setBudgetDeleteTarget] = useState<Budget | null>(null);
   const [hasLinkedBank, setHasLinkedBank] = useState(false);
+  const [budgetFieldErrors, setBudgetFieldErrors] = useState<{ categoryId?: string; limit?: string }>(
+    {},
+  );
+  const [budgetEditError, setBudgetEditError] = useState("");
+  const newCategoryRef = useRef<HTMLSelectElement>(null);
+  const newLimitRef = useRef<HTMLInputElement>(null);
+  const editingLimitRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
+      const results = await Promise.allSettled([
+        analyticsApi.summary(month),
+        analyticsApi.today(),
+        analyticsApi.levels(month),
+        analyticsApi.trend(6, month),
+        budgetApi.list(),
+        categoryApi.list(),
+        accountApi.list(),
+      ]);
       const [
         nextSummary,
         nextToday,
@@ -110,30 +133,25 @@ export function DashboardPage() {
         nextBudgets,
         nextCategories,
         nextAccounts,
-      ] = await Promise.all([
-        analyticsApi.summary(month),
-        analyticsApi.today(),
-        analyticsApi.levels(month),
-        analyticsApi.trend(6, month),
-        budgetApi.list(),
-        categoryApi.list(),
-        accountApi.list().catch(() => []),
-      ]);
-      setSummary(nextSummary);
-      setToday(nextToday);
-      setLevels(nextLevels);
-      setTrend(nextTrend.series);
-      setBudgets(nextBudgets);
-      setCategories(nextCategories);
-      setAccounts(nextAccounts);
+      ] = results;
+      if (nextSummary.status === "fulfilled") setSummary(nextSummary.value);
+      if (nextToday.status === "fulfilled") setToday(nextToday.value);
+      if (nextLevels.status === "fulfilled") setLevels(nextLevels.value);
+      if (nextTrend.status === "fulfilled") setTrend(nextTrend.value.series);
+      if (nextBudgets.status === "fulfilled") setBudgets(nextBudgets.value);
+      if (nextCategories.status === "fulfilled") setCategories(nextCategories.value);
+      const accountsValue = nextAccounts.status === "fulfilled" ? nextAccounts.value : [];
+      if (nextAccounts.status === "fulfilled") setAccounts(accountsValue);
       setHasLinkedBank(
-        nextAccounts.some(
+        accountsValue.some(
           (account) =>
             account.source === "bank" &&
             account.connectionStatus &&
             account.connectionStatus !== "disconnected",
         ),
       );
+      const failure = results.find((result) => result.status === "rejected");
+      setError(failure && failure.status === "rejected" ? errorMessage(failure.reason) : "");
     } catch (requestError) {
       setError(errorMessage(requestError));
     } finally {
@@ -242,7 +260,15 @@ export function DashboardPage() {
   async function saveBudget(event: FormEvent) {
     event.preventDefault();
     const monthlyLimit = parseSignedMoney(newLimit);
-    if (!newCategoryId || !Number.isFinite(monthlyLimit) || monthlyLimit <= 0) return;
+    const nextErrors: { categoryId?: string; limit?: string } = {};
+    if (!newCategoryId) nextErrors.categoryId = "Escolha uma categoria.";
+    if (!Number.isFinite(monthlyLimit) || monthlyLimit <= 0)
+      nextErrors.limit = "Indique um limite maior do que zero.";
+    setBudgetFieldErrors(nextErrors);
+    if (nextErrors.categoryId || nextErrors.limit) {
+      (nextErrors.categoryId ? newCategoryRef : newLimitRef).current?.focus();
+      return;
+    }
     setSaving(true);
     try {
       const created = await budgetApi.create({ categoryId: newCategoryId, monthlyLimit });
@@ -260,7 +286,12 @@ export function DashboardPage() {
 
   async function updateBudget(budget: Budget) {
     const monthlyLimit = parseSignedMoney(editingLimit);
-    if (!Number.isFinite(monthlyLimit) || monthlyLimit <= 0) return;
+    if (!Number.isFinite(monthlyLimit) || monthlyLimit <= 0) {
+      setBudgetEditError("Indique um limite maior do que zero.");
+      editingLimitRef.current?.focus();
+      return;
+    }
+    setBudgetEditError("");
     setSaving(true);
     try {
       const updated = await budgetApi.update(budget.id, monthlyLimit);
@@ -323,9 +354,9 @@ export function DashboardPage() {
             <span className="skeleton-block skeleton-block--chart" />
           </span>
         </div>
-      ) : error && !summary ? (
+      ) : error && !summary && !today ? (
         <ErrorState message={error} onRetry={() => void load()} />
-      ) : !summary ? (
+      ) : !summary && !today ? (
         <EmptyState
           title="Ainda sem resumo"
           description="Adicione despesas para começar a ver a análise mensal."
@@ -483,6 +514,8 @@ export function DashboardPage() {
               </div>
             </section>
           )}
+          {summary && (
+            <>
           <section className="dashboard-total" aria-labelledby="total-title">
             <div>
               <p className="eyebrow">Total em {monthLabel(selectedMonth)}</p>
@@ -693,6 +726,8 @@ export function DashboardPage() {
           </div>
 
           <SpendingHeatmap month={selectedMonth} byDay={summary.byDay ?? []} currency={currency} />
+            </>
+          )}
 
           <section className="dashboard-section" aria-labelledby="levels-title">
             <div className="section-heading">
@@ -757,12 +792,20 @@ export function DashboardPage() {
               </div>
             </div>
             <div className="budgets-layout">
-              <form className="budget-create" onSubmit={saveBudget}>
+              <form className="budget-create" onSubmit={saveBudget} noValidate>
                 <label className="field">
                   <span>Categoria</span>
                   <select
+                    ref={newCategoryRef}
                     value={newCategoryId}
-                    onChange={(event) => setNewCategoryId(event.target.value)}
+                    onChange={(event) => {
+                      setNewCategoryId(event.target.value);
+                      setBudgetFieldErrors((current) => ({ ...current, categoryId: undefined }));
+                    }}
+                    aria-invalid={Boolean(budgetFieldErrors.categoryId)}
+                    aria-describedby={
+                      budgetFieldErrors.categoryId ? "budget-category-error" : undefined
+                    }
                   >
                     <option value="">Escolher categoria</option>
                     {unbudgetedCategories.map((category) => (
@@ -771,15 +814,31 @@ export function DashboardPage() {
                       </option>
                     ))}
                   </select>
+                  {budgetFieldErrors.categoryId && (
+                    <small className="field__error" id="budget-category-error">
+                      {budgetFieldErrors.categoryId}
+                    </small>
+                  )}
                 </label>
                 <label className="field">
                   <span>Limite por mês</span>
                   <input
+                    ref={newLimitRef}
                     inputMode="decimal"
                     value={newLimit}
-                    onChange={(event) => setNewLimit(event.target.value)}
+                    onChange={(event) => {
+                      setNewLimit(event.target.value);
+                      setBudgetFieldErrors((current) => ({ ...current, limit: undefined }));
+                    }}
                     placeholder="0,00"
+                    aria-invalid={Boolean(budgetFieldErrors.limit)}
+                    aria-describedby={budgetFieldErrors.limit ? "budget-limit-error" : undefined}
                   />
+                  {budgetFieldErrors.limit && (
+                    <small className="field__error" id="budget-limit-error">
+                      {budgetFieldErrors.limit}
+                    </small>
+                  )}
                 </label>
                 <button
                   className="button button--accent"
@@ -813,10 +872,21 @@ export function DashboardPage() {
                           </label>
                           <input
                             id={`budget-${budget.id}`}
+                            ref={editingLimitRef}
                             inputMode="decimal"
                             value={editingLimit}
-                            onChange={(event) => setEditingLimit(event.target.value)}
+                            onChange={(event) => {
+                              setEditingLimit(event.target.value);
+                              setBudgetEditError("");
+                            }}
+                            aria-invalid={Boolean(budgetEditError)}
+                            aria-describedby={budgetEditError ? "budget-edit-error" : undefined}
                           />
+                          {budgetEditError && (
+                            <small className="field__error" id="budget-edit-error">
+                              {budgetEditError}
+                            </small>
+                          )}
                           <button
                             className="button button--small button--primary"
                             type="button"

@@ -106,6 +106,8 @@ export async function processDueConnections(limit: number): Promise<DueBatchResu
     transactionsUpdated: 0,
   };
 
+  await reclaimStaleRunningJobs();
+
   const connectionIds = await findDueConnectionIds(limit);
   for (const connectionId of connectionIds) {
     if (!(await claimConnection(connectionId))) continue;
@@ -145,6 +147,7 @@ export async function cleanupOpenBankingData(retentionDays = 30): Promise<{
   attemptsDeleted: number;
   rawPayloadsCleared: number;
 }> {
+  await reclaimStaleRunningJobs();
   const threshold = new Date(Date.now() - retentionDays * 86_400_000);
   const attempts = await prisma.bankAuthorizationAttempt.deleteMany({
     where: { OR: [{ expiresAt: { lt: threshold } }, { usedAt: { lt: threshold } }] },
@@ -156,12 +159,44 @@ export async function cleanupOpenBankingData(retentionDays = 30): Promise<{
   return { attemptsDeleted: attempts.count, rawPayloadsCleared: payloads.count };
 }
 
+/** Jobs `running` há mais de 20 min consideram-se mortos (crash/OOM no Render). */
+const STALE_RUNNING_MS = 20 * 60_000;
+
+function staleRunningCutoff() {
+  return new Date(Date.now() - STALE_RUNNING_MS);
+}
+
 export async function hasActiveJob(connectionId: string): Promise<boolean> {
+  const cutoff = staleRunningCutoff();
   const active = await prisma.bankSyncJob.findFirst({
-    where: { connectionId, status: { in: ["queued", "running"] } },
+    where: {
+      connectionId,
+      OR: [{ status: "queued" }, { status: "running", startedAt: { gt: cutoff } }],
+    },
     select: { id: true },
   });
   return active !== null;
+}
+
+/**
+ * Marca jobs `running` presos como `failed` para o cron/manual poderem enfileirar
+ * um novo. Sem isto, um crash a meio do sync bloqueia a ligação indefinidamente.
+ */
+export async function reclaimStaleRunningJobs(): Promise<number> {
+  const cutoff = staleRunningCutoff();
+  const result = await prisma.bankSyncJob.updateMany({
+    where: {
+      status: "running",
+      OR: [{ startedAt: { lte: cutoff } }, { startedAt: null }],
+    },
+    data: {
+      status: "failed",
+      finishedAt: new Date(),
+      errorCode: "SYNC_JOB_STALE",
+      errorDetailSanitized: "SYNC_JOB_STALE",
+    },
+  });
+  return result.count;
 }
 
 function connectionStatusFor(providerStatus: string): BankConnection["status"] {

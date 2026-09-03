@@ -78,4 +78,14 @@ export default tseslint.config(
       "@typescript-eslint/no-require-imports": "off",
     },
   },
+
+  {
+    files: ["frontend/scripts/**/*.{js,mjs}"],
+    languageOptions: {
+      globals: { ...globals.node },
+    },
+    rules: {
+      "no-console": "off",
+    },
+  },
 );

@@ -2,13 +2,16 @@ import { Moon, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const THEME_KEY = "expensesnap.theme";
+const THEME_COLORS = { light: "#ffffff", dark: "#0c0c09" } as const;
 
-function preferredTheme() {
-  if (typeof window === "undefined") return "light";
+type Theme = "light" | "dark";
+
+function preferredTheme(): Theme {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return "light";
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
-function storedTheme() {
+function storedTheme(): Theme {
   if (typeof window === "undefined") return preferredTheme();
   try {
     const value = window.localStorage.getItem(THEME_KEY);
@@ -18,19 +21,21 @@ function storedTheme() {
   }
 }
 
+export function applyTheme(theme: Theme) {
+  document.documentElement.dataset.theme = theme;
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", THEME_COLORS[theme]);
+  try {
+    window.localStorage.setItem(THEME_KEY, theme);
+  } catch {
+    // O tema continua a funcionar quando o armazenamento estiver indisponível.
+  }
+}
+
 export function ThemeToggle({ compact = false }: { compact?: boolean }) {
-  const [theme, setTheme] = useState(storedTheme);
+  const [theme, setTheme] = useState<Theme>(storedTheme);
 
   useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    document
-      .querySelector('meta[name="theme-color"]')
-      ?.setAttribute("content", theme === "dark" ? "#101712" : "#f5f7f2");
-    try {
-      window.localStorage.setItem(THEME_KEY, theme);
-    } catch {
-      // O tema continua a funcionar quando o armazenamento estiver indisponível.
-    }
+    applyTheme(theme);
   }, [theme]);
 
   const dark = theme === "dark";

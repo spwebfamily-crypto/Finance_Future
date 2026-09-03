@@ -17,6 +17,10 @@ playwright-report/
 test-results/
 blob-report/
 
+# OCR assets copiados no build (os LICENSE-* ficam versionados)
+frontend/public/ocr/**
+!frontend/public/ocr/LICENSE-*.txt
+
 # Uploads locais
 backend/uploads/
 

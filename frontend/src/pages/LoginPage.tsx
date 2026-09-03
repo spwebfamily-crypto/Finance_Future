@@ -1,6 +1,6 @@
 import { useRef, useState, type FormEvent } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail } from "lucide-react";
+import { ArrowRight, CircleAlert, Eye, EyeOff, LockKeyhole, Mail } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { errorMessage } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
@@ -37,7 +37,8 @@ export function LoginPage() {
 
     try {
       const destination =
-        (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || "/expenses";
+        (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ||
+        "/dashboard";
       await login(email, password, destination);
     } catch (requestError) {
       setError(errorMessage(requestError));
@@ -58,11 +59,9 @@ export function LoginPage() {
           transition={{ duration: reduceMotion ? 0 : 0.22, ease: [0.22, 1, 0.36, 1] }}
         >
           <div className="auth-form-heading">
-            <div>
-              <p className="eyebrow">Bem-vindo de volta</p>
-              <h1>Entrar na conta</h1>
-              <p className="form-intro">Continue de onde ficou.</p>
-            </div>
+            <p className="eyebrow">Bem-vindo de volta</p>
+            <h1>Entrar na conta</h1>
+            <p className="form-intro">Continue de onde ficou.</p>
           </div>
 
           <form className="stack-form" onSubmit={handleSubmit} noValidate>
@@ -76,19 +75,24 @@ export function LoginPage() {
                   exit={reduceMotion ? undefined : { opacity: 0, y: -6 }}
                   transition={{ duration: reduceMotion ? 0 : 0.16, ease: "easeOut" }}
                 >
-                  {error}
+                  <CircleAlert size={18} aria-hidden="true" />
+                  <span>{error}</span>
                 </motion.div>
               )}
             </AnimatePresence>
-            <label className="field">
+            <label className="field" htmlFor="login-email">
               <span>Email</span>
               <span className="field__control">
                 <Mail aria-hidden="true" />
                 <input
+                  id="login-email"
                   ref={emailRef}
                   type="email"
                   name="email"
                   autoComplete="email"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
                   inputMode="email"
                   required
                   value={email}
@@ -107,11 +111,17 @@ export function LoginPage() {
                 </small>
               )}
             </label>
-            <label className="field">
-              <span>Palavra-passe</span>
+            <div className="field">
+              <span className="field__header">
+                <label htmlFor="login-password">Palavra-passe</label>
+                <Link className="auth-forgot" to="/forgot-password">
+                  Esqueceu a palavra-passe?
+                </Link>
+              </span>
               <span className="field__control field__control--password">
                 <LockKeyhole aria-hidden="true" />
                 <input
+                  id="login-password"
                   ref={passwordRef}
                   type={showPassword ? "text" : "password"}
                   name="password"
@@ -131,6 +141,7 @@ export function LoginPage() {
                   className="field__action"
                   type="button"
                   onClick={() => setShowPassword((current) => !current)}
+                  aria-pressed={showPassword}
                   aria-label={showPassword ? "Ocultar palavra-passe" : "Mostrar palavra-passe"}
                 >
                   {showPassword ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
@@ -141,7 +152,7 @@ export function LoginPage() {
                   {fieldErrors.password}
                 </small>
               )}
-            </label>
+            </div>
             <button
               className="button button--primary button--wide"
               type="submit"

@@ -63,7 +63,7 @@ export function VerifyEmailPage() {
 
   const view = {
     verifying: {
-      icon: <Spinner label="" />,
+      icon: <Spinner hideLabel label="A confirmar o email" />,
       tone: "neutral" as const,
       eyebrow: "Verificação",
       title: "A confirmar o seu email",
@@ -108,7 +108,7 @@ export function VerifyEmailPage() {
           <div className={`auth-status auth-status--${view.tone}`}>
             <motion.span
               className="auth-status__icon"
-              aria-hidden="true"
+              aria-hidden={status !== "verifying"}
               initial={reduceMotion ? false : { scale: 0.82, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{

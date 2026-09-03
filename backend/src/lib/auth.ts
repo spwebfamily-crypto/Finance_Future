@@ -17,6 +17,7 @@ interface PublicUserSource extends TokenUser {
 
 const refreshLifetimeMs = 7 * 24 * 60 * 60 * 1_000;
 const verificationLifetimeMs = 24 * 60 * 60 * 1_000;
+const passwordResetLifetimeMs = 60 * 60 * 1_000;
 
 export const hashPassword = (value: string) => bcrypt.hash(value, 12);
 export const verifyPassword = (value: string, hash: string) => bcrypt.compare(value, hash);
@@ -62,6 +63,14 @@ export function generateVerificationToken() {
 
 export function verificationExpiresAt() {
   return new Date(Date.now() + verificationLifetimeMs);
+}
+
+export function generatePasswordResetToken() {
+  return randomBytes(32).toString("hex");
+}
+
+export function passwordResetExpiresAt() {
+  return new Date(Date.now() + passwordResetLifetimeMs);
 }
 
 export function publicUser(user: PublicUserSource) {

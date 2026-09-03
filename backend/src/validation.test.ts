@@ -6,16 +6,32 @@ import {
   expenseFiltersSchema,
   expenseUpdateSchema,
   financialProfileUpsertSchema,
+  forgotPasswordSchema,
   incomeCreateSchema,
   registerSchema,
   recurringExpenseCreateSchema,
   recurringIncomeCreateSchema,
+  resetPasswordSchema,
   savingsGoalCreateSchema,
 } from "./validation.js";
 
 describe("request validation", () => {
   it("rejects malformed registration data", () => {
     expect(() => registerSchema.parse({ name: "A", email: "invalid", password: "x" })).toThrow();
+  });
+
+  it("normalizes forgot-password email and enforces reset password rules", () => {
+    expect(forgotPasswordSchema.parse({ email: "  Owner@Example.com " })).toEqual({
+      email: "owner@example.com",
+    });
+    expect(() => forgotPasswordSchema.parse({ email: "not-an-email" })).toThrow();
+
+    const token = "a".repeat(64);
+    expect(resetPasswordSchema.parse({ token, password: "segredo-123" }).password).toBe(
+      "segredo-123",
+    );
+    expect(() => resetPasswordSchema.parse({ token, password: "1234567" })).toThrow();
+    expect(() => resetPasswordSchema.parse({ token: "curto", password: "segredo-123" })).toThrow();
   });
 
   it("normalizes a decimal amount and a date-only value", () => {

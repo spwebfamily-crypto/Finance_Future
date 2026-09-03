@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowRightLeft,
@@ -92,6 +92,22 @@ export function AccountsPage() {
   const [balanceTarget, setBalanceTarget] = useState<FinancialAccount | null>(null);
   const [correctedBalance, setCorrectedBalance] = useState("");
   const [balanceError, setBalanceError] = useState("");
+  const [accountErrors, setAccountErrors] = useState<{ name?: string; openingBalance?: string; creditLimit?: string }>(
+    {},
+  );
+  const [transferErrors, setTransferErrors] = useState<{
+    fromAccountId?: string;
+    toAccountId?: string;
+    amount?: string;
+    date?: string;
+  }>({});
+  const accountNameRef = useRef<HTMLInputElement>(null);
+  const accountBalanceRef = useRef<HTMLInputElement>(null);
+  const accountLimitRef = useRef<HTMLInputElement>(null);
+  const transferFromRef = useRef<HTMLSelectElement>(null);
+  const transferToRef = useRef<HTMLSelectElement>(null);
+  const transferAmountRef = useRef<HTMLInputElement>(null);
+  const transferDateRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -199,12 +215,22 @@ export function AccountsPage() {
     event.preventDefault();
     const openingBalance = accountForm.openingBalance ? amount(accountForm.openingBalance) : 0;
     const creditLimit = accountForm.creditLimit ? amount(accountForm.creditLimit) : undefined;
-    if (
-      !accountForm.name.trim() ||
-      !Number.isFinite(openingBalance) ||
-      (creditLimit !== undefined && (!Number.isFinite(creditLimit) || creditLimit < 0))
-    )
+    const nextErrors: { name?: string; openingBalance?: string; creditLimit?: string } = {};
+    if (!accountForm.name.trim()) nextErrors.name = "Introduza o nome da conta.";
+    if (accountForm.openingBalance && !Number.isFinite(openingBalance))
+      nextErrors.openingBalance = "Indique um saldo inicial válido.";
+    if (creditLimit !== undefined && (!Number.isFinite(creditLimit) || creditLimit < 0))
+      nextErrors.creditLimit = "Indique um limite válido.";
+    setAccountErrors(nextErrors);
+    if (nextErrors.name || nextErrors.openingBalance || nextErrors.creditLimit) {
+      (nextErrors.name
+        ? accountNameRef
+        : nextErrors.openingBalance
+          ? accountBalanceRef
+          : accountLimitRef
+      ).current?.focus();
       return;
+    }
     setIsSaving(true);
     try {
       const created = await accountApi.create({
@@ -226,15 +252,35 @@ export function AccountsPage() {
   async function createTransfer(event: FormEvent) {
     event.preventDefault();
     const transferAmount = amount(transferForm.amount);
+    const nextErrors: {
+      fromAccountId?: string;
+      toAccountId?: string;
+      amount?: string;
+      date?: string;
+    } = {};
+    if (!transferForm.fromAccountId) nextErrors.fromAccountId = "Escolha a conta de origem.";
+    if (!transferForm.toAccountId) nextErrors.toAccountId = "Escolha a conta de destino.";
     if (
-      !transferForm.fromAccountId ||
-      !transferForm.toAccountId ||
-      transferForm.fromAccountId === transferForm.toAccountId ||
-      !transferForm.date ||
-      !Number.isFinite(transferAmount) ||
-      transferAmount <= 0
+      transferForm.fromAccountId &&
+      transferForm.toAccountId &&
+      transferForm.fromAccountId === transferForm.toAccountId
     )
+      nextErrors.toAccountId = "Escolha duas contas diferentes.";
+    if (!transferForm.date) nextErrors.date = "Indique a data.";
+    if (!Number.isFinite(transferAmount) || transferAmount <= 0)
+      nextErrors.amount = "Indique um valor maior do que zero.";
+    setTransferErrors(nextErrors);
+    if (Object.keys(nextErrors).length) {
+      (nextErrors.fromAccountId
+        ? transferFromRef
+        : nextErrors.toAccountId
+          ? transferToRef
+          : nextErrors.amount
+            ? transferAmountRef
+            : transferDateRef
+      ).current?.focus();
       return;
+    }
     setIsSaving(true);
     try {
       const created = await accountApi.transfer({ ...transferForm, amount: transferAmount });
@@ -385,16 +431,25 @@ export function AccountsPage() {
               <span>Adicionar conta</span>
               <small>Conta bancária, dinheiro ou cartão.</small>
             </summary>
-            <form className="planning-form" onSubmit={createAccount}>
+            <form className="planning-form" onSubmit={createAccount} noValidate>
               <label className="field">
                 <span>Nome</span>
                 <input
+                  ref={accountNameRef}
                   value={accountForm.name}
-                  onChange={(event) =>
-                    setAccountForm((form) => ({ ...form, name: event.target.value }))
-                  }
+                  onChange={(event) => {
+                    setAccountForm((form) => ({ ...form, name: event.target.value }));
+                    setAccountErrors((current) => ({ ...current, name: undefined }));
+                  }}
                   placeholder="Ex.: Conta principal"
+                  aria-invalid={Boolean(accountErrors.name)}
+                  aria-describedby={accountErrors.name ? "account-name-error" : undefined}
                 />
+                {accountErrors.name && (
+                  <small className="field__error" id="account-name-error">
+                    {accountErrors.name}
+                  </small>
+                )}
               </label>
               <label className="field">
                 <span>Tipo</span>
@@ -418,25 +473,43 @@ export function AccountsPage() {
               <label className="field">
                 <span>Saldo inicial</span>
                 <input
+                  ref={accountBalanceRef}
                   inputMode="decimal"
                   value={accountForm.openingBalance}
-                  onChange={(event) =>
-                    setAccountForm((form) => ({ ...form, openingBalance: event.target.value }))
-                  }
+                  onChange={(event) => {
+                    setAccountForm((form) => ({ ...form, openingBalance: event.target.value }));
+                    setAccountErrors((current) => ({ ...current, openingBalance: undefined }));
+                  }}
                   placeholder="0,00"
+                  aria-invalid={Boolean(accountErrors.openingBalance)}
+                  aria-describedby={accountErrors.openingBalance ? "account-balance-error" : undefined}
                 />
+                {accountErrors.openingBalance && (
+                  <small className="field__error" id="account-balance-error">
+                    {accountErrors.openingBalance}
+                  </small>
+                )}
               </label>
               {accountForm.type === "credit_card" && (
                 <label className="field">
                   <span>Limite do cartão</span>
                   <input
+                    ref={accountLimitRef}
                     inputMode="decimal"
                     value={accountForm.creditLimit}
-                    onChange={(event) =>
-                      setAccountForm((form) => ({ ...form, creditLimit: event.target.value }))
-                    }
+                    onChange={(event) => {
+                      setAccountForm((form) => ({ ...form, creditLimit: event.target.value }));
+                      setAccountErrors((current) => ({ ...current, creditLimit: undefined }));
+                    }}
                     placeholder="1 500"
+                    aria-invalid={Boolean(accountErrors.creditLimit)}
+                    aria-describedby={accountErrors.creditLimit ? "account-limit-error" : undefined}
                   />
+                  {accountErrors.creditLimit && (
+                    <small className="field__error" id="account-limit-error">
+                      {accountErrors.creditLimit}
+                    </small>
+                  )}
                 </label>
               )}
               <button className="button button--accent" type="submit" disabled={isSaving}>
@@ -469,14 +542,20 @@ export function AccountsPage() {
                 Crie pelo menos duas contas antes de fazer uma transferência.
               </p>
             )}
-            <form className="planning-form" onSubmit={createTransfer}>
+            <form className="planning-form" onSubmit={createTransfer} noValidate>
               <div className="planning-form__split">
                 <label className="field">
                   <span>De</span>
                   <select
+                    ref={transferFromRef}
                     value={transferForm.fromAccountId}
-                    onChange={(event) =>
-                      setTransferForm((form) => ({ ...form, fromAccountId: event.target.value }))
+                    onChange={(event) => {
+                      setTransferForm((form) => ({ ...form, fromAccountId: event.target.value }));
+                      setTransferErrors((current) => ({ ...current, fromAccountId: undefined }));
+                    }}
+                    aria-invalid={Boolean(transferErrors.fromAccountId)}
+                    aria-describedby={
+                      transferErrors.fromAccountId ? "transfer-from-error" : undefined
                     }
                   >
                     <option value="">Escolher</option>
@@ -486,14 +565,23 @@ export function AccountsPage() {
                       </option>
                     ))}
                   </select>
+                  {transferErrors.fromAccountId && (
+                    <small className="field__error" id="transfer-from-error">
+                      {transferErrors.fromAccountId}
+                    </small>
+                  )}
                 </label>
                 <label className="field">
                   <span>Para</span>
                   <select
+                    ref={transferToRef}
                     value={transferForm.toAccountId}
-                    onChange={(event) =>
-                      setTransferForm((form) => ({ ...form, toAccountId: event.target.value }))
-                    }
+                    onChange={(event) => {
+                      setTransferForm((form) => ({ ...form, toAccountId: event.target.value }));
+                      setTransferErrors((current) => ({ ...current, toAccountId: undefined }));
+                    }}
+                    aria-invalid={Boolean(transferErrors.toAccountId)}
+                    aria-describedby={transferErrors.toAccountId ? "transfer-to-error" : undefined}
                   >
                     <option value="">Escolher</option>
                     {visibleAccounts.map((account) => (
@@ -502,29 +590,52 @@ export function AccountsPage() {
                       </option>
                     ))}
                   </select>
+                  {transferErrors.toAccountId && (
+                    <small className="field__error" id="transfer-to-error">
+                      {transferErrors.toAccountId}
+                    </small>
+                  )}
                 </label>
               </div>
               <div className="planning-form__split">
                 <label className="field">
                   <span>Valor</span>
                   <input
+                    ref={transferAmountRef}
                     inputMode="decimal"
                     value={transferForm.amount}
-                    onChange={(event) =>
-                      setTransferForm((form) => ({ ...form, amount: event.target.value }))
-                    }
+                    onChange={(event) => {
+                      setTransferForm((form) => ({ ...form, amount: event.target.value }));
+                      setTransferErrors((current) => ({ ...current, amount: undefined }));
+                    }}
                     placeholder="0,00"
+                    aria-invalid={Boolean(transferErrors.amount)}
+                    aria-describedby={transferErrors.amount ? "transfer-amount-error" : undefined}
                   />
+                  {transferErrors.amount && (
+                    <small className="field__error" id="transfer-amount-error">
+                      {transferErrors.amount}
+                    </small>
+                  )}
                 </label>
                 <label className="field">
                   <span>Data</span>
                   <input
+                    ref={transferDateRef}
                     type="date"
                     value={transferForm.date}
-                    onChange={(event) =>
-                      setTransferForm((form) => ({ ...form, date: event.target.value }))
-                    }
+                    onChange={(event) => {
+                      setTransferForm((form) => ({ ...form, date: event.target.value }));
+                      setTransferErrors((current) => ({ ...current, date: undefined }));
+                    }}
+                    aria-invalid={Boolean(transferErrors.date)}
+                    aria-describedby={transferErrors.date ? "transfer-date-error" : undefined}
                   />
+                  {transferErrors.date && (
+                    <small className="field__error" id="transfer-date-error">
+                      {transferErrors.date}
+                    </small>
+                  )}
                 </label>
               </div>
               <label className="field">

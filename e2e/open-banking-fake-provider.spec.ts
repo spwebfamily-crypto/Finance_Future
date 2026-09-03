@@ -13,6 +13,8 @@ async function register(page: import("@playwright/test").Page) {
   await page.getByLabel("Nome").fill("Open Banking E2E");
   await page.getByLabel("Email").fill(`e2e.ob.${runId}@example.com`);
   await page.locator('input[name="password"]').fill("Teste-E2E-2026!");
+  await page.locator('input[name="confirmPassword"]').fill("Teste-E2E-2026!");
+  await page.locator('input[name="confirmPassword"]').fill("Teste-E2E-2026!");
   await Promise.all([
     page.waitForURL(/\/onboarding(?:\?.*)?$/),
     page.getByRole("button", { name: "Criar conta" }).click(),

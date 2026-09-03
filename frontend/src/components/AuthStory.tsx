@@ -2,6 +2,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { ShieldCheck } from "lucide-react";
 import { AuthFlowVisual } from "./AuthFlowVisual";
 import { Brand } from "./Brand";
+import { ThemeToggle } from "./ThemeToggle";
 
 const storyContent = {
   login: {
@@ -37,6 +38,26 @@ const storyContent = {
       "A confirmação garante que só quem tem acesso a este email consegue recuperar a conta.",
     footer: "Nunca partilhamos o seu email com terceiros.",
   },
+  forgot: {
+    eyebrow: "Recuperar acesso",
+    title: (
+      <>
+        Um link para <em>voltar à conta.</em>
+      </>
+    ),
+    description: "Se existir uma conta com este email, enviamos um link para escolher uma nova palavra-passe.",
+    footer: "O link expira ao fim de uma hora e só pode ser usado uma vez.",
+  },
+  reset: {
+    eyebrow: "Nova palavra-passe",
+    title: (
+      <>
+        Escolha uma palavra-passe <em>só sua.</em>
+      </>
+    ),
+    description: "Depois de gravar, inicie sessão com a nova palavra-passe.",
+    footer: "As sessões abertas noutros dispositivos serão encerradas.",
+  },
 } as const;
 
 export function AuthStory({ variant }: { variant: keyof typeof storyContent }) {
@@ -45,7 +66,10 @@ export function AuthStory({ variant }: { variant: keyof typeof storyContent }) {
 
   return (
     <section className="auth-story" aria-label="ExpenseSnap">
-      <Brand linked={false} />
+      <div className="auth-story__top">
+        <Brand linked={false} />
+        <ThemeToggle compact />
+      </div>
       <motion.div
         className="auth-story__body"
         initial={reduceMotion ? false : { opacity: 0, y: 8 }}

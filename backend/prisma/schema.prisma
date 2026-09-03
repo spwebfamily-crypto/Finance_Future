@@ -31,6 +31,7 @@ model User {
   notes            FinancialNote[]
   refreshTokens    RefreshToken[]
   verificationToken EmailVerificationToken?
+  passwordResetToken PasswordResetToken?
   financialProfile FinancialProfile?
 
   bankConnections         BankConnection[]
@@ -353,6 +354,20 @@ model RefreshToken {
 // Um único token de verificação ativo por utilizador; reenviar substitui-o.
 // Apenas o hash SHA-256 é guardado, à semelhança dos refresh tokens.
 model EmailVerificationToken {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+}
+
+// Um único token de reposição ativo por utilizador; um novo pedido substitui-o.
+// Só o hash SHA-256 é guardado; o valor em claro vai só no email.
+model PasswordResetToken {
   id        String   @id @default(uuid())
   userId    String   @unique
   tokenHash String   @unique

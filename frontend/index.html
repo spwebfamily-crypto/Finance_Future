@@ -3,18 +3,24 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#f5f7f2" />
+    <meta name="theme-color" content="#ffffff" />
     <script>
       try {
-        const theme = localStorage.getItem("expensesnap.theme");
-        document.documentElement.dataset.theme =
-          theme === "light" || theme === "dark"
-            ? theme
+        const stored = localStorage.getItem("expensesnap.theme");
+        const theme =
+          stored === "light" || stored === "dark"
+            ? stored
             : matchMedia("(prefers-color-scheme: dark)").matches
               ? "dark"
               : "light";
+        document.documentElement.dataset.theme = theme;
+        const themeColor = document.querySelector('meta[name="theme-color"]');
+        if (themeColor)
+          themeColor.setAttribute("content", theme === "dark" ? "#0c0c09" : "#ffffff");
       } catch {
         document.documentElement.dataset.theme = "light";
+        const themeColor = document.querySelector('meta[name="theme-color"]');
+        if (themeColor) themeColor.setAttribute("content", "#ffffff");
       }
     </script>
     <meta name="mobile-web-app-capable" content="yes" />

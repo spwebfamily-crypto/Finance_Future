@@ -295,6 +295,7 @@ export function ExpensesPage() {
           <button
             className={`filter-chip ${!activeFilters.from && !activeFilters.to ? "filter-chip--active" : ""}`}
             type="button"
+            aria-pressed={!activeFilters.from && !activeFilters.to}
             onClick={() => applyPeriod({ from: "", to: "" })}
           >
             Todos os períodos

@@ -339,7 +339,7 @@ export function FinancialOnboardingPage() {
       <main className="onboarding-page">
         <header className="onboarding-header">
           <Brand />
-          <Link className="text-button" to="/expenses">
+          <Link className="text-button" to="/dashboard">
             Fazer mais tarde
           </Link>
         </header>
@@ -348,7 +348,7 @@ export function FinancialOnboardingPage() {
             message={loadError}
             onRetry={() => setLoadAttempt((current) => current + 1)}
           />
-          <Link className="button button--secondary" to="/expenses">
+          <Link className="button button--secondary" to="/dashboard">
             Continuar sem perfil
           </Link>
         </div>
@@ -373,7 +373,7 @@ export function FinancialOnboardingPage() {
       />
       <header className="onboarding-header">
         <Brand />
-        <Link className="text-button" to="/expenses">
+        <Link className="text-button" to="/dashboard">
           Fazer mais tarde
         </Link>
       </header>

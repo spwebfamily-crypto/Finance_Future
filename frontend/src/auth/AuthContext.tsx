@@ -10,7 +10,7 @@ import {
 } from "react";
 import { useNavigate } from "react-router-dom";
 import { authApi } from "../api/resources";
-import { refreshAccessToken } from "../api/client";
+import { ApiError, refreshAccessToken } from "../api/client";
 import {
   clearSession,
   getAccessToken,
@@ -38,9 +38,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(() => getStoredUser());
-  const [isInitializing, setIsInitializing] = useState(() =>
-    Boolean(getRefreshToken() && !getAccessToken()),
-  );
+  const [isInitializing, setIsInitializing] = useState(() => Boolean(getRefreshToken()));
 
   const logout = useCallback(() => {
     // Revoga a sessão no servidor antes de limpar o estado local. O token é
@@ -60,28 +58,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("expensesnap:session-expired", handleExpiredSession);
   }, [logout]);
 
+  const applyUser = useCallback((nextUser: User) => {
+    saveStoredUser(nextUser);
+    setUser(nextUser);
+  }, []);
+
   useEffect(() => {
     if (!isInitializing) return;
     let active = true;
 
-    refreshAccessToken()
-      .catch(() => {
-        if (active) logout();
-      })
-      .finally(() => {
+    async function restoreSession() {
+      try {
+        if (!getAccessToken() && getRefreshToken()) {
+          await refreshAccessToken();
+        }
+        const me = await authApi.me();
+        if (active) applyUser(me);
+      } catch (error) {
+        if (!active) return;
+        if (error instanceof ApiError && (error.status === 401 || error.code === "SESSION_EXPIRED")) {
+          logout();
+        }
+      } finally {
         if (active) setIsInitializing(false);
-      });
+      }
+    }
 
+    void restoreSession();
     return () => {
       active = false;
     };
-  }, [isInitializing, logout]);
+  }, [applyUser, isInitializing, logout]);
 
   // Localização e estado de autenticação têm de se tornar visíveis NO MESMO
   // commit: o React Router v7 trata navigate() como transição concorrente;
   // se setUser fosse síncrono, existiria um commit intermédio com a página de
   // guest (ex.: /register) já autenticada e o GuestRoute redirecionava para
-  // /expenses antes da transição do destino se concretizar.
+  // /dashboard antes da transição do destino se concretizar.
   const applySession = useCallback(
     (session: { accessToken: string; refreshToken: string; user: User }, destination: string) => {
       saveSession(session.accessToken, session.refreshToken, session.user);
@@ -94,7 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const login = useCallback(
-    async (email: string, password: string, destination = "/expenses") => {
+    async (email: string, password: string, destination = "/dashboard") => {
       const session = await authApi.login(email, password);
       applySession(session, destination);
     },
@@ -108,11 +121,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     [applySession],
   );
-
-  const applyUser = useCallback((nextUser: User) => {
-    saveStoredUser(nextUser);
-    setUser(nextUser);
-  }, []);
 
   const value = useMemo(
     () => ({

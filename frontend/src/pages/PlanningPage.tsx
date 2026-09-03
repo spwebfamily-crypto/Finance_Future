@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import {
   AlertTriangle,
@@ -142,6 +142,49 @@ export function PlanningPage() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget>(null);
+  const [incomeErrors, setIncomeErrors] = useState<{
+    description?: string;
+    amount?: string;
+    date?: string;
+  }>({});
+  const [goalErrors, setGoalErrors] = useState<{ name?: string; targetAmount?: string }>({});
+  const [recurringErrors, setRecurringErrors] = useState<{
+    description?: string;
+    location?: string;
+    categoryId?: string;
+    amount?: string;
+    dayOfMonth?: string;
+  }>({});
+  const [recurringIncomeErrors, setRecurringIncomeErrors] = useState<{
+    description?: string;
+    amount?: string;
+    dayOfMonth?: string;
+  }>({});
+  const [debtErrors, setDebtErrors] = useState<{
+    name?: string;
+    lender?: string;
+    currentBalance?: string;
+    annualInterestRate?: string;
+    monthlyPayment?: string;
+  }>({});
+  const incomeDescriptionRef = useRef<HTMLInputElement>(null);
+  const incomeAmountRef = useRef<HTMLInputElement>(null);
+  const incomeDateRef = useRef<HTMLInputElement>(null);
+  const goalNameRef = useRef<HTMLInputElement>(null);
+  const goalTargetRef = useRef<HTMLInputElement>(null);
+  const recurringDescriptionRef = useRef<HTMLInputElement>(null);
+  const recurringLocationRef = useRef<HTMLInputElement>(null);
+  const recurringCategoryRef = useRef<HTMLSelectElement>(null);
+  const recurringAmountRef = useRef<HTMLInputElement>(null);
+  const recurringDayRef = useRef<HTMLInputElement>(null);
+  const recurringIncomeDescriptionRef = useRef<HTMLInputElement>(null);
+  const recurringIncomeAmountRef = useRef<HTMLInputElement>(null);
+  const recurringIncomeDayRef = useRef<HTMLInputElement>(null);
+  const debtNameRef = useRef<HTMLInputElement>(null);
+  const debtLenderRef = useRef<HTMLInputElement>(null);
+  const debtBalanceRef = useRef<HTMLInputElement>(null);
+  const debtRateRef = useRef<HTMLInputElement>(null);
+  const debtPaymentRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -322,13 +365,21 @@ export function PlanningPage() {
   async function createIncome(event: FormEvent) {
     event.preventDefault();
     const amount = numberFromInput(incomeForm.amount);
-    if (
-      !incomeForm.description.trim() ||
-      !incomeForm.date ||
-      !Number.isFinite(amount) ||
-      amount <= 0
-    )
+    const nextErrors: { description?: string; amount?: string; date?: string } = {};
+    if (!incomeForm.description.trim()) nextErrors.description = "Introduza uma descrição.";
+    if (!incomeForm.date) nextErrors.date = "Indique a data.";
+    if (!Number.isFinite(amount) || amount <= 0)
+      nextErrors.amount = "Indique um valor maior do que zero.";
+    setIncomeErrors(nextErrors);
+    if (nextErrors.description || nextErrors.amount || nextErrors.date) {
+      (nextErrors.description
+        ? incomeDescriptionRef
+        : nextErrors.amount
+          ? incomeAmountRef
+          : incomeDateRef
+      ).current?.focus();
       return;
+    }
     setIsSaving(true);
     try {
       const created = await incomeApi.create({
@@ -352,14 +403,17 @@ export function PlanningPage() {
     event.preventDefault();
     const targetAmount = numberFromInput(goalForm.targetAmount);
     const currentAmount = goalForm.currentAmount ? numberFromInput(goalForm.currentAmount) : 0;
-    if (
-      !goalForm.name.trim() ||
-      !Number.isFinite(targetAmount) ||
-      targetAmount <= 0 ||
-      !Number.isFinite(currentAmount) ||
-      currentAmount < 0
-    )
+    const nextErrors: { name?: string; targetAmount?: string } = {};
+    if (!goalForm.name.trim()) nextErrors.name = "Introduza o nome da meta.";
+    if (!Number.isFinite(targetAmount) || targetAmount <= 0)
+      nextErrors.targetAmount = "Indique um objetivo maior do que zero.";
+    if (!Number.isFinite(currentAmount) || currentAmount < 0)
+      nextErrors.targetAmount = nextErrors.targetAmount || "Indique um valor já poupado válido.";
+    setGoalErrors(nextErrors);
+    if (nextErrors.name || nextErrors.targetAmount) {
+      (nextErrors.name ? goalNameRef : goalTargetRef).current?.focus();
       return;
+    }
     setIsSaving(true);
     try {
       const created = await savingsGoalApi.create({
@@ -387,17 +441,34 @@ export function PlanningPage() {
     event.preventDefault();
     const amount = numberFromInput(recurringForm.amount);
     const dayOfMonth = Number(recurringForm.dayOfMonth);
-    if (
-      !recurringForm.description.trim() ||
-      !recurringForm.location.trim() ||
-      !recurringForm.categoryId ||
-      !Number.isFinite(amount) ||
-      amount <= 0 ||
-      !Number.isInteger(dayOfMonth) ||
-      dayOfMonth < 1 ||
-      dayOfMonth > 31
-    )
+    const nextErrors: {
+      description?: string;
+      location?: string;
+      categoryId?: string;
+      amount?: string;
+      dayOfMonth?: string;
+    } = {};
+    if (!recurringForm.description.trim()) nextErrors.description = "Introduza uma descrição.";
+    if (!recurringForm.location.trim()) nextErrors.location = "Introduza o local.";
+    if (!recurringForm.categoryId) nextErrors.categoryId = "Escolha uma categoria.";
+    if (!Number.isFinite(amount) || amount <= 0)
+      nextErrors.amount = "Indique um valor maior do que zero.";
+    if (!Number.isInteger(dayOfMonth) || dayOfMonth < 1 || dayOfMonth > 31)
+      nextErrors.dayOfMonth = "Indique um dia entre 1 e 31.";
+    setRecurringErrors(nextErrors);
+    if (Object.keys(nextErrors).length) {
+      (nextErrors.description
+        ? recurringDescriptionRef
+        : nextErrors.location
+          ? recurringLocationRef
+          : nextErrors.categoryId
+            ? recurringCategoryRef
+            : nextErrors.amount
+              ? recurringAmountRef
+              : recurringDayRef
+      ).current?.focus();
       return;
+    }
     setIsSaving(true);
     try {
       const created = await recurringExpenseApi.create({
@@ -422,15 +493,22 @@ export function PlanningPage() {
     event.preventDefault();
     const amount = numberFromInput(recurringIncomeForm.amount);
     const dayOfMonth = Number(recurringIncomeForm.dayOfMonth);
-    if (
-      !recurringIncomeForm.description.trim() ||
-      !Number.isFinite(amount) ||
-      amount <= 0 ||
-      !Number.isInteger(dayOfMonth) ||
-      dayOfMonth < 1 ||
-      dayOfMonth > 31
-    )
+    const nextErrors: { description?: string; amount?: string; dayOfMonth?: string } = {};
+    if (!recurringIncomeForm.description.trim()) nextErrors.description = "Introduza uma descrição.";
+    if (!Number.isFinite(amount) || amount <= 0)
+      nextErrors.amount = "Indique um valor maior do que zero.";
+    if (!Number.isInteger(dayOfMonth) || dayOfMonth < 1 || dayOfMonth > 31)
+      nextErrors.dayOfMonth = "Indique um dia entre 1 e 31.";
+    setRecurringIncomeErrors(nextErrors);
+    if (nextErrors.description || nextErrors.amount || nextErrors.dayOfMonth) {
+      (nextErrors.description
+        ? recurringIncomeDescriptionRef
+        : nextErrors.amount
+          ? recurringIncomeAmountRef
+          : recurringIncomeDayRef
+      ).current?.focus();
       return;
+    }
     setIsSaving(true);
     try {
       const created = await recurringIncomeApi.create({
@@ -492,18 +570,33 @@ export function PlanningPage() {
     const currentBalance = numberFromInput(debtForm.currentBalance);
     const annualInterestRate = numberFromInput(debtForm.annualInterestRate);
     const monthlyPayment = numberFromInput(debtForm.monthlyPayment);
-    if (
-      !debtForm.name.trim() ||
-      !debtForm.lender.trim() ||
-      !Number.isFinite(currentBalance) ||
-      currentBalance < 0 ||
-      !Number.isFinite(annualInterestRate) ||
-      annualInterestRate < 0 ||
-      !Number.isFinite(monthlyPayment) ||
-      monthlyPayment <= 0
-    ) {
-      if (Number.isFinite(monthlyPayment) && monthlyPayment <= 0)
-        setError("A prestação mensal deve ser superior a zero.");
+    const nextErrors: {
+      name?: string;
+      lender?: string;
+      currentBalance?: string;
+      annualInterestRate?: string;
+      monthlyPayment?: string;
+    } = {};
+    if (!debtForm.name.trim()) nextErrors.name = "Introduza o nome da dívida.";
+    if (!debtForm.lender.trim()) nextErrors.lender = "Introduza o credor.";
+    if (!Number.isFinite(currentBalance) || currentBalance < 0)
+      nextErrors.currentBalance = "Indique um saldo válido.";
+    if (!Number.isFinite(annualInterestRate) || annualInterestRate < 0)
+      nextErrors.annualInterestRate = "Indique a taxa de juro.";
+    if (!Number.isFinite(monthlyPayment) || monthlyPayment <= 0)
+      nextErrors.monthlyPayment = "A prestação mensal deve ser superior a zero.";
+    setDebtErrors(nextErrors);
+    if (Object.keys(nextErrors).length) {
+      (nextErrors.name
+        ? debtNameRef
+        : nextErrors.lender
+          ? debtLenderRef
+          : nextErrors.currentBalance
+            ? debtBalanceRef
+            : nextErrors.annualInterestRate
+              ? debtRateRef
+              : debtPaymentRef
+      ).current?.focus();
       return;
     }
     setIsSaving(true);
@@ -660,7 +753,7 @@ export function PlanningPage() {
       />
       <div className="planning-header-actions">
         <Link className="button button--secondary" to="/accounts">
-          <Landmark aria-hidden="true" /> Contas e cartoes
+          <Landmark aria-hidden="true" /> Contas e cartões
         </Link>
         {notificationPermission !== "unsupported" && notificationPermission !== "granted" && (
           <button
@@ -794,29 +887,47 @@ export function PlanningPage() {
               <span>Adicionar meta</span>
               <small>Definir um valor e, se quiser, uma data.</small>
             </summary>
-            <form className="planning-form" onSubmit={createGoal}>
+            <form className="planning-form" onSubmit={createGoal} noValidate>
               <label className="field">
                 <span>Nome da meta</span>
                 <input
+                  ref={goalNameRef}
                   value={goalForm.name}
-                  onChange={(event) =>
-                    setGoalForm((form) => ({ ...form, name: event.target.value }))
-                  }
+                  onChange={(event) => {
+                    setGoalForm((form) => ({ ...form, name: event.target.value }));
+                    setGoalErrors((current) => ({ ...current, name: undefined }));
+                  }}
                   placeholder="Ex.: Fundo de emergência"
                   maxLength={100}
+                  aria-invalid={Boolean(goalErrors.name)}
+                  aria-describedby={goalErrors.name ? "goal-name-error" : undefined}
                 />
+                {goalErrors.name && (
+                  <small className="field__error" id="goal-name-error">
+                    {goalErrors.name}
+                  </small>
+                )}
               </label>
               <div className="planning-form__split">
                 <label className="field">
                   <span>Objetivo</span>
                   <input
+                    ref={goalTargetRef}
                     inputMode="decimal"
                     value={goalForm.targetAmount}
-                    onChange={(event) =>
-                      setGoalForm((form) => ({ ...form, targetAmount: event.target.value }))
-                    }
+                    onChange={(event) => {
+                      setGoalForm((form) => ({ ...form, targetAmount: event.target.value }));
+                      setGoalErrors((current) => ({ ...current, targetAmount: undefined }));
+                    }}
                     placeholder="3 000"
+                    aria-invalid={Boolean(goalErrors.targetAmount)}
+                    aria-describedby={goalErrors.targetAmount ? "goal-target-error" : undefined}
                   />
+                  {goalErrors.targetAmount && (
+                    <small className="field__error" id="goal-target-error">
+                      {goalErrors.targetAmount}
+                    </small>
+                  )}
                 </label>
                 <label className="field">
                   <span>Já poupado</span>
@@ -949,7 +1060,7 @@ export function PlanningPage() {
               <span>Registar rendimento</span>
               <small>Adicionar uma entrada recebida.</small>
             </summary>
-            <form className="planning-form" onSubmit={createIncome}>
+            <form className="planning-form" onSubmit={createIncome} noValidate>
               <label className="field">
                 <span>
                   Conta <em>opcional</em>
@@ -971,35 +1082,62 @@ export function PlanningPage() {
               <label className="field">
                 <span>Descrição</span>
                 <input
+                  ref={incomeDescriptionRef}
                   value={incomeForm.description}
-                  onChange={(event) =>
-                    setIncomeForm((form) => ({ ...form, description: event.target.value }))
-                  }
+                  onChange={(event) => {
+                    setIncomeForm((form) => ({ ...form, description: event.target.value }));
+                    setIncomeErrors((current) => ({ ...current, description: undefined }));
+                  }}
                   placeholder="Ex.: Salário"
                   maxLength={160}
+                  aria-invalid={Boolean(incomeErrors.description)}
+                  aria-describedby={incomeErrors.description ? "income-description-error" : undefined}
                 />
+                {incomeErrors.description && (
+                  <small className="field__error" id="income-description-error">
+                    {incomeErrors.description}
+                  </small>
+                )}
               </label>
               <div className="planning-form__split">
                 <label className="field">
                   <span>Valor</span>
                   <input
+                    ref={incomeAmountRef}
                     inputMode="decimal"
                     value={incomeForm.amount}
-                    onChange={(event) =>
-                      setIncomeForm((form) => ({ ...form, amount: event.target.value }))
-                    }
+                    onChange={(event) => {
+                      setIncomeForm((form) => ({ ...form, amount: event.target.value }));
+                      setIncomeErrors((current) => ({ ...current, amount: undefined }));
+                    }}
                     placeholder="1 500"
+                    aria-invalid={Boolean(incomeErrors.amount)}
+                    aria-describedby={incomeErrors.amount ? "income-amount-error" : undefined}
                   />
+                  {incomeErrors.amount && (
+                    <small className="field__error" id="income-amount-error">
+                      {incomeErrors.amount}
+                    </small>
+                  )}
                 </label>
                 <label className="field">
                   <span>Data</span>
                   <input
+                    ref={incomeDateRef}
                     type="date"
                     value={incomeForm.date}
-                    onChange={(event) =>
-                      setIncomeForm((form) => ({ ...form, date: event.target.value }))
-                    }
+                    onChange={(event) => {
+                      setIncomeForm((form) => ({ ...form, date: event.target.value }));
+                      setIncomeErrors((current) => ({ ...current, date: undefined }));
+                    }}
+                    aria-invalid={Boolean(incomeErrors.date)}
+                    aria-describedby={incomeErrors.date ? "income-date-error" : undefined}
                   />
+                  {incomeErrors.date && (
+                    <small className="field__error" id="income-date-error">
+                      {incomeErrors.date}
+                    </small>
+                  )}
                 </label>
               </div>
               <label className="field">
@@ -1079,20 +1217,32 @@ export function PlanningPage() {
               <form
                 className="planning-form planning-form--recurring-income"
                 onSubmit={createRecurringIncome}
+                noValidate
               >
                 <label className="field">
                   <span>Descrição</span>
                   <input
+                    ref={recurringIncomeDescriptionRef}
                     value={recurringIncomeForm.description}
-                    onChange={(event) =>
+                    onChange={(event) => {
                       setRecurringIncomeForm((form) => ({
                         ...form,
                         description: event.target.value,
-                      }))
-                    }
+                      }));
+                      setRecurringIncomeErrors((current) => ({ ...current, description: undefined }));
+                    }}
                     placeholder="Ex.: Salário"
                     maxLength={160}
+                    aria-invalid={Boolean(recurringIncomeErrors.description)}
+                    aria-describedby={
+                      recurringIncomeErrors.description ? "recurring-income-description-error" : undefined
+                    }
                   />
+                  {recurringIncomeErrors.description && (
+                    <small className="field__error" id="recurring-income-description-error">
+                      {recurringIncomeErrors.description}
+                    </small>
+                  )}
                 </label>
                 <label className="field">
                   <span>
@@ -1110,29 +1260,51 @@ export function PlanningPage() {
                 <label className="field">
                   <span>Valor</span>
                   <input
+                    ref={recurringIncomeAmountRef}
                     inputMode="decimal"
                     value={recurringIncomeForm.amount}
-                    onChange={(event) =>
-                      setRecurringIncomeForm((form) => ({ ...form, amount: event.target.value }))
-                    }
+                    onChange={(event) => {
+                      setRecurringIncomeForm((form) => ({ ...form, amount: event.target.value }));
+                      setRecurringIncomeErrors((current) => ({ ...current, amount: undefined }));
+                    }}
                     placeholder="0,00"
+                    aria-invalid={Boolean(recurringIncomeErrors.amount)}
+                    aria-describedby={
+                      recurringIncomeErrors.amount ? "recurring-income-amount-error" : undefined
+                    }
                   />
+                  {recurringIncomeErrors.amount && (
+                    <small className="field__error" id="recurring-income-amount-error">
+                      {recurringIncomeErrors.amount}
+                    </small>
+                  )}
                 </label>
                 <label className="field">
                   <span>Dia</span>
                   <input
+                    ref={recurringIncomeDayRef}
                     inputMode="numeric"
                     min="1"
                     max="31"
                     value={recurringIncomeForm.dayOfMonth}
-                    onChange={(event) =>
+                    onChange={(event) => {
                       setRecurringIncomeForm((form) => ({
                         ...form,
                         dayOfMonth: event.target.value,
-                      }))
-                    }
+                      }));
+                      setRecurringIncomeErrors((current) => ({ ...current, dayOfMonth: undefined }));
+                    }}
                     placeholder="Ex.: 25"
+                    aria-invalid={Boolean(recurringIncomeErrors.dayOfMonth)}
+                    aria-describedby={
+                      recurringIncomeErrors.dayOfMonth ? "recurring-income-day-error" : undefined
+                    }
                   />
+                  {recurringIncomeErrors.dayOfMonth && (
+                    <small className="field__error" id="recurring-income-day-error">
+                      {recurringIncomeErrors.dayOfMonth}
+                    </small>
+                  )}
                 </label>
                 <label className="field">
                   <span>
@@ -1254,7 +1426,7 @@ export function PlanningPage() {
             <span>Agendar despesa recorrente</span>
             <small>Renda, seguro, subscrição ou outro pagamento mensal.</small>
           </summary>
-          <form className="planning-form planning-form--recurring" onSubmit={createRecurring}>
+          <form className="planning-form planning-form--recurring" onSubmit={createRecurring} noValidate>
             <label className="field">
               <span>
                 Conta <em>opcional</em>
@@ -1276,32 +1448,54 @@ export function PlanningPage() {
             <label className="field">
               <span>Descrição</span>
               <input
+                ref={recurringDescriptionRef}
                 value={recurringForm.description}
-                onChange={(event) =>
-                  setRecurringForm((form) => ({ ...form, description: event.target.value }))
-                }
+                onChange={(event) => {
+                  setRecurringForm((form) => ({ ...form, description: event.target.value }));
+                  setRecurringErrors((current) => ({ ...current, description: undefined }));
+                }}
                 placeholder="Ex.: Renda"
                 maxLength={160}
+                aria-invalid={Boolean(recurringErrors.description)}
+                aria-describedby={recurringErrors.description ? "recurring-description-error" : undefined}
               />
+              {recurringErrors.description && (
+                <small className="field__error" id="recurring-description-error">
+                  {recurringErrors.description}
+                </small>
+              )}
             </label>
             <label className="field">
               <span>Local</span>
               <input
+                ref={recurringLocationRef}
                 value={recurringForm.location}
-                onChange={(event) =>
-                  setRecurringForm((form) => ({ ...form, location: event.target.value }))
-                }
+                onChange={(event) => {
+                  setRecurringForm((form) => ({ ...form, location: event.target.value }));
+                  setRecurringErrors((current) => ({ ...current, location: undefined }));
+                }}
                 placeholder="Ex.: Senhorio"
                 maxLength={160}
+                aria-invalid={Boolean(recurringErrors.location)}
+                aria-describedby={recurringErrors.location ? "recurring-location-error" : undefined}
               />
+              {recurringErrors.location && (
+                <small className="field__error" id="recurring-location-error">
+                  {recurringErrors.location}
+                </small>
+              )}
             </label>
             <label className="field">
               <span>Categoria</span>
               <select
+                ref={recurringCategoryRef}
                 value={recurringForm.categoryId}
-                onChange={(event) =>
-                  setRecurringForm((form) => ({ ...form, categoryId: event.target.value }))
-                }
+                onChange={(event) => {
+                  setRecurringForm((form) => ({ ...form, categoryId: event.target.value }));
+                  setRecurringErrors((current) => ({ ...current, categoryId: undefined }));
+                }}
+                aria-invalid={Boolean(recurringErrors.categoryId)}
+                aria-describedby={recurringErrors.categoryId ? "recurring-category-error" : undefined}
               >
                 <option value="">Escolher categoria</option>
                 {categories.map((category) => (
@@ -1310,30 +1504,53 @@ export function PlanningPage() {
                   </option>
                 ))}
               </select>
+              {recurringErrors.categoryId && (
+                <small className="field__error" id="recurring-category-error">
+                  {recurringErrors.categoryId}
+                </small>
+              )}
             </label>
             <label className="field">
               <span>Valor</span>
               <input
+                ref={recurringAmountRef}
                 inputMode="decimal"
                 value={recurringForm.amount}
-                onChange={(event) =>
-                  setRecurringForm((form) => ({ ...form, amount: event.target.value }))
-                }
+                onChange={(event) => {
+                  setRecurringForm((form) => ({ ...form, amount: event.target.value }));
+                  setRecurringErrors((current) => ({ ...current, amount: undefined }));
+                }}
                 placeholder="0,00"
+                aria-invalid={Boolean(recurringErrors.amount)}
+                aria-describedby={recurringErrors.amount ? "recurring-amount-error" : undefined}
               />
+              {recurringErrors.amount && (
+                <small className="field__error" id="recurring-amount-error">
+                  {recurringErrors.amount}
+                </small>
+              )}
             </label>
             <label className="field">
               <span>Dia do mês</span>
               <input
+                ref={recurringDayRef}
                 inputMode="numeric"
                 value={recurringForm.dayOfMonth}
-                onChange={(event) =>
-                  setRecurringForm((form) => ({ ...form, dayOfMonth: event.target.value }))
-                }
+                onChange={(event) => {
+                  setRecurringForm((form) => ({ ...form, dayOfMonth: event.target.value }));
+                  setRecurringErrors((current) => ({ ...current, dayOfMonth: undefined }));
+                }}
                 placeholder="Ex.: 1"
                 min="1"
                 max="31"
+                aria-invalid={Boolean(recurringErrors.dayOfMonth)}
+                aria-describedby={recurringErrors.dayOfMonth ? "recurring-day-error" : undefined}
               />
+              {recurringErrors.dayOfMonth && (
+                <small className="field__error" id="recurring-day-error">
+                  {recurringErrors.dayOfMonth}
+                </small>
+              )}
             </label>
             <button
               className="button button--accent"
@@ -1464,59 +1681,106 @@ export function PlanningPage() {
             <span>Adicionar dívida</span>
             <small>Registe o saldo, a prestação e o próximo vencimento.</small>
           </summary>
-          <form className="planning-form planning-form--debt" onSubmit={createDebt}>
+          <form className="planning-form planning-form--debt" onSubmit={createDebt} noValidate>
             <label className="field">
               <span>Nome</span>
               <input
+                ref={debtNameRef}
                 value={debtForm.name}
-                onChange={(event) => setDebtForm((form) => ({ ...form, name: event.target.value }))}
+                onChange={(event) => {
+                  setDebtForm((form) => ({ ...form, name: event.target.value }));
+                  setDebtErrors((current) => ({ ...current, name: undefined }));
+                }}
                 placeholder="Ex.: Cartão de crédito"
                 maxLength={100}
+                aria-invalid={Boolean(debtErrors.name)}
+                aria-describedby={debtErrors.name ? "debt-name-error" : undefined}
               />
+              {debtErrors.name && (
+                <small className="field__error" id="debt-name-error">
+                  {debtErrors.name}
+                </small>
+              )}
             </label>
             <label className="field">
               <span>Credor</span>
               <input
+                ref={debtLenderRef}
                 value={debtForm.lender}
-                onChange={(event) =>
-                  setDebtForm((form) => ({ ...form, lender: event.target.value }))
-                }
+                onChange={(event) => {
+                  setDebtForm((form) => ({ ...form, lender: event.target.value }));
+                  setDebtErrors((current) => ({ ...current, lender: undefined }));
+                }}
                 placeholder="Ex.: Banco"
                 maxLength={100}
+                aria-invalid={Boolean(debtErrors.lender)}
+                aria-describedby={debtErrors.lender ? "debt-lender-error" : undefined}
               />
+              {debtErrors.lender && (
+                <small className="field__error" id="debt-lender-error">
+                  {debtErrors.lender}
+                </small>
+              )}
             </label>
             <label className="field">
               <span>Saldo atual</span>
               <input
+                ref={debtBalanceRef}
                 inputMode="decimal"
                 value={debtForm.currentBalance}
-                onChange={(event) =>
-                  setDebtForm((form) => ({ ...form, currentBalance: event.target.value }))
-                }
+                onChange={(event) => {
+                  setDebtForm((form) => ({ ...form, currentBalance: event.target.value }));
+                  setDebtErrors((current) => ({ ...current, currentBalance: undefined }));
+                }}
                 placeholder="0,00"
+                aria-invalid={Boolean(debtErrors.currentBalance)}
+                aria-describedby={debtErrors.currentBalance ? "debt-balance-error" : undefined}
               />
+              {debtErrors.currentBalance && (
+                <small className="field__error" id="debt-balance-error">
+                  {debtErrors.currentBalance}
+                </small>
+              )}
             </label>
             <label className="field">
               <span>Juro anual (%)</span>
               <input
+                ref={debtRateRef}
                 inputMode="decimal"
                 value={debtForm.annualInterestRate}
-                onChange={(event) =>
-                  setDebtForm((form) => ({ ...form, annualInterestRate: event.target.value }))
-                }
+                onChange={(event) => {
+                  setDebtForm((form) => ({ ...form, annualInterestRate: event.target.value }));
+                  setDebtErrors((current) => ({ ...current, annualInterestRate: undefined }));
+                }}
                 placeholder="0"
+                aria-invalid={Boolean(debtErrors.annualInterestRate)}
+                aria-describedby={debtErrors.annualInterestRate ? "debt-rate-error" : undefined}
               />
+              {debtErrors.annualInterestRate && (
+                <small className="field__error" id="debt-rate-error">
+                  {debtErrors.annualInterestRate}
+                </small>
+              )}
             </label>
             <label className="field">
               <span>Prestação mensal</span>
               <input
+                ref={debtPaymentRef}
                 inputMode="decimal"
                 value={debtForm.monthlyPayment}
-                onChange={(event) =>
-                  setDebtForm((form) => ({ ...form, monthlyPayment: event.target.value }))
-                }
+                onChange={(event) => {
+                  setDebtForm((form) => ({ ...form, monthlyPayment: event.target.value }));
+                  setDebtErrors((current) => ({ ...current, monthlyPayment: undefined }));
+                }}
                 placeholder="0,00"
+                aria-invalid={Boolean(debtErrors.monthlyPayment)}
+                aria-describedby={debtErrors.monthlyPayment ? "debt-payment-error" : undefined}
               />
+              {debtErrors.monthlyPayment && (
+                <small className="field__error" id="debt-payment-error">
+                  {debtErrors.monthlyPayment}
+                </small>
+              )}
             </label>
             <label className="field">
               <span>

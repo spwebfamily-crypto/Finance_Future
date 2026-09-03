@@ -26,6 +26,7 @@ import {
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { errorMessage } from "../api/client";
 import { accountApi, categoryApi, expenseApi } from "../api/resources";
+import { OCR_ASSETS_UNAVAILABLE, isOcrAssetsError } from "../utils/localOcr";
 import { PageHeader } from "../components/PageHeader";
 import { AuthenticatedReceiptImage } from "../components/AuthenticatedReceiptImage";
 import { PdfReceiptPreview } from "../components/PdfReceiptPreview";
@@ -60,6 +61,11 @@ export function ExpenseFormPage() {
   const navigate = useNavigate();
   const reduceMotion = useReducedMotion();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const descriptionRef = useRef<HTMLInputElement>(null);
+  const locationRef = useRef<HTMLInputElement>(null);
+  const amountRef = useRef<HTMLInputElement>(null);
+  const dateRef = useRef<HTMLInputElement>(null);
+  const categoryRef = useRef<HTMLSelectElement>(null);
   const readRunIdRef = useRef(0);
   const readAbortRef = useRef<AbortController | null>(null);
   const lastAutofillRef = useRef<Partial<ExpenseInput>>({});
@@ -188,12 +194,16 @@ export function ExpenseFormPage() {
           ? `${result.pdf?.usedOcr ? "PDF digitalizado lido com OCR local" : result.source === "pdf" ? "Texto do PDF lido" : "Leitura concluída"}. Confirme as sugestões antes de guardar.`
           : "Não foi encontrado texto legível. Confirme os dados manualmente.",
       );
-    } catch {
+    } catch (readError) {
       if (runId !== readRunIdRef.current) return;
       if (controller.signal.aborted) return;
       setOcrState("error");
       setOcrSource(null);
-      setOcrMessage("Não foi possível ler o comprovativo. Pode preencher os campos manualmente.");
+      setOcrMessage(
+        isOcrAssetsError(readError)
+          ? OCR_ASSETS_UNAVAILABLE
+          : "Não foi possível ler o comprovativo. Pode preencher os campos manualmente.",
+      );
     } finally {
       if (readAbortRef.current === controller) readAbortRef.current = null;
     }
@@ -298,6 +308,18 @@ export function ExpenseFormPage() {
     if (!form.date) nextErrors.date = "Escolha uma data.";
     if (!form.categoryId) nextErrors.categoryId = "Escolha uma categoria.";
     setErrors(nextErrors);
+    const firstInvalid = nextErrors.description
+      ? descriptionRef
+      : nextErrors.location
+        ? locationRef
+        : nextErrors.amount
+          ? amountRef
+          : nextErrors.date
+            ? dateRef
+            : nextErrors.categoryId
+              ? categoryRef
+              : null;
+    firstInvalid?.current?.focus();
     return Object.keys(nextErrors).length === 0;
   }
 
@@ -376,6 +398,7 @@ export function ExpenseFormPage() {
               <label className="field field--span-2">
                 <span>Descrição</span>
                 <input
+                  ref={descriptionRef}
                   type="text"
                   name="description"
                   value={form.description}
@@ -396,6 +419,7 @@ export function ExpenseFormPage() {
                 <span className="field__control">
                   <MapPin aria-hidden="true" />
                   <input
+                    ref={locationRef}
                     type="text"
                     name="location"
                     value={form.location}
@@ -417,6 +441,7 @@ export function ExpenseFormPage() {
                 <span className="field__control field__control--amount">
                   <span aria-hidden="true">€</span>
                   <input
+                    ref={amountRef}
                     type="number"
                     name="amount"
                     inputMode="decimal"
@@ -440,6 +465,7 @@ export function ExpenseFormPage() {
                 <span className="field__control">
                   <CalendarDays aria-hidden="true" />
                   <input
+                    ref={dateRef}
                     type="date"
                     name="date"
                     value={form.date}
@@ -459,6 +485,7 @@ export function ExpenseFormPage() {
                 <span className="field__control">
                   <Tag aria-hidden="true" />
                   <select
+                    ref={categoryRef}
                     name="categoryId"
                     value={form.categoryId}
                     onChange={(event) => updateField("categoryId", event.target.value)}

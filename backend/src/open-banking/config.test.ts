@@ -101,6 +101,8 @@ describe("open banking configuration", () => {
       NODE_ENV: "production",
       FRONTEND_ORIGIN: "https://app.example.com",
       OPEN_BANKING_CALLBACK_URL: "https://api.example.com/api/open-banking/callback",
+      JWT_ACCESS_SECRET: "prod-access-secret-with-more-than-32-chars",
+      JWT_REFRESH_SECRET: "prod-refresh-secret-with-more-than-32-chars",
     };
 
     await expect(

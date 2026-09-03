@@ -51,7 +51,24 @@ export const refreshSchema = z.object({
 });
 
 export const verifyEmailSchema = z.object({
-  token: z.string().trim().length(64).regex(/^[a-f0-9]{64}$/, "Token de verificação inválido."),
+  token: z
+    .string()
+    .trim()
+    .length(64)
+    .regex(/^[a-f0-9]{64}$/, "Token de verificação inválido."),
+});
+
+export const forgotPasswordSchema = z.object({
+  email: loginSchema.shape.email,
+});
+
+export const resetPasswordSchema = z.object({
+  token: z
+    .string()
+    .trim()
+    .length(64)
+    .regex(/^[a-f0-9]{64}$/, "Token de reposição inválido."),
+  password: z.string().min(8).max(128),
 });
 
 const supportedTimeZones = new Set<string>(Intl.supportedValuesOf("timeZone"));

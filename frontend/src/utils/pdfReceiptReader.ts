@@ -1,6 +1,6 @@
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import type { PDFDocumentProxy, PDFPageProxy, RenderTask } from "pdfjs-dist";
-import { localOcrOptions } from "./localOcr";
+import { ensureLocalOcrAssets, localOcrOptions } from "./localOcr";
 
 const MAX_TEXT_PAGES = 20;
 const MAX_OCR_PAGES = 5;
@@ -322,6 +322,8 @@ export async function readPdfReceipt(
 
     onProgress?.(0.36, "A preparar o OCR local…");
     let activeOcrPage = 0;
+    await ensureLocalOcrAssets();
+    signal?.throwIfAborted();
     const { default: Tesseract } = await import("tesseract.js");
     signal?.throwIfAborted();
     const pendingWorker = Tesseract.createWorker("por+eng", Tesseract.OEM.LSTM_ONLY, {

@@ -4,6 +4,7 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import { env } from "./config.js";
 import { errorHandler, notFound, sendError } from "./middleware.js";
+import { prisma } from "./prisma.js";
 import authRoutes from "./routes/auth.js";
 import categoryRoutes from "./routes/categories.js";
 import expenseRoutes from "./routes/expenses.js";
@@ -24,7 +25,18 @@ export const app = express();
 app.disable("x-powered-by");
 if (env.TRUST_PROXY_HOPS > 0) app.set("trust proxy", env.TRUST_PROXY_HOPS);
 app.use(helmet({ crossOriginResourcePolicy: false }));
-app.use(cors({ origin: env.FRONTEND_ORIGIN, credentials: false }));
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin || env.FRONTEND_ORIGINS.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(null, false);
+    },
+    credentials: false,
+  }),
+);
 app.use(express.json({ limit: "1mb" }));
 
 // Rede de segurança por IP para toda a API. Os limiters específicos (login,
@@ -45,8 +57,13 @@ const globalApiLimiter = rateLimit({
 });
 app.use("/api", globalApiLimiter);
 
-app.get("/api/health", (_request, response) => {
-  response.json({ data: { status: "ok" } });
+app.get("/api/health", async (_request, response) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    return response.json({ data: { status: "ok" } });
+  } catch {
+    return response.status(503).json({ data: { status: "unavailable" } });
+  }
 });
 
 app.use("/api/auth", authRoutes);

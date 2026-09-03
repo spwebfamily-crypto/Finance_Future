@@ -64,7 +64,7 @@ export function Brand({ compact = false, linked = true, phase = "idle" }: BrandP
   );
 
   return linked ? (
-    <Link to="/expenses" className="brand-link">
+    <Link to="/dashboard" className="brand-link">
       {content}
     </Link>
   ) : (
