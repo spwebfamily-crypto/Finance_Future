@@ -3,6 +3,7 @@ import { BankLogo } from "./BankLogo";
 import { BankSyncStatus } from "./BankSyncStatus";
 import { Spinner } from "./States";
 import type { BankConnectionSummary } from "../types";
+import { useI18n } from "../i18n/I18nContext";
 
 export function BankConnectionCard({
   connection,
@@ -19,6 +20,7 @@ export function BankConnectionCard({
   onReauthorize: (connection: BankConnectionSummary) => void;
   onDisconnect: (connection: BankConnectionSummary) => void;
 }) {
+  const { t, formatDate } = useI18n();
   const needsReauth =
     connection.status === "reauth_required" ||
     connection.status === "expired" ||
@@ -34,8 +36,9 @@ export function BankConnectionCard({
         <div>
           <h3>{connection.institutionName}</h3>
           <p>
-            {connection.accountCount}{" "}
-            {connection.accountCount === 1 ? "conta ligada" : "contas ligadas"}
+            {t(connection.accountCount === 1 ? "{count} conta ligada" : "{count} contas ligadas", {
+              count: connection.accountCount,
+            })}
           </p>
         </div>
       </header>
@@ -48,8 +51,9 @@ export function BankConnectionCard({
 
       {connection.consentExpiresAt && (
         <p className="bank-connection-card__consent">
-          Consentimento válido até{" "}
-          {new Date(connection.consentExpiresAt).toLocaleDateString("pt-PT")}
+          {t("Consentimento válido até {date}", {
+            date: formatDate(connection.consentExpiresAt),
+          })}
         </p>
       )}
 
@@ -61,7 +65,7 @@ export function BankConnectionCard({
             onClick={() => onReauthorize(connection)}
             disabled={busy}
           >
-            Renovar acesso
+            {t("Renovar acesso")}
           </button>
         )}
         {canSync && (
@@ -71,8 +75,8 @@ export function BankConnectionCard({
             onClick={() => onSync(connection)}
             disabled={busy}
           >
-            {busy ? <Spinner label="A sincronizar" /> : <RefreshCw aria-hidden="true" />}
-            <span>{connection.status === "error" ? "Tentar novamente" : "Sincronizar"}</span>
+            {busy ? <Spinner label={t("A sincronizar")} /> : <RefreshCw aria-hidden="true" />}
+            <span>{t(connection.status === "error" ? "Tentar novamente" : "Sincronizar")}</span>
           </button>
         )}
         <button
@@ -80,9 +84,9 @@ export function BankConnectionCard({
           className="icon-button icon-button--danger"
           onClick={() => onDisconnect(connection)}
           disabled={busy}
-          aria-label={`Desligar ${connection.institutionName}`}
+          aria-label={t("Desligar {bank}", { bank: connection.institutionName })}
         >
-          Desligar
+          {t("Desligar")}
         </button>
       </div>
     </article>

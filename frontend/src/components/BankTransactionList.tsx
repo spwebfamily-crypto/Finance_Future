@@ -1,6 +1,7 @@
 import { Inbox } from "lucide-react";
 import { BankTransactionRow } from "./BankTransactionRow";
 import type { BankTransaction } from "../types";
+import { useI18n } from "../i18n/I18nContext";
 
 export function BankTransactionList({
   transactions,
@@ -15,10 +16,11 @@ export function BankTransactionList({
   onCategoryChange: (transaction: BankTransaction, categoryId: string) => void;
   onToggleAnalytics: (transaction: BankTransaction, excluded: boolean) => void;
 }) {
+  const { t } = useI18n();
   if (!transactions.length) {
     return (
       <p className="accounts-empty">
-        <Inbox aria-hidden="true" /> Ainda não há movimentos para os filtros escolhidos.
+        <Inbox aria-hidden="true" /> {t("Ainda não há movimentos para os filtros escolhidos.")}
       </p>
     );
   }

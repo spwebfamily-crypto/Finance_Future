@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, type FormEvent } from "react";
 import { Landmark } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { formatCurrency } from "../utils/format";
+import { useI18n } from "../i18n/I18nContext";
 
 interface BalanceCorrectionDialogProps {
   open: boolean;
@@ -28,6 +29,7 @@ export function BalanceCorrectionDialog({
   onConfirm,
   onCancel,
 }: BalanceCorrectionDialogProps) {
+  const { t, locale } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLElement>(null);
   const titleId = useId();
@@ -114,9 +116,12 @@ export function BalanceCorrectionDialog({
             >
               <Landmark />
             </span>
-            <h2 id={titleId}>Corrigir valor da conta</h2>
+            <h2 id={titleId}>{t("Corrigir valor da conta")}</h2>
             <p id={descriptionId}>
-              Defina o saldo atual de “{accountName}”. Os movimentos existentes não serão alterados.
+              {t(
+                "Defina o saldo atual de {account}. Os movimentos existentes não serão alterados.",
+                { account: accountName },
+              )}
             </p>
             <form onSubmit={submit}>
               {errorMessage && (
@@ -125,7 +130,7 @@ export function BalanceCorrectionDialog({
                 </div>
               )}
               <label className="field">
-                <span>Novo saldo</span>
+                <span>{t("Novo saldo")}</span>
                 <input
                   ref={inputRef}
                   inputMode="decimal"
@@ -137,7 +142,9 @@ export function BalanceCorrectionDialog({
                 />
               </label>
               <small id={`${descriptionId}-current`} className="balance-correction-dialog__current">
-                Saldo apresentado: {formatCurrency(currentBalance, currency)}
+                {t("Saldo apresentado: {amount}", {
+                  amount: formatCurrency(currentBalance, currency, locale),
+                })}
               </small>
               <div className="confirm-dialog__actions">
                 <button
@@ -146,10 +153,10 @@ export function BalanceCorrectionDialog({
                   onClick={onCancel}
                   disabled={busy}
                 >
-                  Cancelar
+                  {t("Cancelar")}
                 </button>
                 <button className="button button--primary" type="submit" disabled={busy}>
-                  {busy ? "A corrigir…" : "Guardar correção"}
+                  {busy ? t("A corrigir…") : t("Guardar correção")}
                 </button>
               </div>
             </form>

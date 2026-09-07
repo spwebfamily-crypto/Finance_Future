@@ -16,6 +16,7 @@ import { createOpenBankingProvider } from "./providerFactory.js";
 import { decryptSessionId } from "./authorizationService.js";
 import { materializeBookedTransactions, type MaterializationCounters } from "./materialize.js";
 import { matchInternalTransfers, type TransferMatchResult } from "./transferMatcher.js";
+import { cleanupStableBankTransactionDuplicates } from "./duplicateCleanup.js";
 
 const MAX_PAGES_PER_ACCOUNT = 100;
 const MAX_ACCOUNTS_PER_SYNC = 25;
@@ -545,6 +546,10 @@ export async function runSyncJob(job: BankSyncJob): Promise<SyncOutcome> {
     let materialization: MaterializationCounters | undefined;
     let transfers: TransferMatchResult | undefined;
     if (successfulAccountIds.length > 0) {
+      // Uma nova ligação à mesma conta pode voltar a devolver movimentos já
+      // importados por uma ligação anterior. Remove apenas cópias comprovadas
+      // pela referência estável antes de materializar despesas/rendimentos.
+      await cleanupStableBankTransactionDuplicates({ userId: connection.userId, apply: true });
       // Passamos o userId; o materialize filtra por status="booked" nas ligações
       // que foram processadas com sucesso. Como o materialize usa bankAccountLinkId
       // opcional, materializa tudo do utilizador — mas transações de contas que

@@ -1,6 +1,7 @@
 import { AlertCircle, Inbox, RotateCcw } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Brand } from "./Brand";
+import { useI18n } from "../i18n/I18nContext";
 
 export function Spinner({
   label = "A carregar",
@@ -64,16 +65,17 @@ export function LoadingState({ label = "A carregar dados" }: { label?: string })
 }
 
 export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
+  const { t } = useI18n();
   return (
     <div className="state-panel state-panel--error" role="alert">
       <AlertCircle aria-hidden="true" />
       <div>
-        <h2>Algo não correu como esperado</h2>
+        <h2>{t("Algo não correu como esperado")}</h2>
         <p>{message}</p>
       </div>
       {onRetry && (
         <button className="button button--secondary button--small" type="button" onClick={onRetry}>
-          <RotateCcw size={16} aria-hidden="true" /> Tentar novamente
+          <RotateCcw size={16} aria-hidden="true" /> {t("Tentar novamente")}
         </button>
       )}
     </div>

@@ -465,6 +465,28 @@ describe("open banking institutions, authorization and callback", () => {
     expect((await forbidden.json()).error.code).toBe("BANK_CONNECTION_NOT_FOUND");
   });
 
+  it("requires renewed consent instead of syncing a reauthorization-required connection", async () => {
+    repositories.connections.push({
+      id: "conn-reauth",
+      userId,
+      provider: "fake",
+      institutionName: "Banco Demonstração",
+      status: "reauth_required",
+      disconnectedAt: null,
+      accounts: [],
+    });
+
+    const response = await fetch(`${baseUrl}/api/open-banking/connections/conn-reauth/sync`, {
+      method: "POST",
+      headers: { Authorization: authorization() },
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(409);
+    expect(body.error.code).toBe("BANK_CONNECTION_REAUTH_REQUIRED");
+    expect(repositories.jobs).toHaveLength(0);
+  });
+
   it("never stores the raw state, only its hash", async () => {
     const { body } = await startAuthorization();
     const authorizationId = new URL(body.data.authorizationUrl).searchParams.get(

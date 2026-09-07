@@ -9,27 +9,40 @@ import { PageHeader } from "../components/PageHeader";
 import { openBankingApi } from "../api/resources";
 import { errorMessage } from "../api/client";
 import type { BankConnectionSummary, BankInstitution, BankRetention, BankSyncJob } from "../types";
+import { useI18n } from "../i18n/I18nContext";
+import { bankConnectionOutcomeMessage } from "../utils/bankConnectionOutcome";
 
 const POLL_INTERVAL_MS = 3_000;
 
 export function BankConnectionsPage() {
+  const { t } = useI18n();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [connections, setConnections] = useState<BankConnectionSummary[]>([]);
   const [institutionLogos, setInstitutionLogos] = useState<Map<string, string>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState(
-    searchParams.get("bankConnection") === "success"
-      ? "Banco ligado. A primeira sincronização começou — os gastos contabilizados passam a despesas."
-      : "",
-  );
+  const [notice, setNotice] = useState(() => {
+    const outcome = searchParams.get("bankConnection");
+    return outcome
+      ? t(bankConnectionOutcomeMessage(outcome, searchParams.get("reason") ?? ""))
+      : "";
+  });
   const [busyId, setBusyId] = useState<string | null>(null);
   const [disconnectTarget, setDisconnectTarget] = useState<BankConnectionSummary | null>(null);
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const [pendingJobs, setPendingJobs] = useState<Array<{ connectionId: string; jobId: string }>>(
     [],
   );
+
+  useEffect(() => {
+    const outcome = searchParams.get("bankConnection");
+    if (!outcome) return;
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete("bankConnection");
+    nextParams.delete("reason");
+    setSearchParams(nextParams, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   // As ligações persistem apenas o identificador e o nome do banco. As marcas
   // continuam a vir do catálogo oficial e seguro devolvido pelo provedor.
@@ -86,8 +99,8 @@ export function BankConnectionsPage() {
             hasFinishedJob = true;
             setNotice(
               status.status === "completed"
-                ? "Sincronização concluída. Os gastos contabilizados já estão em Despesas."
-                : `Sincronização terminada com o estado ${status.status}.`,
+                ? t("Sincronização concluída. Os gastos contabilizados já estão em Despesas.")
+                : t("Sincronização terminada com o estado {status}.", { status: status.status }),
             );
           }
         } catch {
@@ -107,7 +120,7 @@ export function BankConnectionsPage() {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [pendingJobs, load]);
+  }, [pendingJobs, load, t]);
 
   async function sync(connection: BankConnectionSummary) {
     setBusyId(connection.id);
@@ -115,7 +128,7 @@ export function BankConnectionsPage() {
     try {
       const job = await openBankingApi.sync(connection.id);
       setPendingJobs((jobs) => [...jobs, { connectionId: connection.id, jobId: job.jobId }]);
-      setNotice("Sincronização pedida. Os gastos entram em Despesas quando terminar.");
+      setNotice(t("Sincronização pedida. Os gastos entram em Despesas quando terminar."));
     } catch (requestError) {
       setError(errorMessage(requestError));
     } finally {
@@ -146,8 +159,10 @@ export function BankConnectionsPage() {
       const result = await openBankingApi.disconnect(disconnectTarget.id, retention);
       setNotice(
         retention === "delete_imported"
-          ? `Banco desligado. ${result.transactionsDeleted} movimentos eliminados.`
-          : "Banco desligado. Os dados importados foram conservados.",
+          ? t("Banco desligado. {count} movimentos eliminados.", {
+              count: result.transactionsDeleted,
+            })
+          : t("Banco desligado. Os dados importados foram conservados."),
       );
       setDisconnectTarget(null);
       await load();
@@ -161,7 +176,7 @@ export function BankConnectionsPage() {
   if (isLoading) {
     return (
       <div className="page">
-        <LoadingState label="A carregar as ligações bancárias" />
+        <LoadingState label={t("A carregar as ligações bancárias")} />
       </div>
     );
   }
@@ -180,16 +195,18 @@ export function BankConnectionsPage() {
     <div className="page page--connections">
       <NoticeToast message={notice} onClose={() => setNotice("")} />
       <PageHeader
-        eyebrow="Bancos"
-        title="Bancos ligados"
-        description="Sincronize para trazer gastos como despesas. Renove o acesso ou desligue quando quiser."
+        eyebrow={t("Bancos")}
+        title={t("Bancos ligados")}
+        description={t(
+          "Sincronize para trazer gastos como despesas. Renove o acesso ou desligue quando quiser.",
+        )}
         action={
           <button
             type="button"
             className="button button--accent"
             onClick={() => navigate("/accounts/connect")}
           >
-            <Plus aria-hidden="true" /> Ligar banco
+            <Plus aria-hidden="true" /> {t("Ligar banco")}
           </button>
         }
       />
@@ -202,7 +219,7 @@ export function BankConnectionsPage() {
 
       <section aria-labelledby="active-connections">
         <h2 id="active-connections" className="section-title">
-          Ligações ativas
+          {t("Ligações ativas")}
         </h2>
         {live.length ? (
           <div className="bank-connection-grid">
@@ -223,8 +240,9 @@ export function BankConnectionsPage() {
           </div>
         ) : (
           <p className="accounts-empty">
-            Ainda não tem bancos ligados. Ligue um banco para importar saldos — cada gasto
-            contabilizado passa a despesa.
+            {t(
+              "Ainda não tem bancos ligados. Ligue um banco para importar saldos — cada gasto contabilizado passa a despesa.",
+            )}
           </p>
         )}
       </section>

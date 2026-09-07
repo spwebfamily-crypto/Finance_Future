@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef } from "react";
 import { AlertTriangle } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { useI18n } from "../i18n/I18nContext";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -21,6 +22,7 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  const { t } = useI18n();
   const cancelButtonRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLElement>(null);
   const titleId = useId();
@@ -111,7 +113,7 @@ export function ConfirmDialog({
                 onClick={onCancel}
                 disabled={busy}
               >
-                Cancelar
+                {t("Cancelar")}
               </button>
               <button
                 className="button button--danger"
@@ -119,7 +121,7 @@ export function ConfirmDialog({
                 onClick={onConfirm}
                 disabled={busy}
               >
-                {busy ? "A eliminar…" : confirmLabel}
+                {busy ? t("A eliminar…") : confirmLabel}
               </button>
             </div>
           </motion.section>

@@ -1,13 +1,15 @@
 import { useRef, useState, type FormEvent } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ArrowRight, CircleAlert, Eye, EyeOff, LockKeyhole, Mail } from "lucide-react";
+import { ArrowRight, CircleAlert, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { errorMessage } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { AuthStory } from "../components/AuthStory";
 import { Spinner } from "../components/States";
+import { useI18n } from "../i18n/I18nContext";
 
 export function LoginPage() {
+  const { t } = useI18n();
   const { login } = useAuth();
   const location = useLocation();
   const reduceMotion = useReducedMotion();
@@ -24,10 +26,10 @@ export function LoginPage() {
     event.preventDefault();
     setError("");
     const nextErrors: { email?: string; password?: string } = {};
-    if (!email.trim()) nextErrors.email = "Introduza o seu email.";
+    if (!email.trim()) nextErrors.email = t("Introduza o seu email.");
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
-      nextErrors.email = "Introduza um email válido.";
-    if (!password) nextErrors.password = "Introduza a sua palavra-passe.";
+      nextErrors.email = t("Introduza um email válido.");
+    if (!password) nextErrors.password = t("Introduza a sua palavra-passe.");
     setFieldErrors(nextErrors);
     if (nextErrors.email || nextErrors.password) {
       (nextErrors.email ? emailRef : passwordRef).current?.focus();
@@ -37,8 +39,7 @@ export function LoginPage() {
 
     try {
       const destination =
-        (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ||
-        "/dashboard";
+        (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || "/dashboard";
       await login(email, password, destination);
     } catch (requestError) {
       setError(errorMessage(requestError));
@@ -58,10 +59,20 @@ export function LoginPage() {
           animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
           transition={{ duration: reduceMotion ? 0 : 0.22, ease: [0.22, 1, 0.36, 1] }}
         >
+          <div className="auth-login-security">
+            <span className="auth-login-security__icon" aria-hidden="true">
+              <ShieldCheck />
+            </span>
+            <span>
+              <strong>{t("Acesso protegido")}</strong>
+              <small>{t("Sessão privada e segura")}</small>
+            </span>
+          </div>
+
           <div className="auth-form-heading">
-            <p className="eyebrow">Bem-vindo de volta</p>
-            <h1>Entrar na conta</h1>
-            <p className="form-intro">Continue de onde ficou.</p>
+            <p className="eyebrow">{t("Bem-vindo de volta")}</p>
+            <h1>{t("Entrar na conta")}</h1>
+            <p className="form-intro">{t("Continue de onde ficou.")}</p>
           </div>
 
           <form className="stack-form" onSubmit={handleSubmit} noValidate>
@@ -81,7 +92,7 @@ export function LoginPage() {
               )}
             </AnimatePresence>
             <label className="field" htmlFor="login-email">
-              <span>Email</span>
+              <span>{t("Email")}</span>
               <span className="field__control">
                 <Mail aria-hidden="true" />
                 <input
@@ -113,9 +124,9 @@ export function LoginPage() {
             </label>
             <div className="field">
               <span className="field__header">
-                <label htmlFor="login-password">Palavra-passe</label>
+                <label htmlFor="login-password">{t("Palavra-passe")}</label>
                 <Link className="auth-forgot" to="/forgot-password">
-                  Esqueceu a palavra-passe?
+                  {t("Esqueceu a palavra-passe?")}
                 </Link>
               </span>
               <span className="field__control field__control--password">
@@ -133,7 +144,7 @@ export function LoginPage() {
                     setPassword(event.target.value);
                     setFieldErrors((current) => ({ ...current, password: undefined }));
                   }}
-                  placeholder="A sua palavra-passe"
+                  placeholder={t("A sua palavra-passe")}
                   aria-invalid={Boolean(fieldErrors.password)}
                   aria-describedby={fieldErrors.password ? "login-password-error" : undefined}
                 />
@@ -142,7 +153,7 @@ export function LoginPage() {
                   type="button"
                   onClick={() => setShowPassword((current) => !current)}
                   aria-pressed={showPassword}
-                  aria-label={showPassword ? "Ocultar palavra-passe" : "Mostrar palavra-passe"}
+                  aria-label={t(showPassword ? "Ocultar palavra-passe" : "Mostrar palavra-passe")}
                 >
                   {showPassword ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
                 </button>
@@ -159,20 +170,25 @@ export function LoginPage() {
               disabled={isSubmitting}
             >
               {isSubmitting ? (
-                <Spinner label="A entrar" />
+                <Spinner label={t("A entrar")} />
               ) : (
                 <>
-                  Entrar <ArrowRight aria-hidden="true" />
+                  {t("Entrar")} <ArrowRight aria-hidden="true" />
                 </>
               )}
             </button>
           </form>
 
           <p className="auth-switch">
-            Ainda não tem conta?{" "}
+            {t("Ainda não tem conta?")}{" "}
             <Link to="/register">
-              Criar conta <ArrowRight size={14} aria-hidden="true" />
+              {t("Criar conta")} <ArrowRight size={14} aria-hidden="true" />
             </Link>
+          </p>
+
+          <p className="auth-login-note">
+            <LockKeyhole aria-hidden="true" />
+            {t("Os seus dados financeiros nunca são partilhados.")}
           </p>
         </motion.div>
       </section>

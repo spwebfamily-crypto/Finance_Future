@@ -1,5 +1,5 @@
 const CACHE_NAME = 'expensesnap-shell-v4';
-const SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icon.svg'];
+const SHELL = ['/', '/index.html', '/manifest.webmanifest', '/brand-mark.svg'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -17,7 +17,7 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   if (request.method !== 'GET' || url.origin !== self.location.origin || url.pathname.startsWith('/api/') || url.pathname.startsWith('/uploads/')) return;
 
-  if (url.pathname.startsWith('/assets/') || url.pathname.startsWith('/ocr/') || url.pathname === '/icon.svg' || url.pathname === '/manifest.webmanifest') {
+  if (url.pathname.startsWith('/assets/') || url.pathname.startsWith('/ocr/') || url.pathname === '/brand-mark.svg' || url.pathname === '/manifest.webmanifest') {
     event.respondWith(
       caches.match(request).then((cached) => cached || fetch(request).then((response) => {
         if (response.ok && response.type === 'basic') {
@@ -46,7 +46,7 @@ self.addEventListener('push', (event) => {
   event.waitUntil(self.registration.showNotification(data.title || 'ExpenseSnap', {
     body: data.body || 'Tem uma atualização financeira.',
     data: { url: data.url || '/dashboard' },
-    icon: '/icon.svg',
+    icon: '/brand-mark.svg',
   }));
 });
 

@@ -63,6 +63,21 @@ npm run open-banking:sync -- --limit 20 --retention-days 30
 
 Alternativamente, chamar `POST /api/internal/open-banking/sync-due` com o segredo do cron.
 
+O servidor também verifica ligações vencidas a cada minuto enquanto está ativo.
+O intervalo de cada conta continua a ser definido por
+`OPEN_BANKING_SYNC_INTERVAL_MINUTES`; o claim atómico impede que o servidor e o
+cron sincronizem a mesma ligação em paralelo.
+
+Para auditar movimentos repetidos com a mesma referência estável do banco:
+
+```bash
+npm run open-banking:dedupe -w backend
+```
+
+O comando é somente leitura por omissão. Depois de rever as contagens, aplique a
+limpeza com `npm run open-banking:dedupe -w backend -- --apply`. Movimentos sem
+referência estável não são apagados automaticamente.
+
 ## Saldos
 
 - Conta `manual`: saldo derivado (`openingBalance` + rendimentos − despesas − transferências).

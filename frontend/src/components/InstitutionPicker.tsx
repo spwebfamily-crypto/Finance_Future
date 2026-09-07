@@ -1,5 +1,6 @@
 import type { BankInstitution } from "../types";
 import { BankLogo } from "./BankLogo";
+import { useI18n } from "../i18n/I18nContext";
 
 /** Escolha do banco: pesquisa local sobre a lista devolvida pelo backend. */
 export function InstitutionPicker({
@@ -17,6 +18,7 @@ export function InstitutionPicker({
   onSelect: (institution: BankInstitution) => void;
   disabled?: boolean;
 }) {
+  const { t } = useI18n();
   const normalized = query.trim().toLowerCase();
   const visible = normalized
     ? institutions.filter((institution) => institution.name.toLowerCase().includes(normalized))
@@ -25,17 +27,17 @@ export function InstitutionPicker({
   return (
     <div className="institution-picker">
       <label className="field">
-        <span>Pesquisar banco</span>
+        <span>{t("Pesquisar banco")}</span>
         <input
           type="search"
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
-          placeholder="Ex.: Banco"
+          placeholder={t("Ex.: Banco")}
           disabled={disabled}
         />
       </label>
 
-      <ul className="institution-list" aria-label="Bancos disponíveis">
+      <ul className="institution-list" aria-label={t("Bancos disponíveis")}>
         {visible.map((institution) => {
           const isSelected = institution.id === selectedId;
           return (
@@ -54,7 +56,7 @@ export function InstitutionPicker({
             </li>
           );
         })}
-        {!visible.length && <li className="institution-empty">Nenhum banco encontrado.</li>}
+        {!visible.length && <li className="institution-empty">{t("Nenhum banco encontrado.")}</li>}
       </ul>
     </div>
   );

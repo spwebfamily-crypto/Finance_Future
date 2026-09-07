@@ -26,6 +26,8 @@ import type {
   FinancialAccount,
 } from "../types";
 import { formatCurrency, formatDate, parseSignedMoney, todayInputValue } from "../utils/format";
+import { useI18n } from "../i18n/I18nContext";
+import { bankConnectionOutcomeMessage } from "../utils/bankConnectionOutcome";
 
 const initialAccount = {
   name: "",
@@ -72,6 +74,7 @@ function AccountIcon({ type }: { type: AccountType }) {
 }
 
 export function AccountsPage() {
+  const { t, locale, formatDate: formatLocaleDate } = useI18n();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -87,14 +90,17 @@ export function AccountsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
+  const [connectionError, setConnectionError] = useState("");
   const [notice, setNotice] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<FinancialAccount | null>(null);
   const [balanceTarget, setBalanceTarget] = useState<FinancialAccount | null>(null);
   const [correctedBalance, setCorrectedBalance] = useState("");
   const [balanceError, setBalanceError] = useState("");
-  const [accountErrors, setAccountErrors] = useState<{ name?: string; openingBalance?: string; creditLimit?: string }>(
-    {},
-  );
+  const [accountErrors, setAccountErrors] = useState<{
+    name?: string;
+    openingBalance?: string;
+    creditLimit?: string;
+  }>({});
   const [transferErrors, setTransferErrors] = useState<{
     fromAccountId?: string;
     toAccountId?: string;
@@ -109,9 +115,10 @@ export function AccountsPage() {
   const transferAmountRef = useRef<HTMLInputElement>(null);
   const transferDateRef = useRef<HTMLInputElement>(null);
 
-  const load = useCallback(async () => {
-    setIsLoading(true);
+  const load = useCallback(async (showLoading = true) => {
+    if (showLoading) setIsLoading(true);
     setError("");
+    setConnectionError("");
     try {
       const [nextAccounts, nextTransfers] = await Promise.all([
         accountApi.list(),
@@ -123,13 +130,14 @@ export function AccountsPage() {
       // impede a utilização das contas manuais.
       try {
         setConnections(await openBankingApi.connections());
-      } catch {
+      } catch (requestError) {
         setConnections([]);
+        setConnectionError(errorMessage(requestError));
       }
     } catch (requestError) {
       setError(errorMessage(requestError));
     } finally {
-      setIsLoading(false);
+      if (showLoading) setIsLoading(false);
     }
   }, []);
 
@@ -149,39 +157,36 @@ export function AccountsPage() {
           if (job.status === "queued" || job.status === "running") remaining.push(pending);
           else if (job.status === "completed") completed = true;
           else if (!cancelled)
-            setError("A sincronização bancária não foi concluída. Tente novamente.");
+            setError(t("A sincronização bancária não foi concluída. Tente novamente."));
         } catch {
-          if (!cancelled) setError("Não foi possível confirmar a sincronização bancária.");
+          if (!cancelled) setError(t("Não foi possível confirmar a sincronização bancária."));
         }
       }
       if (cancelled) return;
       setPendingSyncJobs(remaining);
       if (!remaining.length) setSyncingConnectionId(null);
       if (completed) {
-        setNotice("Sincronização concluída. Saldos e movimentos foram atualizados.");
-        void load();
+        setNotice(t("Sincronização concluída. Saldos e movimentos foram atualizados."));
+        void load(false);
       }
     }, SYNC_POLL_INTERVAL_MS);
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [pendingSyncJobs, load]);
+  }, [pendingSyncJobs, load, t]);
 
   // Resultado do callback do banco: `?bankConnection=success|error&reason=...`.
   const bankConnectionOutcome = searchParams.get("bankConnection");
   useEffect(() => {
     if (!bankConnectionOutcome) return;
-    setNotice(
-      bankConnectionOutcome === "success"
-        ? "Banco ligado. A primeira sincronização começou — os gastos contabilizados passam a despesas."
-        : "Não foi possível concluir a ligação ao banco. Tente novamente.",
-    );
+    const reason = searchParams.get("reason") ?? "";
+    setNotice(t(bankConnectionOutcomeMessage(bankConnectionOutcome, reason)));
     const nextParams = new URLSearchParams(searchParams);
     nextParams.delete("bankConnection");
     nextParams.delete("reason");
     setSearchParams(nextParams, { replace: true });
-  }, [bankConnectionOutcome, searchParams, setSearchParams]);
+  }, [bankConnectionOutcome, searchParams, setSearchParams, t]);
 
   async function syncConnection(connectionId: string) {
     setSyncingConnectionId(connectionId);
@@ -189,7 +194,7 @@ export function AccountsPage() {
     try {
       const job = await openBankingApi.sync(connectionId);
       setPendingSyncJobs((jobs) => [...jobs, { connectionId, jobId: job.jobId }]);
-      setNotice("A sincronizar saldos e movimentos…");
+      setNotice(t("A sincronizar saldos e movimentos…"));
     } catch (requestError) {
       setError(errorMessage(requestError));
       setSyncingConnectionId(null);
@@ -216,11 +221,11 @@ export function AccountsPage() {
     const openingBalance = accountForm.openingBalance ? amount(accountForm.openingBalance) : 0;
     const creditLimit = accountForm.creditLimit ? amount(accountForm.creditLimit) : undefined;
     const nextErrors: { name?: string; openingBalance?: string; creditLimit?: string } = {};
-    if (!accountForm.name.trim()) nextErrors.name = "Introduza o nome da conta.";
+    if (!accountForm.name.trim()) nextErrors.name = t("Introduza o nome da conta.");
     if (accountForm.openingBalance && !Number.isFinite(openingBalance))
-      nextErrors.openingBalance = "Indique um saldo inicial válido.";
+      nextErrors.openingBalance = t("Indique um saldo inicial válido.");
     if (creditLimit !== undefined && (!Number.isFinite(creditLimit) || creditLimit < 0))
-      nextErrors.creditLimit = "Indique um limite válido.";
+      nextErrors.creditLimit = t("Indique um limite válido.");
     setAccountErrors(nextErrors);
     if (nextErrors.name || nextErrors.openingBalance || nextErrors.creditLimit) {
       (nextErrors.name
@@ -241,7 +246,7 @@ export function AccountsPage() {
       });
       setAccounts((items) => [...items, created]);
       setAccountForm(initialAccount);
-      setNotice("Conta criada.");
+      setNotice(t("Conta criada."));
     } catch (requestError) {
       setError(errorMessage(requestError));
     } finally {
@@ -258,17 +263,17 @@ export function AccountsPage() {
       amount?: string;
       date?: string;
     } = {};
-    if (!transferForm.fromAccountId) nextErrors.fromAccountId = "Escolha a conta de origem.";
-    if (!transferForm.toAccountId) nextErrors.toAccountId = "Escolha a conta de destino.";
+    if (!transferForm.fromAccountId) nextErrors.fromAccountId = t("Escolha a conta de origem.");
+    if (!transferForm.toAccountId) nextErrors.toAccountId = t("Escolha a conta de destino.");
     if (
       transferForm.fromAccountId &&
       transferForm.toAccountId &&
       transferForm.fromAccountId === transferForm.toAccountId
     )
-      nextErrors.toAccountId = "Escolha duas contas diferentes.";
-    if (!transferForm.date) nextErrors.date = "Indique a data.";
+      nextErrors.toAccountId = t("Escolha duas contas diferentes.");
+    if (!transferForm.date) nextErrors.date = t("Indique a data.");
     if (!Number.isFinite(transferAmount) || transferAmount <= 0)
-      nextErrors.amount = "Indique um valor maior do que zero.";
+      nextErrors.amount = t("Indique um valor maior do que zero.");
     setTransferErrors(nextErrors);
     if (Object.keys(nextErrors).length) {
       (nextErrors.fromAccountId
@@ -286,7 +291,7 @@ export function AccountsPage() {
       const created = await accountApi.transfer({ ...transferForm, amount: transferAmount });
       setTransfers((items) => [created, ...items]);
       setTransferForm(initialTransfer);
-      setNotice("Transferência registada.");
+      setNotice(t("Transferência registada."));
       void load();
     } catch (requestError) {
       setError(errorMessage(requestError));
@@ -307,7 +312,7 @@ export function AccountsPage() {
       setAccounts(nextAccounts);
       setTransfers(nextTransfers);
       setDeleteTarget(null);
-      setNotice("Conta removida.");
+      setNotice(t("Conta removida."));
     } catch (requestError) {
       setError(errorMessage(requestError));
     } finally {
@@ -331,7 +336,7 @@ export function AccountsPage() {
       !Number.isFinite(nextBalance) ||
       Math.abs(nextBalance) > 9_999_999_999.99
     ) {
-      setBalanceError("Indique um saldo válido, com no máximo duas casas decimais.");
+      setBalanceError(t("Indique um saldo válido, com no máximo duas casas decimais."));
       return;
     }
     setIsSaving(true);
@@ -344,7 +349,7 @@ export function AccountsPage() {
       setBalanceTarget(null);
       setCorrectedBalance("");
       setBalanceError("");
-      setNotice("Saldo corrigido.");
+      setNotice(t("Saldo corrigido."));
     } catch (requestError) {
       setBalanceError(errorMessage(requestError));
     } finally {
@@ -355,7 +360,7 @@ export function AccountsPage() {
   if (isLoading)
     return (
       <div className="page">
-        <LoadingState label="A preparar as suas contas" />
+        <LoadingState label={t("A preparar as suas contas")} />
       </div>
     );
   if (error && !accounts.length)
@@ -369,9 +374,11 @@ export function AccountsPage() {
     <div className="page page--accounts">
       <NoticeToast message={notice} onClose={() => setNotice("")} />
       <PageHeader
-        eyebrow="Dinheiro disponível"
-        title="Contas e cartões"
-        description="Saldos, cartões e transferências. Os gastos das contas ligadas ao banco entram automaticamente nas despesas."
+        eyebrow={t("Dinheiro disponível")}
+        title={t("Contas e cartões")}
+        description={t(
+          "Saldos, cartões e transferências. Os gastos das contas ligadas ao banco entram automaticamente nas despesas.",
+        )}
         action={
           <>
             <button
@@ -379,10 +386,10 @@ export function AccountsPage() {
               className="button button--accent"
               onClick={() => navigate("/accounts/connect")}
             >
-              <Plus aria-hidden="true" /> Ligar banco
+              <Plus aria-hidden="true" /> {t("Ligar banco")}
             </button>
             <Link className="button button--secondary" to="/accounts/connections">
-              Bancos ligados
+              {t("Bancos ligados")}
             </Link>
           </>
         }
@@ -392,29 +399,51 @@ export function AccountsPage() {
           {error}
         </div>
       )}
+      {connectionError && (
+        <div className="form-alert form-alert--page form-alert--action" role="alert">
+          <span>
+            {t(
+              "As contas manuais estão disponíveis, mas não foi possível carregar o estado dos bancos: {message}",
+              { message: connectionError },
+            )}
+          </span>
+          <button
+            type="button"
+            className="button button--secondary button--small"
+            onClick={() => void load(false)}
+          >
+            {t("Tentar novamente")}
+          </button>
+        </div>
+      )}
       <p className={`accounts-insight${hasLinkedBank ? "" : " accounts-insight--invite"}`}>
         {hasLinkedBank ? (
           <>
-            Os gastos contabilizados das contas ligadas já estão em{" "}
-            <Link to="/expenses">Despesas</Link>.
+            {t("Os gastos contabilizados das contas ligadas já estão em Despesas.")}{" "}
+            <Link to="/expenses">{t("Movimentos")}</Link>.
           </>
         ) : (
-          "Ligue o banco uma vez: os gastos passam a despesas sem as escrever à mão."
+          t("Ligue o banco uma vez: os gastos passam a despesas sem as escrever à mão.")
         )}
       </p>
       <section className="accounts-total">
-        <span>Saldo combinado</span>
+        <span>{t("Saldo combinado")}</span>
         <div className="accounts-total__values">
           {balancesByCurrency.length ? (
             balancesByCurrency.map(([accountCurrency, total]) => (
-              <strong key={accountCurrency}>{formatCurrency(total, accountCurrency)}</strong>
+              <strong key={accountCurrency}>
+                {formatCurrency(total, accountCurrency, locale)}
+              </strong>
             ))
           ) : (
-            <strong>{formatCurrency(0, currency)}</strong>
+            <strong>{formatCurrency(0, currency, locale)}</strong>
           )}
         </div>
         <small>
-          {visibleAccounts.length} {visibleAccounts.length === 1 ? "conta" : "contas"} registadas
+          {t(
+            visibleAccounts.length === 1 ? "{count} conta registada" : "{count} contas registadas",
+            { count: visibleAccounts.length },
+          )}
         </small>
       </section>
 
@@ -422,18 +451,18 @@ export function AccountsPage() {
         <section className="accounts-panel" aria-labelledby="account-create-title">
           <div className="section-heading">
             <div>
-              <p className="eyebrow">Adicionar</p>
-              <h2 id="account-create-title">Nova conta</h2>
+              <p className="eyebrow">{t("Adicionar")}</p>
+              <h2 id="account-create-title">{t("Nova conta")}</h2>
             </div>
           </div>
           <details className="planning-disclosure" open={visibleAccounts.length === 0}>
             <summary>
-              <span>Adicionar conta</span>
-              <small>Conta bancária, dinheiro ou cartão.</small>
+              <span>{t("Adicionar conta")}</span>
+              <small>{t("Conta bancária, dinheiro ou cartão.")}</small>
             </summary>
             <form className="planning-form" onSubmit={createAccount} noValidate>
               <label className="field">
-                <span>Nome</span>
+                <span>{t("Nome")}</span>
                 <input
                   ref={accountNameRef}
                   value={accountForm.name}
@@ -452,7 +481,7 @@ export function AccountsPage() {
                 )}
               </label>
               <label className="field">
-                <span>Tipo</span>
+                <span>{t("Tipo")}</span>
                 <select
                   value={accountForm.type}
                   onChange={(event) =>
@@ -465,13 +494,13 @@ export function AccountsPage() {
                 >
                   {Object.entries(accountLabels).map(([type, label]) => (
                     <option key={type} value={type}>
-                      {label}
+                      {t(label)}
                     </option>
                   ))}
                 </select>
               </label>
               <label className="field">
-                <span>Saldo inicial</span>
+                <span>{t("Saldo inicial")}</span>
                 <input
                   ref={accountBalanceRef}
                   inputMode="decimal"
@@ -482,7 +511,9 @@ export function AccountsPage() {
                   }}
                   placeholder="0,00"
                   aria-invalid={Boolean(accountErrors.openingBalance)}
-                  aria-describedby={accountErrors.openingBalance ? "account-balance-error" : undefined}
+                  aria-describedby={
+                    accountErrors.openingBalance ? "account-balance-error" : undefined
+                  }
                 />
                 {accountErrors.openingBalance && (
                   <small className="field__error" id="account-balance-error">
@@ -492,7 +523,7 @@ export function AccountsPage() {
               </label>
               {accountForm.type === "credit_card" && (
                 <label className="field">
-                  <span>Limite do cartão</span>
+                  <span>{t("Limite do cartão")}</span>
                   <input
                     ref={accountLimitRef}
                     inputMode="decimal"
@@ -514,10 +545,10 @@ export function AccountsPage() {
               )}
               <button className="button button--accent" type="submit" disabled={isSaving}>
                 {isSaving ? (
-                  <Spinner label="A guardar" />
+                  <Spinner label={t("A guardar")} />
                 ) : (
                   <>
-                    <Plus aria-hidden="true" /> Criar conta
+                    <Plus aria-hidden="true" /> {t("Criar conta")}
                   </>
                 )}
               </button>
@@ -527,25 +558,25 @@ export function AccountsPage() {
         <section className="accounts-panel" aria-labelledby="transfer-title">
           <div className="section-heading">
             <div>
-              <p className="eyebrow">Mover dinheiro</p>
-              <h2 id="transfer-title">Transferência</h2>
+              <p className="eyebrow">{t("Mover dinheiro")}</p>
+              <h2 id="transfer-title">{t("Transferência")}</h2>
             </div>
             <ArrowRightLeft aria-hidden="true" />
           </div>
           <details className="planning-disclosure" open={visibleAccounts.length < 2}>
             <summary>
-              <span>Fazer transferência</span>
-              <small>Mover dinheiro entre duas contas.</small>
+              <span>{t("Fazer transferência")}</span>
+              <small>{t("Mover dinheiro entre duas contas.")}</small>
             </summary>
             {visibleAccounts.length < 2 && (
               <p className="planning-disclosure__hint">
-                Crie pelo menos duas contas antes de fazer uma transferência.
+                {t("Crie pelo menos duas contas antes de fazer uma transferência.")}
               </p>
             )}
             <form className="planning-form" onSubmit={createTransfer} noValidate>
               <div className="planning-form__split">
                 <label className="field">
-                  <span>De</span>
+                  <span>{t("De")}</span>
                   <select
                     ref={transferFromRef}
                     value={transferForm.fromAccountId}
@@ -558,7 +589,7 @@ export function AccountsPage() {
                       transferErrors.fromAccountId ? "transfer-from-error" : undefined
                     }
                   >
-                    <option value="">Escolher</option>
+                    <option value="">{t("Escolher")}</option>
                     {visibleAccounts.map((account) => (
                       <option key={account.id} value={account.id}>
                         {account.name}
@@ -572,7 +603,7 @@ export function AccountsPage() {
                   )}
                 </label>
                 <label className="field">
-                  <span>Para</span>
+                  <span>{t("Para")}</span>
                   <select
                     ref={transferToRef}
                     value={transferForm.toAccountId}
@@ -583,7 +614,7 @@ export function AccountsPage() {
                     aria-invalid={Boolean(transferErrors.toAccountId)}
                     aria-describedby={transferErrors.toAccountId ? "transfer-to-error" : undefined}
                   >
-                    <option value="">Escolher</option>
+                    <option value="">{t("Escolher")}</option>
                     {visibleAccounts.map((account) => (
                       <option key={account.id} value={account.id}>
                         {account.name}
@@ -599,7 +630,7 @@ export function AccountsPage() {
               </div>
               <div className="planning-form__split">
                 <label className="field">
-                  <span>Valor</span>
+                  <span>{t("Valor")}</span>
                   <input
                     ref={transferAmountRef}
                     inputMode="decimal"
@@ -619,7 +650,7 @@ export function AccountsPage() {
                   )}
                 </label>
                 <label className="field">
-                  <span>Data</span>
+                  <span>{t("Data")}</span>
                   <input
                     ref={transferDateRef}
                     type="date"
@@ -640,14 +671,14 @@ export function AccountsPage() {
               </div>
               <label className="field">
                 <span>
-                  Nota <em>opcional</em>
+                  {t("Nota")} <em>{t("opcional")}</em>
                 </span>
                 <input
                   value={transferForm.description}
                   onChange={(event) =>
                     setTransferForm((form) => ({ ...form, description: event.target.value }))
                   }
-                  placeholder="Ex.: reforço da poupança"
+                  placeholder={t("Ex.: reforço da poupança")}
                 />
               </label>
               <button
@@ -655,7 +686,7 @@ export function AccountsPage() {
                 disabled={isSaving || visibleAccounts.length < 2}
                 type="submit"
               >
-                Transferir
+                {t("Transferir")}
               </button>
             </form>
           </details>
@@ -665,8 +696,8 @@ export function AccountsPage() {
       <section className="accounts-panel accounts-panel--list" aria-labelledby="accounts-title">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">Saldos</p>
-            <h2 id="accounts-title">As suas contas</h2>
+            <p className="eyebrow">{t("Saldos")}</p>
+            <h2 id="accounts-title">{t("As suas contas")}</h2>
           </div>
         </div>
         <div className="account-cards">
@@ -693,14 +724,14 @@ export function AccountsPage() {
                     <AccountIcon type={account.type} />
                   </span>
                   <div className="account-card-large__identity">
-                    <p>{accountLabels[account.type]}</p>
+                    <p>{t(accountLabels[account.type])}</p>
                     <h3>
                       <Link to={`/accounts/${account.id}`}>{account.name}</Link>
                     </h3>
                     <span
                       className={`account-badge account-badge--${isLinked ? "bank" : "manual"}`}
                     >
-                      {isLinked ? "Ligada ao banco" : "Manual"}
+                      {t(isLinked ? "Ligada ao banco" : "Manual")}
                     </span>
                     {(isLinked || cardUse !== null) && (
                       <div className="account-card-large__meta">
@@ -708,10 +739,11 @@ export function AccountsPage() {
                           account.availableBalance !== null &&
                           account.availableBalance !== undefined && (
                             <span>
-                              Disponível{" "}
+                              {t("Disponível")}{" "}
                               {formatCurrency(
                                 account.availableBalance,
                                 account.currency ?? currency,
+                                locale,
                               )}
                             </span>
                           )}
@@ -721,16 +753,29 @@ export function AccountsPage() {
                           Math.abs(account.balanceDelta) >= 0.01 && (
                             <span className="account-card-large__delta">
                               Na app{" "}
-                              {formatCurrency(account.derivedBalance, account.currency ?? currency)}{" "}
+                              {formatCurrency(
+                                account.derivedBalance,
+                                account.currency ?? currency,
+                                locale,
+                              )}{" "}
                               · diferença{" "}
-                              {formatCurrency(account.balanceDelta, account.currency ?? currency)}
+                              {formatCurrency(
+                                account.balanceDelta,
+                                account.currency ?? currency,
+                                locale,
+                              )}
                             </span>
                           )}
                         {isLinked && (
                           <span>
                             {account.lastSyncedAt
-                              ? `Atualizado ${new Date(account.lastSyncedAt).toLocaleString("pt-PT")}`
-                              : "Ainda sem sincronização"}
+                              ? t("Atualizado {date}", {
+                                  date: formatLocaleDate(account.lastSyncedAt, {
+                                    dateStyle: "short",
+                                    timeStyle: "short",
+                                  }),
+                                })
+                              : t("Ainda sem sincronização")}
                           </span>
                         )}
                         {cardUse !== null && (
@@ -739,42 +784,44 @@ export function AccountsPage() {
                       </div>
                     )}
                   </div>
-                  <strong>{formatCurrency(balance, account.currency ?? currency)}</strong>
+                  <strong>{formatCurrency(balance, account.currency ?? currency, locale)}</strong>
                   <div className="account-card-large__actions">
                     {isLinked && connection && canSync && (
                       <button
                         type="button"
                         className="icon-button"
-                        aria-label={`Sincronizar ${connection.institutionName}`}
+                        aria-label={t("Sincronizar {bank}", { bank: connection.institutionName })}
                         disabled={syncingConnectionId === connection.id}
                         onClick={() => void syncConnection(connection.id)}
                       >
                         <RefreshCw aria-hidden="true" />
-                        <span>Sincronizar</span>
+                        <span>{t("Sincronizar")}</span>
                       </button>
                     )}
                     {isLinked && connection && !canSync && connection.status !== "pending" && (
                       <Link className="text-button" to="/accounts/connections">
-                        Gerir ligação
+                        {t("Gerir ligação")}
                       </Link>
                     )}
                     {!isLinked && (
                       <button
                         type="button"
                         className="icon-button account-card-large__correct"
-                        aria-label={`Corrigir saldo da conta ${account.name}`}
+                        aria-label={t("Corrigir saldo da conta {account}", {
+                          account: account.name,
+                        })}
                         onClick={() => openBalanceCorrection(account)}
                       >
                         <PencilLine aria-hidden="true" />
-                        <span>Corrigir valor</span>
+                        <span>{t("Corrigir saldo")}</span>
                       </button>
                     )}
                     {!isLinked && (
                       <button
                         type="button"
                         className="icon-button icon-button--danger"
-                        aria-label={`Remover conta ${account.name}`}
-                        title="Remover conta"
+                        aria-label={t("Remover conta {account}", { account: account.name })}
+                        title={t("Remover conta")}
                         onClick={() => setDeleteTarget(account)}
                       >
                         <Trash2 aria-hidden="true" />
@@ -785,10 +832,7 @@ export function AccountsPage() {
               );
             })
           ) : (
-            <p className="accounts-empty">
-              Crie uma conta ou ligue o banco para começar a acompanhar o saldo. Os gastos ligados
-              passam a despesas.
-            </p>
+            <p className="accounts-empty">{t("Crie uma conta ou ligue o banco para começar.")}</p>
           )}
         </div>
       </section>
@@ -796,8 +840,8 @@ export function AccountsPage() {
       <section className="accounts-panel accounts-panel--list" aria-labelledby="transfers-title">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">Histórico</p>
-            <h2 id="transfers-title">Últimas transferências</h2>
+            <p className="eyebrow">{t("Histórico")}</p>
+            <h2 id="transfers-title">{t("Transferências recentes")}</h2>
           </div>
         </div>
         {transfers.length ? (
@@ -817,12 +861,12 @@ export function AccountsPage() {
                     {transfer.description ? ` · ${formatDate(transfer.date)}` : ""}
                   </p>
                 </div>
-                <strong>{formatCurrency(transfer.amount, currency)}</strong>
+                <strong>{formatCurrency(transfer.amount, currency, locale)}</strong>
               </article>
             ))}
           </div>
         ) : (
-          <p className="accounts-empty">As transferências entre contas aparecem aqui.</p>
+          <p className="accounts-empty">{t("Ainda não existem transferências.")}</p>
         )}
       </section>
       <BalanceCorrectionDialog
@@ -845,13 +889,16 @@ export function AccountsPage() {
       />
       <ConfirmDialog
         open={Boolean(deleteTarget)}
-        title="Remover esta conta?"
+        title={t("Remover esta conta?")}
         description={
           deleteTarget
-            ? `“${deleteTarget.name}” será removida. As despesas e rendimentos existentes deixam de estar associados a esta conta. As transferências desta conta também serão removidas, sem alterar o saldo das restantes contas.`
+            ? t(
+                "{account} será removida. As despesas e rendimentos existentes deixam de estar associados a esta conta. As transferências desta conta também serão removidas, sem alterar o saldo das restantes contas.",
+                { account: `“${deleteTarget.name}”` },
+              )
             : ""
         }
-        confirmLabel="Remover conta"
+        confirmLabel={t("Remover conta")}
         busy={isSaving}
         onCancel={() => setDeleteTarget(null)}
         onConfirm={() => void removeAccount()}

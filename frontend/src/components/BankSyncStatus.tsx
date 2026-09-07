@@ -1,5 +1,6 @@
 import { AlertTriangle, CheckCircle2, Clock, RefreshCw, WifiOff } from "lucide-react";
 import type { BankConnectionStatus } from "../types";
+import { useI18n } from "../i18n/I18nContext";
 
 const labels: Record<BankConnectionStatus, string> = {
   pending: "Aguarda confirmação no banco",
@@ -29,6 +30,7 @@ export function BankSyncStatus({
   errorCode?: string | null;
   compact?: boolean;
 }) {
+  const { t, formatDate } = useI18n();
   const icon =
     status === "active" ? (
       <CheckCircle2 aria-hidden="true" />
@@ -43,26 +45,33 @@ export function BankSyncStatus({
   return (
     <p className={`bank-status bank-status--${status}`}>
       {icon}
-      <span>{labels[status]}</span>
+      <span>{t(labels[status])}</span>
       {status === "error" && !compact && (
         <>
-          <small>{errorRecoveryHint}</small>
-          {errorCode && <small>Código de diagnóstico: {errorCode}</small>}
+          <small>{t(errorRecoveryHint)}</small>
+          {errorCode && <small>{t("Código de diagnóstico: {code}", { code: errorCode })}</small>}
         </>
       )}
       {!compact && lastSyncedAt && (
-        <small>Última atualização: {new Date(lastSyncedAt).toLocaleString("pt-PT")}</small>
+        <small>
+          {t("Última atualização: {date}", {
+            date: formatDate(lastSyncedAt, { dateStyle: "short", timeStyle: "short" }),
+          })}
+        </small>
       )}
-      {!compact && !lastSyncedAt && status === "active" && <small>Ainda sem sincronização.</small>}
+      {!compact && !lastSyncedAt && status === "active" && (
+        <small>{t("Ainda sem sincronização.")}</small>
+      )}
     </p>
   );
 }
 
 export function SyncingIndicator({ label = "A sincronizar" }: { label?: string }) {
+  const { t } = useI18n();
   return (
     <p className="bank-status bank-status--syncing" role="status">
       <RefreshCw aria-hidden="true" />
-      <span>{label}</span>
+      <span>{t(label)}</span>
     </p>
   );
 }

@@ -5,6 +5,7 @@ import { MotionConfig } from "framer-motion";
 import App from "./App";
 import { AuthProvider } from "./auth/AuthContext";
 import { SessionLoadingOverlay } from "./components/SessionLoadingOverlay";
+import { I18nProvider } from "./i18n/I18nContext";
 import "./styles.css";
 
 if ("serviceWorker" in navigator)
@@ -16,10 +17,12 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
       <MotionConfig reducedMotion="user" transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}>
-        <AuthProvider>
-          <App />
-          <SessionLoadingOverlay />
-        </AuthProvider>
+        <I18nProvider>
+          <AuthProvider>
+            <App />
+            <SessionLoadingOverlay />
+          </AuthProvider>
+        </I18nProvider>
       </MotionConfig>
     </BrowserRouter>
   </StrictMode>,

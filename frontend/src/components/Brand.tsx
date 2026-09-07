@@ -55,7 +55,7 @@ export function Brand({ compact = false, linked = true, phase = "idle" }: BrandP
         aria-hidden="true"
         variants={reduceMotion ? undefined : markVariants}
       >
-        <img src="/icon.svg" alt="" decoding="async" draggable={false} />
+        <img src="/brand-mark.svg" alt="" decoding="async" draggable={false} />
       </motion.span>
       <span className="brand__word">
         expense<span>snap</span>

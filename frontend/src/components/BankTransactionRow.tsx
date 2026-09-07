@@ -1,4 +1,5 @@
 import type { BankTransaction } from "../types";
+import { useI18n } from "../i18n/I18nContext";
 
 const classificationLabels: Record<BankTransaction["classification"], string> = {
   unreviewed: "Por rever",
@@ -9,13 +10,13 @@ const classificationLabels: Record<BankTransaction["classification"], string> = 
   refund: "Reembolso",
 };
 
-function formatAmount(value: number, currency: string) {
-  return new Intl.NumberFormat("pt-PT", { style: "currency", currency }).format(value);
+function formatAmount(value: number, currency: string, locale: string) {
+  return new Intl.NumberFormat(locale, { style: "currency", currency }).format(value);
 }
 
-function formatDay(value: string | null) {
-  if (!value) return "Sem data";
-  return new Intl.DateTimeFormat("pt-PT", { day: "2-digit", month: "short" }).format(
+function formatDay(value: string | null, locale: string, noDate: string) {
+  if (!value) return noDate;
+  return new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short" }).format(
     new Date(value),
   );
 }
@@ -33,6 +34,7 @@ export function BankTransactionRow({
   onCategoryChange: (transaction: BankTransaction, categoryId: string) => void;
   onToggleAnalytics: (transaction: BankTransaction, excluded: boolean) => void;
 }) {
+  const { t, locale } = useI18n();
   const isPending = transaction.status === "pending";
   const isCredit = transaction.direction === "credit";
 
@@ -41,24 +43,24 @@ export function BankTransactionRow({
       <div className="bank-transaction-row__main">
         <p className="bank-transaction-row__description">{transaction.description}</p>
         <p className="bank-transaction-row__meta">
-          {formatDay(transaction.bookingDate)}
+          {formatDay(transaction.bookingDate, locale, t("Sem data"))}
           {transaction.counterpartyName ? ` · ${transaction.counterpartyName}` : ""}
-          {isPending && <span className="bank-transaction-row__badge">Pendente</span>}
+          {isPending && <span className="bank-transaction-row__badge">{t("Pendente")}</span>}
           <span className="bank-transaction-row__badge bank-transaction-row__badge--muted">
-            {classificationLabels[transaction.classification]}
+            {t(classificationLabels[transaction.classification])}
           </span>
         </p>
       </div>
 
       <strong className={`bank-transaction-row__amount${isCredit ? " is-credit" : ""}`}>
         {isCredit ? "+" : "−"}
-        {formatAmount(transaction.amount, transaction.currency)}
+        {formatAmount(transaction.amount, transaction.currency, locale)}
       </strong>
 
       <div className="bank-transaction-row__actions">
         {transaction.expense && (
           <label className="field field--inline">
-            <span>Categoria</span>
+            <span>{t("Categoria")}</span>
             <select
               value={transaction.expense.categoryId}
               disabled={busy}
@@ -79,7 +81,7 @@ export function BankTransactionRow({
             disabled={busy}
             onChange={(event) => onToggleAnalytics(transaction, event.target.checked)}
           />
-          <span>Não contar como despesa</span>
+          <span>{t("Não contar como despesa")}</span>
         </label>
       </div>
     </article>

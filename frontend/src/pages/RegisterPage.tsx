@@ -7,8 +7,10 @@ import { useAuth } from "../auth/AuthContext";
 import { AuthStory } from "../components/AuthStory";
 import { Spinner } from "../components/States";
 import { preloadFinancialOnboardingPage } from "../routePreloads";
+import { useI18n } from "../i18n/I18nContext";
 
 export function RegisterPage() {
+  const { t } = useI18n();
   const { register } = useAuth();
   const reduceMotion = useReducedMotion();
   const nameRef = useRef<HTMLInputElement>(null);
@@ -41,15 +43,15 @@ export function RegisterPage() {
       password?: string;
       confirmPassword?: string;
     } = {};
-    if (name.trim().length < 2) nextErrors.name = "Introduza pelo menos 2 caracteres.";
-    if (!email.trim()) nextErrors.email = "Introduza o seu email.";
+    if (name.trim().length < 2) nextErrors.name = t("Introduza pelo menos 2 caracteres.");
+    if (!email.trim()) nextErrors.email = t("Introduza o seu email.");
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
-      nextErrors.email = "Introduza um email válido.";
-    if (password.length < 8) nextErrors.password = "Use pelo menos 8 caracteres.";
-    else if (password.length > 128) nextErrors.password = "Use no máximo 128 caracteres.";
-    if (!confirmPassword) nextErrors.confirmPassword = "Confirme a palavra-passe.";
+      nextErrors.email = t("Introduza um email válido.");
+    if (password.length < 8) nextErrors.password = t("Use pelo menos 8 caracteres.");
+    else if (password.length > 128) nextErrors.password = t("Use no máximo 128 caracteres.");
+    if (!confirmPassword) nextErrors.confirmPassword = t("Confirme a palavra-passe.");
     else if (password !== confirmPassword)
-      nextErrors.confirmPassword = "As palavras-passe não coincidem.";
+      nextErrors.confirmPassword = t("As palavras-passe não coincidem.");
     setFieldErrors(nextErrors);
     if (nextErrors.name || nextErrors.email || nextErrors.password || nextErrors.confirmPassword) {
       (nextErrors.name
@@ -86,9 +88,9 @@ export function RegisterPage() {
         >
           <div className="auth-form-heading">
             <div>
-              <p className="eyebrow">A sua conta</p>
-              <h1>Criar conta</h1>
-              <p className="form-intro">Demora menos de um minuto.</p>
+              <p className="eyebrow">{t("A sua conta")}</p>
+              <h1>{t("Criar conta")}</h1>
+              <p className="form-intro">{t("Demora menos de um minuto.")}</p>
             </div>
           </div>
 
@@ -108,7 +110,7 @@ export function RegisterPage() {
               )}
             </AnimatePresence>
             <label className="field">
-              <span>Nome</span>
+              <span>{t("Nome")}</span>
               <span className="field__control">
                 <UserRound aria-hidden="true" />
                 <input
@@ -122,7 +124,7 @@ export function RegisterPage() {
                     setName(event.target.value);
                     setFieldErrors((current) => ({ ...current, name: undefined }));
                   }}
-                  placeholder="Como quer ser tratado?"
+                  placeholder={t("Como quer ser tratado?")}
                   aria-invalid={Boolean(fieldErrors.name)}
                   aria-describedby={fieldErrors.name ? "register-name-error" : undefined}
                 />
@@ -134,7 +136,7 @@ export function RegisterPage() {
               )}
             </label>
             <label className="field">
-              <span>Email</span>
+              <span>{t("Email")}</span>
               <span className="field__control">
                 <Mail aria-hidden="true" />
                 <input
@@ -161,7 +163,7 @@ export function RegisterPage() {
               )}
             </label>
             <label className="field">
-              <span>Palavra-passe</span>
+              <span>{t("Palavra-passe")}</span>
               <span className="field__control field__control--password">
                 <LockKeyhole aria-hidden="true" />
                 <input
@@ -181,7 +183,7 @@ export function RegisterPage() {
                       confirmPassword: undefined,
                     }));
                   }}
-                  placeholder="Entre 8 e 128 caracteres"
+                  placeholder={t("Entre 8 e 128 caracteres")}
                   aria-invalid={Boolean(fieldErrors.password)}
                   aria-describedby={
                     fieldErrors.password ? "register-password-error password-help" : "password-help"
@@ -191,7 +193,7 @@ export function RegisterPage() {
                   className="field__action"
                   type="button"
                   onClick={() => setShowPassword((current) => !current)}
-                  aria-label={showPassword ? "Ocultar palavra-passe" : "Mostrar palavra-passe"}
+                  aria-label={t(showPassword ? "Ocultar palavra-passe" : "Mostrar palavra-passe")}
                 >
                   {showPassword ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
                 </button>
@@ -201,10 +203,10 @@ export function RegisterPage() {
                   {fieldErrors.password}
                 </small>
               )}
-              <small id="password-help">Use entre 8 e 128 caracteres.</small>
+              <small id="password-help">{t("Use entre 8 e 128 caracteres.")}</small>
             </label>
             <label className="field">
-              <span>Confirmar palavra-passe</span>
+              <span>{t("Confirmar palavra-passe")}</span>
               <span className="field__control field__control--password">
                 <LockKeyhole aria-hidden="true" />
                 <input
@@ -220,7 +222,7 @@ export function RegisterPage() {
                     setConfirmPassword(event.target.value);
                     setFieldErrors((current) => ({ ...current, confirmPassword: undefined }));
                   }}
-                  placeholder="Repita a palavra-passe"
+                  placeholder={t("Repita a palavra-passe")}
                   aria-invalid={Boolean(fieldErrors.confirmPassword)}
                   aria-describedby={
                     fieldErrors.confirmPassword ? "register-confirm-error" : undefined
@@ -232,8 +234,8 @@ export function RegisterPage() {
                   onClick={() => setShowConfirmPassword((current) => !current)}
                   aria-label={
                     showConfirmPassword
-                      ? "Ocultar confirmação da palavra-passe"
-                      : "Mostrar confirmação da palavra-passe"
+                      ? t("Ocultar confirmação da palavra-passe")
+                      : t("Mostrar confirmação da palavra-passe")
                   }
                 >
                   {showConfirmPassword ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
@@ -251,19 +253,19 @@ export function RegisterPage() {
               disabled={isSubmitting}
             >
               {isSubmitting ? (
-                <Spinner label="A criar conta" />
+                <Spinner label={t("A criar conta")} />
               ) : (
                 <>
-                  Criar conta <ArrowRight aria-hidden="true" />
+                  {t("Criar conta")} <ArrowRight aria-hidden="true" />
                 </>
               )}
             </button>
           </form>
 
           <p className="auth-switch">
-            Já tem conta?{" "}
+            {t("Já tem conta?")}{" "}
             <Link to="/login">
-              Entrar <ArrowRight size={14} aria-hidden="true" />
+              {t("Entrar")} <ArrowRight size={14} aria-hidden="true" />
             </Link>
           </p>
         </motion.div>

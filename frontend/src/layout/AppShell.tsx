@@ -21,6 +21,7 @@ import { ThemeToggle } from "../components/ThemeToggle";
 import { CommandPaletteProvider, CommandPaletteTrigger } from "../components/CommandPalette";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { EmailVerificationBanner } from "../components/EmailVerificationBanner";
+import { LanguageSwitcher, useI18n } from "../i18n/I18nContext";
 import {
   preloadAccountsPage,
   preloadBankConnectionsPage,
@@ -42,7 +43,12 @@ const navItems = [
 const moreItems = [
   { to: "/planning", label: "Plano", icon: CalendarClock, preload: preloadPlanningPage },
   { to: "/investments", label: "Investir", icon: TrendingUp, preload: preloadInvestmentsPage },
-  { to: "/accounts/connections", label: "Bancos", icon: Building2, preload: preloadBankConnectionsPage },
+  {
+    to: "/accounts/connections",
+    label: "Bancos",
+    icon: Building2,
+    preload: preloadBankConnectionsPage,
+  },
   { to: "/privacy", label: "Privacidade", icon: Shield, preload: preloadPrivacyPage },
   { to: "/categories", label: "Categorias", icon: FolderOpen, preload: undefined },
 ];
@@ -55,8 +61,9 @@ const secondaryLinks = [
 ];
 
 function DesktopNavigation() {
+  const { t } = useI18n();
   return (
-    <nav className="side-nav" aria-label="Navegação principal">
+    <nav className="side-nav" aria-label={t("Navegação principal")}>
       {navItems.map(({ to, label, icon: Icon, preload }) => (
         <NavLink
           key={to}
@@ -70,7 +77,7 @@ function DesktopNavigation() {
           {({ isActive }) => (
             <>
               <Icon aria-hidden="true" />
-              <span>{label}</span>
+              <span>{t(label)}</span>
               {isActive && (
                 <motion.span
                   className="nav-link__active-marker"
@@ -94,6 +101,7 @@ function MobileNavigation({
   moreOpen: boolean;
   onToggleMore: () => void;
 }) {
+  const { t } = useI18n();
   const location = useLocation();
   const moreActive = morePaths.some(
     (path) => location.pathname === path || location.pathname.startsWith(`${path}/`),
@@ -101,7 +109,7 @@ function MobileNavigation({
   const tabs = [navItems[0], navItems[1], "new" as const, navItems[2], "more" as const];
 
   return (
-    <nav className="mobile-nav" aria-label="Navegação principal">
+    <nav className="mobile-nav" aria-label={t("Navegação principal")}>
       {tabs.map((item) => {
         if (item === "new") {
           return (
@@ -111,12 +119,12 @@ function MobileNavigation({
               className={({ isActive }) =>
                 isActive ? "mobile-nav__add mobile-nav__add--active" : "mobile-nav__add"
               }
-              aria-label="Nova despesa"
+              aria-label={t("Nova despesa")}
               onPointerDown={preloadExpenseFormPage}
               onFocus={preloadExpenseFormPage}
             >
               <Plus aria-hidden="true" />
-              <span>Novo</span>
+              <span>{t("Novo")}</span>
             </NavLink>
           );
         }
@@ -131,7 +139,7 @@ function MobileNavigation({
               onClick={onToggleMore}
             >
               <MoreHorizontal aria-hidden="true" />
-              <span>Mais</span>
+              <span>{t("Mais")}</span>
               {(moreOpen || moreActive) && (
                 <motion.span
                   className="nav-link__active-marker"
@@ -157,7 +165,7 @@ function MobileNavigation({
             {({ isActive }) => (
               <>
                 <Icon aria-hidden="true" />
-                <span>{label}</span>
+                <span>{t(label)}</span>
                 {isActive && (
                   <motion.span
                     className="nav-link__active-marker"
@@ -184,6 +192,7 @@ function MoreSheet({
   onClose: () => void;
   onLogout: () => void;
 }) {
+  const { t } = useI18n();
   const dialogRef = useRef<HTMLElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const reduceMotion = useReducedMotion();
@@ -259,12 +268,12 @@ function MoreSheet({
             transition={{ duration: reduceMotion ? 0 : 0.2, ease: [0.16, 1, 0.3, 1] }}
           >
             <div className="more-sheet__header">
-              <h2 id="more-sheet-title">Mais</h2>
+              <h2 id="more-sheet-title">{t("Mais")}</h2>
               <button ref={closeRef} className="text-button" type="button" onClick={onClose}>
-                Fechar
+                {t("Fechar")}
               </button>
             </div>
-            <nav className="more-sheet__nav" aria-label="Mais páginas">
+            <nav className="more-sheet__nav" aria-label={t("Mais páginas")}>
               {moreItems.map(({ to, label, icon: Icon, preload }) => (
                 <NavLink
                   key={to}
@@ -277,12 +286,12 @@ function MoreSheet({
                   onFocus={preload}
                 >
                   <Icon aria-hidden="true" />
-                  {label}
+                  {t(label)}
                 </NavLink>
               ))}
             </nav>
             <button className="more-sheet__logout" type="button" onClick={onLogout}>
-              <LogOut aria-hidden="true" /> Terminar sessão
+              <LogOut aria-hidden="true" /> {t("Terminar sessão")}
             </button>
           </motion.section>
         </motion.div>
@@ -292,6 +301,7 @@ function MoreSheet({
 }
 
 export function AppShell() {
+  const { t } = useI18n();
   const { user, logout } = useAuth();
   const location = useLocation();
   const outlet = useOutlet();
@@ -352,7 +362,7 @@ export function AppShell() {
     <CommandPaletteProvider>
       <div className="app-shell">
         <a className="skip-link" href="#main-content">
-          Saltar para o conteúdo
+          {t("Saltar para o conteúdo")}
         </a>
         <aside className="sidebar">
           <Brand phase={isLoggingOut ? "exit" : "idle"} />
@@ -364,11 +374,12 @@ export function AppShell() {
             onPointerDown={preloadExpenseFormPage}
             onFocus={preloadExpenseFormPage}
           >
-            <Plus aria-hidden="true" /> Registar despesa
+            <Plus aria-hidden="true" /> {t("Registar despesa")}
           </NavLink>
           <div className="sidebar__tools">
             <CommandPaletteTrigger />
             <ThemeToggle />
+            <LanguageSwitcher />
           </div>
           <nav className="sidebar__secondary" aria-label="Open Banking">
             {secondaryLinks.map(({ to, label, preload }) => (
@@ -381,7 +392,7 @@ export function AppShell() {
                 onPointerEnter={preload}
                 onFocus={preload}
               >
-                {label}
+                {t(label)}
               </NavLink>
             ))}
           </nav>
@@ -399,8 +410,8 @@ export function AppShell() {
               onClick={requestLogout}
               disabled={isLoggingOut}
               aria-busy={isLoggingOut}
-              aria-label={isLoggingOut ? "A terminar sessão" : "Terminar sessão"}
-              title="Terminar sessão"
+              aria-label={isLoggingOut ? t("A terminar sessão") : t("Terminar sessão")}
+              title={t("Terminar sessão")}
             >
               <LogOut aria-hidden="true" />
             </motion.button>
@@ -412,13 +423,14 @@ export function AppShell() {
           <div className="mobile-header__actions">
             <CommandPaletteTrigger compact />
             <ThemeToggle compact />
+            <LanguageSwitcher compact />
             <motion.button
               className="mobile-account"
               type="button"
               onClick={requestLogout}
               disabled={isLoggingOut}
               aria-busy={isLoggingOut}
-              aria-label={isLoggingOut ? "A terminar sessão" : "Terminar sessão"}
+              aria-label={isLoggingOut ? t("A terminar sessão") : t("Terminar sessão")}
               whileTap={reduceMotion ? undefined : { scale: 0.96 }}
             >
               <span aria-hidden="true">{initials}</span>
@@ -430,7 +442,8 @@ export function AppShell() {
         <main id="main-content" className="main-content" tabIndex={-1}>
           {isOffline && (
             <div className="offline-banner" role="status">
-              <WifiOff aria-hidden="true" /> Sem ligação. A mostrar os últimos dados guardados.
+              <WifiOff aria-hidden="true" />{" "}
+              {t("Sem ligação. A mostrar os últimos dados guardados.")}
             </div>
           )}
           <EmailVerificationBanner />
@@ -452,16 +465,12 @@ export function AppShell() {
           </AnimatePresence>
         </main>
         <MobileNavigation moreOpen={moreOpen} onToggleMore={() => setMoreOpen((open) => !open)} />
-        <MoreSheet
-          open={moreOpen}
-          onClose={() => setMoreOpen(false)}
-          onLogout={requestLogout}
-        />
+        <MoreSheet open={moreOpen} onClose={() => setMoreOpen(false)} onLogout={requestLogout} />
         <ConfirmDialog
           open={logoutConfirmOpen}
-          title="Terminar sessão?"
-          description="Vai sair desta conta neste dispositivo."
-          confirmLabel="Terminar sessão"
+          title={t("Terminar sessão?")}
+          description={t("Vai sair desta conta neste dispositivo.")}
+          confirmLabel={t("Terminar sessão")}
           onCancel={() => setLogoutConfirmOpen(false)}
           onConfirm={confirmLogout}
         />

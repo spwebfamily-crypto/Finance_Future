@@ -6,8 +6,10 @@ import { errorMessage } from "../api/client";
 import { authApi } from "../api/resources";
 import { AuthStory } from "../components/AuthStory";
 import { Spinner } from "../components/States";
+import { useI18n } from "../i18n/I18nContext";
 
 export function ForgotPasswordPage() {
+  const { t } = useI18n();
   const reduceMotion = useReducedMotion();
   const emailRef = useRef<HTMLInputElement>(null);
   const [email, setEmail] = useState("");
@@ -20,12 +22,12 @@ export function ForgotPasswordPage() {
     event.preventDefault();
     setError("");
     if (!email.trim()) {
-      setFieldError("Introduza o seu email.");
+      setFieldError(t("Introduza o seu email."));
       emailRef.current?.focus();
       return;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      setFieldError("Introduza um email válido.");
+      setFieldError(t("Introduza um email válido."));
       emailRef.current?.focus();
       return;
     }
@@ -54,12 +56,14 @@ export function ForgotPasswordPage() {
         >
           <div className="auth-form-heading">
             <div>
-              <p className="eyebrow">Recuperar acesso</p>
-              <h1>Esqueceu a palavra-passe?</h1>
+              <p className="eyebrow">{t("Recuperar acesso")}</p>
+              <h1>{t("Esqueceu a palavra-passe?")}</h1>
               <p className="form-intro">
                 {sent
-                  ? "Se existir uma conta com este email, enviámos um link para repor a palavra-passe."
-                  : "Indique o email da conta. Se existir, enviamos um link de reposição."}
+                  ? t(
+                      "Se existir uma conta com este email, enviámos um link para repor a palavra-passe.",
+                    )
+                  : t("Indique o email da conta. Se existir, enviamos um link de reposição.")}
               </p>
             </div>
           </div>
@@ -67,10 +71,10 @@ export function ForgotPasswordPage() {
           {sent ? (
             <div className="auth-status__actions">
               <Link className="button button--primary button--wide" to="/login">
-                Voltar a entrar <ArrowRight aria-hidden="true" />
+                {t("Voltar a entrar")} <ArrowRight aria-hidden="true" />
               </Link>
               <p className="auth-status__hint" role="status">
-                Verifique a caixa de entrada e o spam. O link expira ao fim de uma hora.
+                {t("Verifique a caixa de entrada e o spam. O link expira ao fim de uma hora.")}
               </p>
             </div>
           ) : (
@@ -90,7 +94,7 @@ export function ForgotPasswordPage() {
                 )}
               </AnimatePresence>
               <label className="field">
-                <span>Email</span>
+                <span>{t("Email")}</span>
                 <span className="field__control">
                   <Mail aria-hidden="true" />
                   <input
@@ -122,10 +126,10 @@ export function ForgotPasswordPage() {
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
-                  <Spinner label="A enviar" />
+                  <Spinner label={t("A enviar")} />
                 ) : (
                   <>
-                    Enviar link <ArrowRight aria-hidden="true" />
+                    {t("Enviar link")} <ArrowRight aria-hidden="true" />
                   </>
                 )}
               </button>
@@ -134,7 +138,7 @@ export function ForgotPasswordPage() {
 
           <p className="auth-switch">
             <Link to="/login">
-              <ArrowLeft size={14} aria-hidden="true" /> Voltar ao início de sessão
+              <ArrowLeft size={14} aria-hidden="true" /> {t("Voltar ao início de sessão")}
             </Link>
           </p>
         </motion.div>

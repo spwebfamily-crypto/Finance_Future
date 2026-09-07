@@ -1,5 +1,6 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { ChartNoAxesCombined, ReceiptText, WalletCards } from "lucide-react";
+import { useI18n } from "../i18n/I18nContext";
 
 const nodes = [
   { label: "Registo", icon: ReceiptText, className: "auth-flow__node--top" },
@@ -8,6 +9,7 @@ const nodes = [
 ];
 
 export function AuthFlowVisual() {
+  const { t } = useI18n();
   const reduceMotion = useReducedMotion();
 
   return (
@@ -54,11 +56,11 @@ export function AuthFlowVisual() {
             <span className="auth-flow__icon">
               <Icon size={19} strokeWidth={1.8} />
             </span>
-            <span>{label}</span>
+            <span>{t(label)}</span>
           </motion.div>
         ))}
       </div>
-      <p className="auth-flow__caption">Uma leitura simples do que sai e do que fica.</p>
+      <p className="auth-flow__caption">{t("Uma leitura simples do que sai e do que fica.")}</p>
     </div>
   );
 }

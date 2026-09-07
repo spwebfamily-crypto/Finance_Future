@@ -50,7 +50,7 @@ Contrato confirmado na documentação oficial (https://enablebanking.com/docs/ap
 
 1. Sincronização inicial no callback (`BankSyncJob` com `trigger=initial`).
 2. Sincronização manual pelo utilizador (`trigger=manual`), com rate limit e bloqueio de jobs concorrentes por ligação.
-3. Sincronização agendada (`trigger=scheduled`) por um comando CLI + rota interna protegida por `OPEN_BANKING_CRON_SECRET`, executada por Render Cron, com claim atómico e lote limitado.
+3. Sincronização agendada (`trigger=scheduled`) pelo servidor enquanto está ativo, além do comando CLI e da rota interna protegida por `OPEN_BANKING_CRON_SECRET` para Render Cron, sempre com claim atómico e lote limitado.
 
 **Motivo:** o contrato público confirmado para AIS é pedido-resposta com paginação por `continuation_key`. Não se inventa um contrato de webhook que não está verificado. O intervalo padrão é `OPEN_BANKING_SYNC_INTERVAL_MINUTES=360` (6 h), conservador face a limites de taxa dos bancos.
 

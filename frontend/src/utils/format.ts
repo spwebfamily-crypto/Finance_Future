@@ -1,7 +1,7 @@
-export function formatCurrency(value: string | number, currency = "EUR") {
+export function formatCurrency(value: string | number, currency = "EUR", locale = "pt-PT") {
   const amount = typeof value === "number" ? value : Number(value);
 
-  return new Intl.NumberFormat("pt-PT", {
+  return new Intl.NumberFormat(locale, {
     style: "currency",
     currency,
   }).format(Number.isFinite(amount) ? amount : 0);

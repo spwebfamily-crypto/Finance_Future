@@ -14,6 +14,7 @@ import type {
   BankTransactionStatus,
   FinancialAccount,
 } from "../types";
+import { useI18n } from "../i18n/I18nContext";
 
 const statusOptions: Array<
   { value: ""; label: string } | { value: BankTransactionStatus; label: string }
@@ -36,6 +37,7 @@ const classificationOptions: Array<
 ];
 
 export function AccountDetailPage() {
+  const { t } = useI18n();
   const { accountId = "" } = useParams();
   const [account, setAccount] = useState<FinancialAccount | null>(null);
   const [transactions, setTransactions] = useState<BankTransaction[]>([]);
@@ -54,29 +56,46 @@ export function AccountDetailPage() {
     setIsLoading(true);
     setError("");
     try {
-      const [accounts, categoryList] = await Promise.all([accountApi.list(), categoryApi.list()]);
-      const found = accounts.find((item) => item.id === accountId) ?? null;
+      const [accountsResult, categoriesResult] = await Promise.allSettled([
+        accountApi.list(),
+        categoryApi.list(),
+      ]);
+      if (accountsResult.status === "rejected") throw accountsResult.reason;
+      const found = accountsResult.value.find((item) => item.id === accountId) ?? null;
       setAccount(found);
-      setCategories(categoryList.map((category) => ({ id: category.id, name: category.name })));
+      if (categoriesResult.status === "fulfilled") {
+        setCategories(
+          categoriesResult.value.map((category) => ({ id: category.id, name: category.name })),
+        );
+      } else {
+        setCategories([]);
+        setError(
+          t("A conta foi carregada, mas as categorias estão temporariamente indisponíveis."),
+        );
+      }
       setTransactions([]);
       setPageCount(1);
       if (found?.source === "bank") {
-        const result = await openBankingApi.transactions({
-          accountId,
-          ...(status ? { status } : {}),
-          ...(classification ? { classification } : {}),
-          page,
-          pageSize: 25,
-        });
-        setTransactions(result.data);
-        setPageCount(result.meta.pageCount);
+        try {
+          const result = await openBankingApi.transactions({
+            accountId,
+            ...(status ? { status } : {}),
+            ...(classification ? { classification } : {}),
+            page,
+            pageSize: 25,
+          });
+          setTransactions(result.data);
+          setPageCount(result.meta.pageCount);
+        } catch (requestError) {
+          setError(errorMessage(requestError));
+        }
       }
     } catch (requestError) {
       setError(errorMessage(requestError));
     } finally {
       setIsLoading(false);
     }
-  }, [accountId, page, status, classification]);
+  }, [accountId, page, status, classification, t]);
 
   useEffect(() => {
     void load();
@@ -88,7 +107,7 @@ export function AccountDetailPage() {
     setBusyTransactionId(transaction.id);
     try {
       await openBankingApi.reviewTransaction(transaction.id, { categoryId });
-      setNotice("Categoria atualizada.");
+      setNotice(t("Categoria atualizada."));
       await load();
     } catch (requestError) {
       setError(errorMessage(requestError));
@@ -105,8 +124,8 @@ export function AccountDetailPage() {
       });
       setNotice(
         excluded
-          ? "Este movimento deixou de contar como despesa."
-          : "Este gasto voltou às despesas.",
+          ? t("Este movimento deixou de contar como despesa.")
+          : t("Este gasto voltou às despesas."),
       );
       await load();
     } catch (requestError) {
@@ -119,7 +138,7 @@ export function AccountDetailPage() {
   if (isLoading && !account) {
     return (
       <div className="page">
-        <LoadingState label="A carregar a conta" />
+        <LoadingState label={t("A carregar a conta")} />
       </div>
     );
   }
@@ -127,7 +146,7 @@ export function AccountDetailPage() {
   if (!account) {
     return (
       <div className="page">
-        <ErrorState message={error || "Conta não encontrada."} onRetry={() => void load()} />
+        <ErrorState message={error || t("Conta não encontrada.")} onRetry={() => void load()} />
       </div>
     );
   }
@@ -136,16 +155,18 @@ export function AccountDetailPage() {
     <div className="page page--account-detail">
       <NoticeToast message={notice} onClose={() => setNotice("")} />
       <PageHeader
-        eyebrow={account.source === "bank" ? "Conta ligada ao banco" : "Conta manual"}
+        eyebrow={t(account.source === "bank" ? "Conta ligada ao banco" : "Conta manual")}
         title={account.name}
         description={
           account.source === "bank"
-            ? "Cada gasto contabilizado entra nas despesas. Pendentes e transferências próprias ficam de fora."
-            : "Saldo e movimentos desta conta."
+            ? t(
+                "Cada gasto contabilizado entra nas despesas. Pendentes e transferências próprias ficam de fora.",
+              )
+            : t("Saldo e movimentos desta conta.")
         }
         action={
           <Link className="button button--secondary" to="/accounts">
-            <ArrowLeft aria-hidden="true" /> Voltar
+            <ArrowLeft aria-hidden="true" /> {t("Voltar")}
           </Link>
         }
       />
@@ -171,54 +192,62 @@ export function AccountDetailPage() {
       <section className="accounts-panel" aria-labelledby="movements-title">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">Movimentos</p>
-            <h2 id="movements-title">Histórico da conta</h2>
+            <p className="eyebrow">{t("Movimentos")}</p>
+            <h2 id="movements-title">{t("Histórico da conta")}</h2>
             {account.source === "bank" && (
               <p className="section-heading__note">
-                Débitos contabilizados aparecem em Despesas. Use a categoria para os organizar, ou
-                exclua o que não quiser contar.
+                {t(
+                  "Débitos contabilizados aparecem em Despesas. Use a categoria para os organizar, ou exclua o que não quiser contar.",
+                )}
               </p>
             )}
           </div>
         </div>
 
-        <div className="planning-form__split">
-          <label className="field">
-            <span>Estado</span>
-            <select
-              value={status}
-              onChange={(event) => {
-                setPage(1);
-                setStatus(event.target.value as "" | BankTransactionStatus);
-              }}
-            >
-              {statusOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="field">
-            <span>Classificação</span>
-            <select
-              value={classification}
-              onChange={(event) => {
-                setPage(1);
-                setClassification(event.target.value as "" | BankTransactionClassification);
-              }}
-            >
-              {classificationOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
+        {account.source === "bank" && (
+          <div className="planning-form__split">
+            <label className="field">
+              <span>{t("Estado")}</span>
+              <select
+                value={status}
+                onChange={(event) => {
+                  setPage(1);
+                  setStatus(event.target.value as "" | BankTransactionStatus);
+                }}
+              >
+                {statusOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {t(option.label)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="field">
+              <span>{t("Classificação")}</span>
+              <select
+                value={classification}
+                onChange={(event) => {
+                  setPage(1);
+                  setClassification(event.target.value as "" | BankTransactionClassification);
+                }}
+              >
+                {classificationOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {t(option.label)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        )}
 
-        {isLoading ? (
-          <LoadingState label="A carregar os movimentos" />
+        {account.source !== "bank" ? (
+          <p className="accounts-empty">
+            {t("Os movimentos de contas manuais aparecem no arquivo geral.")}{" "}
+            <Link to="/expenses">{t("Ver movimentos")}</Link>
+          </p>
+        ) : isLoading ? (
+          <LoadingState label={t("A carregar os movimentos")} />
         ) : (
           <BankTransactionList
             transactions={transactions}
@@ -241,18 +270,16 @@ export function AccountDetailPage() {
               disabled={page <= 1}
               onClick={() => setPage((current) => Math.max(1, current - 1))}
             >
-              Anterior
+              {t("Anterior")}
             </button>
-            <span>
-              Página {page} de {pageCount}
-            </span>
+            <span>{t("Página {page} de {count}", { page, count: pageCount })}</span>
             <button
               type="button"
               className="button button--secondary"
               disabled={page >= pageCount}
               onClick={() => setPage((current) => Math.min(pageCount, current + 1))}
             >
-              Seguinte
+              {t("Seguinte")}
             </button>
           </div>
         )}

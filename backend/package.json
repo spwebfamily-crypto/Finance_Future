@@ -15,7 +15,8 @@
     "db:migrate:dev": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "postinstall": "prisma generate",
-    "open-banking:sync": "tsx src/scripts/processOpenBankingJobs.ts"
+    "open-banking:sync": "tsx src/scripts/processOpenBankingJobs.ts",
+    "open-banking:dedupe": "tsx src/scripts/cleanupDuplicateBankTransactions.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

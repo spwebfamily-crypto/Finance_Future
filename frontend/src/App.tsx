@@ -12,6 +12,7 @@ import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import { VerifyEmailPage } from "./pages/VerifyEmailPage";
 import { LoadingState } from "./components/States";
 import { RouteTransitionOutlet } from "./components/RouteTransitionOutlet";
+import { useI18n } from "./i18n/I18nContext";
 import {
   loadAccountDetailPage,
   loadAccountsConnectPage,
@@ -85,12 +86,6 @@ const PrivacyPage = lazy(() =>
   })),
 );
 
-const routeFallback = (
-  <div className="page">
-    <LoadingState label="A abrir esta página" />
-  </div>
-);
-
 const routeTitles: Record<string, string> = {
   "/login": "Entrar",
   "/register": "Criar conta",
@@ -110,137 +105,144 @@ const routeTitles: Record<string, string> = {
   "/investments": "Investir",
 };
 
-function titleForPath(pathname: string) {
-  if (routeTitles[pathname]) return `${routeTitles[pathname]} · ExpenseSnap`;
-  if (/^\/expenses\/[^/]+\/edit$/.test(pathname)) return "Editar despesa · ExpenseSnap";
-  if (/^\/accounts\/[^/]+$/.test(pathname)) return "Conta · ExpenseSnap";
+function titleForPath(pathname: string, t: (source: string) => string) {
+  if (routeTitles[pathname]) return `${t(routeTitles[pathname])} · ExpenseSnap`;
+  if (/^\/expenses\/[^/]+\/edit$/.test(pathname)) return `${t("Editar despesa")} · ExpenseSnap`;
+  if (/^\/accounts\/[^/]+$/.test(pathname)) return `${t("Conta")} · ExpenseSnap`;
   if (pathname === "/") return "ExpenseSnap";
-  return "Página não encontrada · ExpenseSnap";
+  return `${t("Página não encontrada")} · ExpenseSnap`;
 }
 
 function RouteDocumentTitle() {
   const { pathname } = useLocation();
+  const { t } = useI18n();
   useEffect(() => {
-    document.title = titleForPath(pathname);
-  }, [pathname]);
+    document.title = titleForPath(pathname, t);
+  }, [pathname, t]);
   return null;
 }
 
 export default function App() {
+  const { t } = useI18n();
+  const routeFallback = (
+    <div className="page">
+      <LoadingState label={t("A abrir esta página")} />
+    </div>
+  );
   return (
     <>
       <RouteDocumentTitle />
       <Routes>
-      <Route element={<GuestRoute />}>
-        <Route element={<RouteTransitionOutlet className="guest-route-stage" />}>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route element={<GuestRoute />}>
+          <Route element={<RouteTransitionOutlet className="guest-route-stage" />}>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          </Route>
         </Route>
-      </Route>
 
-      <Route element={<ProtectedRoute />}>
-        <Route
-          path="/onboarding"
-          element={
-            <Suspense fallback={routeFallback}>
-              <FinancialOnboardingPage />
-            </Suspense>
-          }
-        />
-        <Route element={<AppShell />}>
+        <Route element={<ProtectedRoute />}>
           <Route
-            path="/dashboard"
+            path="/onboarding"
             element={
               <Suspense fallback={routeFallback}>
-                <DashboardPage />
+                <FinancialOnboardingPage />
               </Suspense>
             }
           />
-          <Route path="/expenses" element={<ExpensesPage />} />
-          <Route
-            path="/expenses/new"
-            element={
-              <Suspense fallback={routeFallback}>
-                <ExpenseFormPage />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/expenses/:expenseId/edit"
-            element={
-              <Suspense fallback={routeFallback}>
-                <ExpenseFormPage />
-              </Suspense>
-            }
-          />
-          <Route path="/categories" element={<CategoriesPage />} />
-          <Route
-            path="/planning"
-            element={
-              <Suspense fallback={routeFallback}>
-                <PlanningPage />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/accounts"
-            element={
-              <Suspense fallback={routeFallback}>
-                <AccountsPage />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/accounts/connect"
-            element={
-              <Suspense fallback={routeFallback}>
-                <AccountsConnectPage />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/accounts/connections"
-            element={
-              <Suspense fallback={routeFallback}>
-                <BankConnectionsPage />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/accounts/:accountId"
-            element={
-              <Suspense fallback={routeFallback}>
-                <AccountDetailPage />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/privacy"
-            element={
-              <Suspense fallback={routeFallback}>
-                <PrivacyPage />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/investments"
-            element={
-              <Suspense fallback={routeFallback}>
-                <InvestmentsPage />
-              </Suspense>
-            }
-          />
+          <Route element={<AppShell />}>
+            <Route
+              path="/dashboard"
+              element={
+                <Suspense fallback={routeFallback}>
+                  <DashboardPage />
+                </Suspense>
+              }
+            />
+            <Route path="/expenses" element={<ExpensesPage />} />
+            <Route
+              path="/expenses/new"
+              element={
+                <Suspense fallback={routeFallback}>
+                  <ExpenseFormPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/expenses/:expenseId/edit"
+              element={
+                <Suspense fallback={routeFallback}>
+                  <ExpenseFormPage />
+                </Suspense>
+              }
+            />
+            <Route path="/categories" element={<CategoriesPage />} />
+            <Route
+              path="/planning"
+              element={
+                <Suspense fallback={routeFallback}>
+                  <PlanningPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/accounts"
+              element={
+                <Suspense fallback={routeFallback}>
+                  <AccountsPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/accounts/connect"
+              element={
+                <Suspense fallback={routeFallback}>
+                  <AccountsConnectPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/accounts/connections"
+              element={
+                <Suspense fallback={routeFallback}>
+                  <BankConnectionsPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/accounts/:accountId"
+              element={
+                <Suspense fallback={routeFallback}>
+                  <AccountDetailPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/privacy"
+              element={
+                <Suspense fallback={routeFallback}>
+                  <PrivacyPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/investments"
+              element={
+                <Suspense fallback={routeFallback}>
+                  <InvestmentsPage />
+                </Suspense>
+              }
+            />
+          </Route>
         </Route>
-      </Route>
 
-      {/* Público: o link do email é aberto com ou sem sessão ativa no dispositivo. */}
-      <Route path="/verify-email" element={<VerifyEmailPage />} />
-      <Route path="/reset-password" element={<ResetPasswordPage />} />
+        {/* Público: o link do email é aberto com ou sem sessão ativa no dispositivo. */}
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
 
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route path="*" element={<NotFoundPage />} />
-    </Routes>
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
     </>
   );
 }

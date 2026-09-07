@@ -8,6 +8,7 @@ import { PageHeader } from "../components/PageHeader";
 import { openBankingApi } from "../api/resources";
 import { errorMessage } from "../api/client";
 import type { BankInstitution, PsuType } from "../types";
+import { useI18n } from "../i18n/I18nContext";
 
 function useOnlineStatus() {
   const [isOnline, setIsOnline] = useState(
@@ -27,6 +28,7 @@ function useOnlineStatus() {
 }
 
 export function AccountsConnectPage() {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const isOnline = useOnlineStatus();
   const [institutions, setInstitutions] = useState<BankInstitution[]>([]);
@@ -83,7 +85,7 @@ export function AccountsConnectPage() {
   if (isLoading) {
     return (
       <div className="page">
-        <LoadingState label="A carregar os bancos disponíveis" />
+        <LoadingState label={t("A carregar os bancos disponíveis")} />
       </div>
     );
   }
@@ -91,31 +93,33 @@ export function AccountsConnectPage() {
   return (
     <div className="page page--connect">
       <PageHeader
-        eyebrow="Ligar banco"
-        title="Ligar um banco"
-        description="Autorize a leitura no próprio banco. Cada gasto contabilizado passa a despesa — no arquivo, no painel e nos limites."
+        eyebrow={t("Ligar banco")}
+        title={t("Ligar um banco")}
+        description={t(
+          "Autorize a leitura no próprio banco. Cada gasto contabilizado passa a despesa — no arquivo, no painel e nos limites.",
+        )}
       />
 
-      <ol className="connect-steps" aria-label="Como funciona">
+      <ol className="connect-steps" aria-label={t("Como funciona")}>
         <li className={selected ? "is-done" : "is-current"}>
           <span>1</span>
           <div>
-            <strong>Escolha o banco</strong>
-            <small>Só leitura de saldos e movimentos.</small>
+            <strong>{t("Escolha o banco")}</strong>
+            <small>{t("Só leitura de saldos e movimentos.")}</small>
           </div>
         </li>
         <li className={selected ? "is-current" : ""}>
           <span>2</span>
           <div>
-            <strong>Confirme no banco</strong>
-            <small>A palavra-passe nunca passa por aqui.</small>
+            <strong>{t("Confirme no banco")}</strong>
+            <small>{t("A palavra-passe nunca passa por aqui.")}</small>
           </div>
         </li>
         <li>
           <span>3</span>
           <div>
-            <strong>Gastos viram despesas</strong>
-            <small>Ficam no arquivo no instante da sincronização.</small>
+            <strong>{t("Gastos viram despesas")}</strong>
+            <small>{t("Ficam no arquivo no instante da sincronização.")}</small>
           </div>
         </li>
       </ol>
@@ -124,14 +128,15 @@ export function AccountsConnectPage() {
         <div className="form-alert form-alert--page" role="alert">
           {error}
           <button type="button" className="button button--secondary" onClick={() => void load()}>
-            Tentar novamente
+            {t("Tentar novamente")}
           </button>
         </div>
       )}
 
       {!isOnline && (
         <p className="offline-note" role="status">
-          <WifiOff aria-hidden="true" /> Sem ligação. Para ligar um banco precisa de estar online.
+          <WifiOff aria-hidden="true" />{" "}
+          {t("Sem ligação. Para ligar um banco precisa de estar online.")}
         </p>
       )}
 
@@ -139,17 +144,17 @@ export function AccountsConnectPage() {
         <section className="accounts-panel accounts-panel--quiet" aria-labelledby="psu-title">
           <div className="connect-toolbar">
             <div>
-              <p className="eyebrow">Banco</p>
-              <h2 id="psu-title">Onde está o dinheiro</h2>
+              <p className="eyebrow">{t("Banco")}</p>
+              <h2 id="psu-title">{t("Onde está o dinheiro")}</h2>
             </div>
-            <div className="segmented-control" role="group" aria-label="Tipo de conta">
+            <div className="segmented-control" role="group" aria-label={t("Tipo de conta")}>
               <button
                 type="button"
                 className={psuType === "personal" ? "is-active" : ""}
                 aria-pressed={psuType === "personal"}
                 onClick={() => setPsuType("personal")}
               >
-                Pessoal
+                {t("Pessoal")}
               </button>
               <button
                 type="button"
@@ -157,7 +162,7 @@ export function AccountsConnectPage() {
                 aria-pressed={psuType === "business"}
                 onClick={() => setPsuType("business")}
               >
-                Empresarial
+                {t("Empresarial")}
               </button>
             </div>
           </div>
@@ -173,7 +178,8 @@ export function AccountsConnectPage() {
             />
           ) : (
             <p className="accounts-empty">
-              <Landmark aria-hidden="true" /> Não há bancos disponíveis para este tipo de conta.
+              <Landmark aria-hidden="true" />{" "}
+              {t("Não há bancos disponíveis para este tipo de conta.")}
             </p>
           )}
         </section>
@@ -188,23 +194,25 @@ export function AccountsConnectPage() {
               onClick={() => void continueInBank()}
             >
               {isSubmitting ? (
-                <Spinner label="A abrir o banco" />
+                <Spinner label={t("A abrir o banco")} />
               ) : (
                 <>
-                  Continuar no banco <ArrowRight aria-hidden="true" />
+                  {t("Continuar no banco")} <ArrowRight aria-hidden="true" />
                 </>
               )}
             </button>
-            {!selected && <p className="planning-disclosure__hint">Escolha primeiro o banco.</p>}
+            {!selected && (
+              <p className="planning-disclosure__hint">{t("Escolha primeiro o banco.")}</p>
+            )}
             <p className="connect-cta__trust">
-              <ShieldCheck aria-hidden="true" /> Só leitura. Pode desligar quando quiser.
+              <ShieldCheck aria-hidden="true" /> {t("Só leitura. Pode desligar quando quiser.")}
             </p>
             <button
               type="button"
               className="button button--ghost button--wide"
               onClick={() => navigate("/accounts")}
             >
-              Voltar às contas
+              {t("Voltar às contas")}
             </button>
           </div>
         </aside>
