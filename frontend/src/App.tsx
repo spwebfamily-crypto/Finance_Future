@@ -1,11 +1,12 @@
 import { lazy, Suspense, useEffect } from "react";
-import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { Route, Routes, useLocation } from "react-router-dom";
 import { GuestRoute, ProtectedRoute } from "./auth/ProtectedRoute";
 import { AppShell } from "./layout/AppShell";
 import { CategoriesPage } from "./pages/CategoriesPage";
 import { ExpensesPage } from "./pages/ExpensesPage";
 import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { LoginPage } from "./pages/LoginPage";
+import { LandingPage } from "./pages/LandingPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
@@ -87,6 +88,7 @@ const PrivacyPage = lazy(() =>
 );
 
 const routeTitles: Record<string, string> = {
+  "/": "Finanças pessoais com clareza",
   "/login": "Entrar",
   "/register": "Criar conta",
   "/forgot-password": "Recuperar palavra-passe",
@@ -109,7 +111,6 @@ function titleForPath(pathname: string, t: (source: string) => string) {
   if (routeTitles[pathname]) return `${t(routeTitles[pathname])} · ExpenseSnap`;
   if (/^\/expenses\/[^/]+\/edit$/.test(pathname)) return `${t("Editar despesa")} · ExpenseSnap`;
   if (/^\/accounts\/[^/]+$/.test(pathname)) return `${t("Conta")} · ExpenseSnap`;
-  if (pathname === "/") return "ExpenseSnap";
   return `${t("Página não encontrada")} · ExpenseSnap`;
 }
 
@@ -133,6 +134,8 @@ export default function App() {
     <>
       <RouteDocumentTitle />
       <Routes>
+        <Route path="/" element={<LandingPage />} />
+
         <Route element={<GuestRoute />}>
           <Route element={<RouteTransitionOutlet className="guest-route-stage" />}>
             <Route path="/login" element={<LoginPage />} />
@@ -240,7 +243,6 @@ export default function App() {
         <Route path="/verify-email" element={<VerifyEmailPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
 
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </>
