@@ -65,6 +65,7 @@ O frontend fica em <http://localhost:5173>, a API em <http://localhost:3000/api>
 | `npm run test:e2e` | Testa registo, fotografia e criação de despesa no Chromium |
 | `npm run open-banking:sync` | Processa sincronizações bancárias agendadas (CLI/cron) |
 | `npm run open-banking:dedupe -w backend` | Audita movimentos bancários repetidos; use `-- --apply` para limpar cópias comprovadas |
+| `npm run data:purge-september -w backend -- --year=2026` | Pré-visualiza os dados de setembro; acrescente `--apply` para os apagar numa transação |
 
 ## Open Banking (somente leitura)
 
@@ -94,6 +95,7 @@ O Netlify Drop publica o `dist` já compilado e não aplica variáveis do painel
 - Start command: `npm run db:migrate -w backend && npm start -w backend`
 - Health check: `/api/health`
 - Variável recomendada no Render: `TRUST_PROXY_HOPS=2` (edge + load balancer; ajuste se a topologia mudar)
+- `OPEN_BANKING_AUTOMATIC_SYNC_ENABLED=false` mantém a importação exclusivamente manual; use `true` apenas se pretender reativar o cron.
 
 Os novos comprovativos são guardados de forma privada no PostgreSQL, com limite de 10 MB por ficheiro e quotas configuráveis (`RECEIPT_QUOTA_MB_PER_USER`, 100 MB por omissão; `RECEIPT_TOTAL_QUOTA_MB`, 500 MB por omissão). `UPLOAD_DIR` serve apenas para abrir e limpar anexos legados criados antes desta migração. A migração não copia esses ficheiros antigos: descarregue-os antes do deploy e volte a anexá-los se existirem dados reais.
 

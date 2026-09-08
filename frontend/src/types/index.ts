@@ -480,6 +480,7 @@ export interface BankTransaction {
   counterpartyName: string | null;
   classification: BankTransactionClassification;
   excludedFromAnalytics: boolean;
+  reviewedAt: string | null;
   expenseId: string | null;
   incomeId: string | null;
   transferId: string | null;

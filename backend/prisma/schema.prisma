@@ -543,6 +543,8 @@ model BankTransaction {
   bankTransactionCode String?
   classification BankTransactionClassification @default(unreviewed)
   excludedFromAnalytics Boolean @default(false)
+  // Momento em que o utilizador confirmou a categoria no fluxo de revisão.
+  reviewedAt    DateTime?
   expenseId     String? @unique
   incomeId      String? @unique
   transferId    String?

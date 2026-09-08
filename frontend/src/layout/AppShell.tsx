@@ -21,6 +21,7 @@ import { ThemeToggle } from "../components/ThemeToggle";
 import { CommandPaletteProvider, CommandPaletteTrigger } from "../components/CommandPalette";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { EmailVerificationBanner } from "../components/EmailVerificationBanner";
+import { DailyBankReviewModal } from "../components/DailyBankReviewModal";
 import { LanguageSwitcher, useI18n } from "../i18n/I18nContext";
 import {
   preloadAccountsPage,
@@ -474,6 +475,7 @@ export function AppShell() {
           onCancel={() => setLogoutConfirmOpen(false)}
           onConfirm={confirmLogout}
         />
+        <DailyBankReviewModal />
       </div>
     </CommandPaletteProvider>
   );

@@ -535,6 +535,7 @@ router.get(
             counterpartyName: true,
             classification: true,
             excludedFromAnalytics: true,
+            reviewedAt: true,
             expenseId: true,
             incomeId: true,
             transferId: true,
@@ -639,11 +640,13 @@ router.patch(
             ...(input.excludedFromAnalytics !== undefined
               ? { excludedFromAnalytics: input.excludedFromAnalytics }
               : {}),
+            ...(input.categoryId ? { reviewedAt: new Date() } : {}),
           },
           select: {
             id: true,
             classification: true,
             excludedFromAnalytics: true,
+            reviewedAt: true,
             expense: { select: { id: true, categoryId: true } },
           },
         });

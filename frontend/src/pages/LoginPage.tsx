@@ -1,12 +1,13 @@
 import { useRef, useState, type FormEvent } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ArrowRight, CircleAlert, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
+import { ArrowRight, CircleAlert, Eye, EyeOff } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { errorMessage } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
-import { AuthStory } from "../components/AuthStory";
+import { Brand } from "../components/Brand";
+import { ThemeToggle } from "../components/ThemeToggle";
 import { Spinner } from "../components/States";
-import { useI18n } from "../i18n/I18nContext";
+import { LanguageSwitcher, useI18n } from "../i18n/I18nContext";
 
 export function LoginPage() {
   const { t } = useI18n();
@@ -50,29 +51,24 @@ export function LoginPage() {
 
   return (
     <main className="auth-page auth-page--login">
-      <AuthStory variant="login" />
+      <header className="auth-minimal-header">
+        <Brand />
+        <div className="auth-minimal-header__actions">
+          <ThemeToggle compact />
+          <LanguageSwitcher compact />
+        </div>
+      </header>
 
-      <section className="auth-form-wrap">
+      <section className="auth-form-wrap" aria-labelledby="login-title">
         <motion.div
           className="auth-form-panel"
           initial={reduceMotion ? false : { opacity: 0, y: 8 }}
           animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
           transition={{ duration: reduceMotion ? 0 : 0.22, ease: [0.22, 1, 0.36, 1] }}
         >
-          <div className="auth-login-security">
-            <span className="auth-login-security__icon" aria-hidden="true">
-              <ShieldCheck />
-            </span>
-            <span>
-              <strong>{t("Acesso protegido")}</strong>
-              <small>{t("Sessão privada e segura")}</small>
-            </span>
-          </div>
-
           <div className="auth-form-heading">
-            <p className="eyebrow">{t("Bem-vindo de volta")}</p>
-            <h1>{t("Entrar na conta")}</h1>
-            <p className="form-intro">{t("Continue de onde ficou.")}</p>
+            <h1 id="login-title">{t("Bem-vindo de volta")}</h1>
+            <p className="form-intro">{t("Entre para consultar as suas finanças.")}</p>
           </div>
 
           <form className="stack-form" onSubmit={handleSubmit} noValidate>
@@ -94,7 +90,6 @@ export function LoginPage() {
             <label className="field" htmlFor="login-email">
               <span>{t("Email")}</span>
               <span className="field__control">
-                <Mail aria-hidden="true" />
                 <input
                   id="login-email"
                   ref={emailRef}
@@ -130,7 +125,6 @@ export function LoginPage() {
                 </Link>
               </span>
               <span className="field__control field__control--password">
-                <LockKeyhole aria-hidden="true" />
                 <input
                   id="login-password"
                   ref={passwordRef}
@@ -184,11 +178,6 @@ export function LoginPage() {
             <Link to="/register">
               {t("Criar conta")} <ArrowRight size={14} aria-hidden="true" />
             </Link>
-          </p>
-
-          <p className="auth-login-note">
-            <LockKeyhole aria-hidden="true" />
-            {t("Os seus dados financeiros nunca são partilhados.")}
           </p>
         </motion.div>
       </section>

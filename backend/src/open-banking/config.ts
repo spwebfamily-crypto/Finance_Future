@@ -50,6 +50,10 @@ const rawSchema = z.object({
   OPEN_BANKING_DATA_KEY_B64: z.string().trim().default(""),
   OPEN_BANKING_CRON_SECRET: z.string().default(""),
   OPEN_BANKING_SYNC_INTERVAL_MINUTES: z.coerce.number().int().min(15).max(10_080).default(360),
+  OPEN_BANKING_AUTOMATIC_SYNC_ENABLED: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((value) => value === "true"),
   ENABLE_BANKING_ENV: z.enum(["sandbox", "production"]).default("sandbox"),
   ENABLE_BANKING_APP_ID: z.string().trim().default(""),
   ENABLE_BANKING_PRIVATE_KEY_B64: z.string().trim().default(""),
@@ -72,6 +76,7 @@ export interface OpenBankingConfig {
   dataKey: Buffer;
   cronSecret: string;
   syncIntervalMinutes: number;
+  automaticSyncEnabled: boolean;
   /** Origem exata do frontend (Netlify), sem barra final. */
   redirectOrigin: string;
   enableBanking: EnableBankingSettings | null;
@@ -169,6 +174,7 @@ function load(): OpenBankingConfig {
       dataKey: Buffer.alloc(0),
       cronSecret: "",
       syncIntervalMinutes: raw.OPEN_BANKING_SYNC_INTERVAL_MINUTES,
+      automaticSyncEnabled: raw.OPEN_BANKING_AUTOMATIC_SYNC_ENABLED,
       redirectOrigin: "",
       enableBanking: null,
     };
@@ -232,6 +238,7 @@ function load(): OpenBankingConfig {
     dataKey,
     cronSecret: raw.OPEN_BANKING_CRON_SECRET,
     syncIntervalMinutes: raw.OPEN_BANKING_SYNC_INTERVAL_MINUTES,
+    automaticSyncEnabled: raw.OPEN_BANKING_AUTOMATIC_SYNC_ENABLED,
     redirectOrigin,
     enableBanking,
   };

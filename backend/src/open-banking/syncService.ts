@@ -63,6 +63,7 @@ export async function claimSyncJob(jobId: string): Promise<BankSyncJob | null> {
 
 /** Ligações com sincronização agendada em atraso, para o processo de cron. */
 export async function findDueConnectionIds(limit: number): Promise<string[]> {
+  if (!getOpenBankingConfig().automaticSyncEnabled) return [];
   const connections = await prisma.bankConnection.findMany({
     where: {
       status: "active",
@@ -81,6 +82,7 @@ export async function findDueConnectionIds(limit: number): Promise<string[]> {
  * outro processo já a reclamou (ou ela deixou de estar em atraso).
  */
 export async function claimConnection(connectionId: string, leaseMinutes = 15): Promise<boolean> {
+  if (!getOpenBankingConfig().automaticSyncEnabled) return false;
   const claimed = await prisma.bankConnection.updateMany({
     where: {
       id: connectionId,
@@ -564,7 +566,9 @@ export async function runSyncJob(job: BankSyncJob): Promise<SyncOutcome> {
       data: {
         status: finalStatus === "completed" ? "active" : "error",
         lastSyncedAt: new Date(),
-        nextSyncAt: new Date(Date.now() + config.syncIntervalMinutes * 60_000),
+        nextSyncAt: config.automaticSyncEnabled
+          ? new Date(Date.now() + config.syncIntervalMinutes * 60_000)
+          : null,
         lastErrorCode: syncError ? sanitizedErrorCode(syncError) : null,
         lastErrorAt: syncError ? new Date() : null,
       },
@@ -599,9 +603,10 @@ export async function runSyncJob(job: BankSyncJob): Promise<SyncOutcome> {
             : "error",
         lastErrorCode: code,
         lastErrorAt: new Date(),
-        nextSyncAt: isConsentError
-          ? null
-          : new Date(Date.now() + backoffMinutes(job.attemptCount) * 60_000),
+        nextSyncAt:
+          isConsentError || !config.automaticSyncEnabled
+            ? null
+            : new Date(Date.now() + backoffMinutes(job.attemptCount) * 60_000),
       },
     });
 

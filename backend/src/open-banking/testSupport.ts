@@ -11,6 +11,7 @@ export function useTestOpenBankingConfig(overrides: Record<string, string> = {})
   vi.stubEnv("OPEN_BANKING_DEFAULT_COUNTRY", "PT");
   vi.stubEnv("OPEN_BANKING_CALLBACK_URL", "http://localhost:3000/api/open-banking/callback");
   vi.stubEnv("OPEN_BANKING_CRON_SECRET", "test-cron-secret-with-at-least-32-characters");
+  vi.stubEnv("OPEN_BANKING_AUTOMATIC_SYNC_ENABLED", "true");
   // Vazio de propósito: em testes a chave é derivada do segredo de JWT.
   vi.stubEnv("OPEN_BANKING_DATA_KEY_B64", "");
   for (const [key, value] of Object.entries(overrides)) vi.stubEnv(key, value);
