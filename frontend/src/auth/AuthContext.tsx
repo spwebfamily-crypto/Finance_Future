@@ -76,7 +76,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (active) applyUser(me);
       } catch (error) {
         if (!active) return;
-        if (error instanceof ApiError && (error.status === 401 || error.code === "SESSION_EXPIRED")) {
+        if (
+          error instanceof ApiError &&
+          (error.status === 401 || error.code === "SESSION_EXPIRED")
+        ) {
           logout();
         }
       } finally {

@@ -494,7 +494,8 @@ export function PlanningPage() {
     const amount = numberFromInput(recurringIncomeForm.amount);
     const dayOfMonth = Number(recurringIncomeForm.dayOfMonth);
     const nextErrors: { description?: string; amount?: string; dayOfMonth?: string } = {};
-    if (!recurringIncomeForm.description.trim()) nextErrors.description = "Introduza uma descrição.";
+    if (!recurringIncomeForm.description.trim())
+      nextErrors.description = "Introduza uma descrição.";
     if (!Number.isFinite(amount) || amount <= 0)
       nextErrors.amount = "Indique um valor maior do que zero.";
     if (!Number.isInteger(dayOfMonth) || dayOfMonth < 1 || dayOfMonth > 31)
@@ -1091,7 +1092,9 @@ export function PlanningPage() {
                   placeholder="Ex.: Salário"
                   maxLength={160}
                   aria-invalid={Boolean(incomeErrors.description)}
-                  aria-describedby={incomeErrors.description ? "income-description-error" : undefined}
+                  aria-describedby={
+                    incomeErrors.description ? "income-description-error" : undefined
+                  }
                 />
                 {incomeErrors.description && (
                   <small className="field__error" id="income-description-error">
@@ -1229,13 +1232,18 @@ export function PlanningPage() {
                         ...form,
                         description: event.target.value,
                       }));
-                      setRecurringIncomeErrors((current) => ({ ...current, description: undefined }));
+                      setRecurringIncomeErrors((current) => ({
+                        ...current,
+                        description: undefined,
+                      }));
                     }}
                     placeholder="Ex.: Salário"
                     maxLength={160}
                     aria-invalid={Boolean(recurringIncomeErrors.description)}
                     aria-describedby={
-                      recurringIncomeErrors.description ? "recurring-income-description-error" : undefined
+                      recurringIncomeErrors.description
+                        ? "recurring-income-description-error"
+                        : undefined
                     }
                   />
                   {recurringIncomeErrors.description && (
@@ -1292,7 +1300,10 @@ export function PlanningPage() {
                         ...form,
                         dayOfMonth: event.target.value,
                       }));
-                      setRecurringIncomeErrors((current) => ({ ...current, dayOfMonth: undefined }));
+                      setRecurringIncomeErrors((current) => ({
+                        ...current,
+                        dayOfMonth: undefined,
+                      }));
                     }}
                     placeholder="Ex.: 25"
                     aria-invalid={Boolean(recurringIncomeErrors.dayOfMonth)}
@@ -1426,7 +1437,11 @@ export function PlanningPage() {
             <span>Agendar despesa recorrente</span>
             <small>Renda, seguro, subscrição ou outro pagamento mensal.</small>
           </summary>
-          <form className="planning-form planning-form--recurring" onSubmit={createRecurring} noValidate>
+          <form
+            className="planning-form planning-form--recurring"
+            onSubmit={createRecurring}
+            noValidate
+          >
             <label className="field">
               <span>
                 Conta <em>opcional</em>
@@ -1457,7 +1472,9 @@ export function PlanningPage() {
                 placeholder="Ex.: Renda"
                 maxLength={160}
                 aria-invalid={Boolean(recurringErrors.description)}
-                aria-describedby={recurringErrors.description ? "recurring-description-error" : undefined}
+                aria-describedby={
+                  recurringErrors.description ? "recurring-description-error" : undefined
+                }
               />
               {recurringErrors.description && (
                 <small className="field__error" id="recurring-description-error">
@@ -1495,7 +1512,9 @@ export function PlanningPage() {
                   setRecurringErrors((current) => ({ ...current, categoryId: undefined }));
                 }}
                 aria-invalid={Boolean(recurringErrors.categoryId)}
-                aria-describedby={recurringErrors.categoryId ? "recurring-category-error" : undefined}
+                aria-describedby={
+                  recurringErrors.categoryId ? "recurring-category-error" : undefined
+                }
               >
                 <option value="">Escolher categoria</option>
                 {categories.map((category) => (

@@ -118,7 +118,7 @@ export function CsvExpenseImport({ categories, accounts, onImported }: CsvExpens
   const [isOpen, setIsOpen] = useState(false);
   const [fallbackCategoryId, setFallbackCategoryId] = useState("");
   const [accountId, setAccountId] = useState("");
-    const [location, setLocation] = useState("Importação CSV");
+  const [location, setLocation] = useState("Importação CSV");
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [fileName, setFileName] = useState("");
   const [error, setError] = useState("");

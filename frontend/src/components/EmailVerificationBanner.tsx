@@ -66,9 +66,7 @@ export function EmailVerificationBanner() {
           <MailCheck />
         </span>
         <div className="verify-banner__text">
-          <strong>
-            {resendState === "sent" ? "Novo email enviado" : "Confirme o seu email"}
-          </strong>
+          <strong>{resendState === "sent" ? "Novo email enviado" : "Confirme o seu email"}</strong>
           <span>
             {resendState === "sent"
               ? `Verifique a caixa de entrada de ${user?.email} e a pasta de spam.`

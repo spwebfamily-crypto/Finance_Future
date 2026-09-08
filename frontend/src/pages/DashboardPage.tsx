@@ -104,9 +104,10 @@ export function DashboardPage() {
   const [editingLimit, setEditingLimit] = useState("");
   const [budgetDeleteTarget, setBudgetDeleteTarget] = useState<Budget | null>(null);
   const [hasLinkedBank, setHasLinkedBank] = useState(false);
-  const [budgetFieldErrors, setBudgetFieldErrors] = useState<{ categoryId?: string; limit?: string }>(
-    {},
-  );
+  const [budgetFieldErrors, setBudgetFieldErrors] = useState<{
+    categoryId?: string;
+    limit?: string;
+  }>({});
   const [budgetEditError, setBudgetEditError] = useState("");
   const newCategoryRef = useRef<HTMLSelectElement>(null);
   const newLimitRef = useRef<HTMLInputElement>(null);
@@ -516,216 +517,220 @@ export function DashboardPage() {
           )}
           {summary && (
             <>
-          <section className="dashboard-total" aria-labelledby="total-title">
-            <div>
-              <p className="eyebrow">Total em {monthLabel(selectedMonth)}</p>
-              <h2 id="total-title">
-                <AnimatedCurrency value={summary.total} currency={currency} />
-              </h2>
-              <p className="dashboard-total__source">
-                {hasLinkedBank
-                  ? "Inclui os gastos das contas ligadas ao banco."
-                  : "Ligue um banco para os gastos contabilizados entrarem sozinhos."}
-              </p>
-            </div>
-            <div
-              className={`dashboard-total__compare ${summary.changeAmount > 0 ? "is-up" : "is-down"}`}
-            >
-              <span>
-                {summary.changeAmount > 0 ? (
-                  <ArrowUpRight aria-hidden="true" />
-                ) : (
-                  <ArrowDownRight aria-hidden="true" />
-                )}
-                {summary.changePercent === null
-                  ? "Sem comparação"
-                  : `${Math.abs(summary.changePercent).toFixed(1)}%`}
-              </span>
-              <p>
-                {summary.changeAmount === 0
-                  ? "Igual ao mês anterior"
-                  : `${formatCurrency(Math.abs(summary.changeAmount), currency)} face ao mês anterior`}
-              </p>
-            </div>
-          </section>
-
-          <section
-            className={`month-pulse month-pulse--${monthPulse.tone}`}
-            aria-labelledby="month-pulse-title"
-          >
-            <span className="month-pulse__icon" aria-hidden="true">
-              <MonthPulseIcon />
-            </span>
-            <div className="month-pulse__copy">
-              <p className="eyebrow">Estado do mês</p>
-              <h2 id="month-pulse-title">{monthPulse.title}</h2>
-              <p>{monthPulse.description}</p>
-            </div>
-            {monthPulse.usage !== null ? (
-              <div className="month-pulse__budget">
+              <section className="dashboard-total" aria-labelledby="total-title">
                 <div>
-                  <span>Orçamento acompanhado</span>
-                  <strong>
-                    {formatCurrency(monthPulse.spent, currency)} /{" "}
-                    {formatCurrency(monthPulse.limit, currency)}
-                  </strong>
+                  <p className="eyebrow">Total em {monthLabel(selectedMonth)}</p>
+                  <h2 id="total-title">
+                    <AnimatedCurrency value={summary.total} currency={currency} />
+                  </h2>
+                  <p className="dashboard-total__source">
+                    {hasLinkedBank
+                      ? "Inclui os gastos das contas ligadas ao banco."
+                      : "Ligue um banco para os gastos contabilizados entrarem sozinhos."}
+                  </p>
                 </div>
                 <div
-                  className="month-pulse__bar"
-                  role="progressbar"
-                  aria-label="Utilização do orçamento acompanhado"
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-valuenow={Math.min(100, Math.round(monthPulse.usage))}
+                  className={`dashboard-total__compare ${summary.changeAmount > 0 ? "is-up" : "is-down"}`}
                 >
-                  <span style={{ width: `${Math.min(100, monthPulse.usage)}%` }} />
+                  <span>
+                    {summary.changeAmount > 0 ? (
+                      <ArrowUpRight aria-hidden="true" />
+                    ) : (
+                      <ArrowDownRight aria-hidden="true" />
+                    )}
+                    {summary.changePercent === null
+                      ? "Sem comparação"
+                      : `${Math.abs(summary.changePercent).toFixed(1)}%`}
+                  </span>
+                  <p>
+                    {summary.changeAmount === 0
+                      ? "Igual ao mês anterior"
+                      : `${formatCurrency(Math.abs(summary.changeAmount), currency)} face ao mês anterior`}
+                  </p>
                 </div>
-                <small>{monthPulse.usage.toFixed(0)}% utilizado</small>
-              </div>
-            ) : (
-              <a className="text-button month-pulse__action" href="#budgets-title">
-                Definir limites
-              </a>
-            )}
-          </section>
+              </section>
 
-          <div className="dashboard-grid">
-            <section
-              className="dashboard-panel dashboard-panel--categories"
-              aria-labelledby="categories-chart-title"
-            >
-              <div className="section-heading">
-                <div>
-                  <p className="eyebrow">Distribuição</p>
-                  <h2 id="categories-chart-title">Por categoria</h2>
+              <section
+                className={`month-pulse month-pulse--${monthPulse.tone}`}
+                aria-labelledby="month-pulse-title"
+              >
+                <span className="month-pulse__icon" aria-hidden="true">
+                  <MonthPulseIcon />
+                </span>
+                <div className="month-pulse__copy">
+                  <p className="eyebrow">Estado do mês</p>
+                  <h2 id="month-pulse-title">{monthPulse.title}</h2>
+                  <p>{monthPulse.description}</p>
                 </div>
-              </div>
-              {categoryData.length ? (
-                <>
-                  <div
-                    className="dashboard-chart"
-                    role="img"
-                    aria-label="Gráfico de barras das despesas por categoria"
-                  >
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        data={categoryData}
-                        layout="vertical"
-                        margin={{ top: 4, right: 12, left: 0, bottom: 4 }}
-                      >
-                        <XAxis type="number" hide />
-                        <YAxis
-                          type="category"
-                          dataKey="name"
-                          width={82}
-                          tickLine={false}
-                          axisLine={false}
-                          tick={{ fill: "var(--chart-tick)", fontSize: 12 }}
-                        />
-                        <Tooltip
-                          formatter={(value) =>
-                            formatCurrency(
-                              Number(Array.isArray(value) ? value[0] : (value ?? 0)),
-                              currency,
-                            )
-                          }
-                          cursor={{ fill: "var(--chart-cursor)" }}
-                          isAnimationActive={!reduceMotion}
-                        />
-                        <Bar
-                          dataKey="amount"
-                          radius={[0, 6, 6, 0]}
-                          isAnimationActive={!reduceMotion}
-                        >
-                          {categoryData.map((entry) => (
-                            <Cell key={entry.category.id} fill={entry.fill} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
+                {monthPulse.usage !== null ? (
+                  <div className="month-pulse__budget">
+                    <div>
+                      <span>Orçamento acompanhado</span>
+                      <strong>
+                        {formatCurrency(monthPulse.spent, currency)} /{" "}
+                        {formatCurrency(monthPulse.limit, currency)}
+                      </strong>
+                    </div>
+                    <div
+                      className="month-pulse__bar"
+                      role="progressbar"
+                      aria-label="Utilização do orçamento acompanhado"
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-valuenow={Math.min(100, Math.round(monthPulse.usage))}
+                    >
+                      <span style={{ width: `${Math.min(100, monthPulse.usage)}%` }} />
+                    </div>
+                    <small>{monthPulse.usage.toFixed(0)}% utilizado</small>
                   </div>
-                  <CategoryTable data={categoryData} currency={currency} />
-                </>
-              ) : (
-                <EmptyState
-                  title="Sem despesas neste mês"
-                  description="As categorias aparecerão aqui quando existirem movimentos."
-                />
-              )}
-            </section>
-            <section
-              className="dashboard-panel dashboard-panel--trend"
-              aria-labelledby="trend-chart-title"
-            >
-              <div className="section-heading">
-                <div>
-                  <p className="eyebrow">Últimos 6 meses</p>
-                  <h2 id="trend-chart-title">Evolução mensal</h2>
-                </div>
-              </div>
-              {hasTrendData ? (
-                <>
-                  <div
-                    className="dashboard-chart"
-                    role="img"
-                    aria-label="Gráfico de linha do total mensal"
-                  >
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart
-                        data={trendData}
-                        margin={{ top: 10, right: 10, left: -22, bottom: 0 }}
-                      >
-                        <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
-                        <XAxis
-                          dataKey="label"
-                          tickLine={false}
-                          axisLine={false}
-                          tick={{ fill: "var(--chart-tick)", fontSize: 12 }}
-                        />
-                        <YAxis
-                          tickFormatter={(value: number) => `${value}€`}
-                          tickLine={false}
-                          axisLine={false}
-                          tick={{ fill: "var(--chart-tick-muted)", fontSize: 11 }}
-                        />
-                        <Tooltip
-                          formatter={(value) =>
-                            formatCurrency(
-                              Number(Array.isArray(value) ? value[0] : (value ?? 0)),
-                              currency,
-                            )
-                          }
-                          isAnimationActive={!reduceMotion}
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="total"
-                          stroke="var(--brand)"
-                          strokeWidth={3}
-                          dot={{
-                            fill: "var(--accent)",
-                            stroke: "var(--brand-dark)",
-                            strokeWidth: 2,
-                            r: 3,
-                          }}
-                          activeDot={{ r: 5 }}
-                          isAnimationActive={!reduceMotion}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <TrendTable data={trendData} currency={currency} />
-                </>
-              ) : (
-                <EmptyState
-                  title="Tendência indisponível"
-                  description="São necessários movimentos para construir a série mensal."
-                />
-              )}
-            </section>
-          </div>
+                ) : (
+                  <a className="text-button month-pulse__action" href="#budgets-title">
+                    Definir limites
+                  </a>
+                )}
+              </section>
 
-          <SpendingHeatmap month={selectedMonth} byDay={summary.byDay ?? []} currency={currency} />
+              <div className="dashboard-grid">
+                <section
+                  className="dashboard-panel dashboard-panel--categories"
+                  aria-labelledby="categories-chart-title"
+                >
+                  <div className="section-heading">
+                    <div>
+                      <p className="eyebrow">Distribuição</p>
+                      <h2 id="categories-chart-title">Por categoria</h2>
+                    </div>
+                  </div>
+                  {categoryData.length ? (
+                    <>
+                      <div
+                        className="dashboard-chart"
+                        role="img"
+                        aria-label="Gráfico de barras das despesas por categoria"
+                      >
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart
+                            data={categoryData}
+                            layout="vertical"
+                            margin={{ top: 4, right: 12, left: 0, bottom: 4 }}
+                          >
+                            <XAxis type="number" hide />
+                            <YAxis
+                              type="category"
+                              dataKey="name"
+                              width={82}
+                              tickLine={false}
+                              axisLine={false}
+                              tick={{ fill: "var(--chart-tick)", fontSize: 12 }}
+                            />
+                            <Tooltip
+                              formatter={(value) =>
+                                formatCurrency(
+                                  Number(Array.isArray(value) ? value[0] : (value ?? 0)),
+                                  currency,
+                                )
+                              }
+                              cursor={{ fill: "var(--chart-cursor)" }}
+                              isAnimationActive={!reduceMotion}
+                            />
+                            <Bar
+                              dataKey="amount"
+                              radius={[0, 6, 6, 0]}
+                              isAnimationActive={!reduceMotion}
+                            >
+                              {categoryData.map((entry) => (
+                                <Cell key={entry.category.id} fill={entry.fill} />
+                              ))}
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <CategoryTable data={categoryData} currency={currency} />
+                    </>
+                  ) : (
+                    <EmptyState
+                      title="Sem despesas neste mês"
+                      description="As categorias aparecerão aqui quando existirem movimentos."
+                    />
+                  )}
+                </section>
+                <section
+                  className="dashboard-panel dashboard-panel--trend"
+                  aria-labelledby="trend-chart-title"
+                >
+                  <div className="section-heading">
+                    <div>
+                      <p className="eyebrow">Últimos 6 meses</p>
+                      <h2 id="trend-chart-title">Evolução mensal</h2>
+                    </div>
+                  </div>
+                  {hasTrendData ? (
+                    <>
+                      <div
+                        className="dashboard-chart"
+                        role="img"
+                        aria-label="Gráfico de linha do total mensal"
+                      >
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart
+                            data={trendData}
+                            margin={{ top: 10, right: 10, left: -22, bottom: 0 }}
+                          >
+                            <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
+                            <XAxis
+                              dataKey="label"
+                              tickLine={false}
+                              axisLine={false}
+                              tick={{ fill: "var(--chart-tick)", fontSize: 12 }}
+                            />
+                            <YAxis
+                              tickFormatter={(value: number) => `${value}€`}
+                              tickLine={false}
+                              axisLine={false}
+                              tick={{ fill: "var(--chart-tick-muted)", fontSize: 11 }}
+                            />
+                            <Tooltip
+                              formatter={(value) =>
+                                formatCurrency(
+                                  Number(Array.isArray(value) ? value[0] : (value ?? 0)),
+                                  currency,
+                                )
+                              }
+                              isAnimationActive={!reduceMotion}
+                            />
+                            <Line
+                              type="monotone"
+                              dataKey="total"
+                              stroke="var(--brand)"
+                              strokeWidth={3}
+                              dot={{
+                                fill: "var(--accent)",
+                                stroke: "var(--brand-dark)",
+                                strokeWidth: 2,
+                                r: 3,
+                              }}
+                              activeDot={{ r: 5 }}
+                              isAnimationActive={!reduceMotion}
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <TrendTable data={trendData} currency={currency} />
+                    </>
+                  ) : (
+                    <EmptyState
+                      title="Tendência indisponível"
+                      description="São necessários movimentos para construir a série mensal."
+                    />
+                  )}
+                </section>
+              </div>
+
+              <SpendingHeatmap
+                month={selectedMonth}
+                byDay={summary.byDay ?? []}
+                currency={currency}
+              />
             </>
           )}
 

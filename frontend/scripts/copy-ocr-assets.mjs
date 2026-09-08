@@ -83,7 +83,9 @@ async function main() {
       "ocr: não foi possível obter tessdata. A leitura local mostrará um erro recuperável até o próximo build com rede.",
     );
     for (const item of missingLangs) {
-      console.warn(`ocr: ${item.lang}: ${item.lastError instanceof Error ? item.lastError.message : item.lastError}`);
+      console.warn(
+        `ocr: ${item.lang}: ${item.lastError instanceof Error ? item.lastError.message : item.lastError}`,
+      );
     }
   }
 }

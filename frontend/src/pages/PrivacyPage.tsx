@@ -55,7 +55,11 @@ export function PrivacyPage() {
         error && (
           <div className="form-alert form-alert--page" role="alert">
             {error}
-            <button className="button button--secondary button--small" type="button" onClick={() => void load()}>
+            <button
+              className="button button--secondary button--small"
+              type="button"
+              onClick={() => void load()}
+            >
               Tentar novamente
             </button>
           </div>
