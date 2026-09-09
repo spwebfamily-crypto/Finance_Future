@@ -1,7 +1,6 @@
 import { useId, useLayoutEffect, useRef, type CSSProperties, type ReactNode } from "react";
 
 interface ScrollStoryPortalProps {
-  word: string;
   ariaLabel: string;
   hint: string;
   actionLabel: string;
@@ -20,11 +19,10 @@ function smooth(start: number, end: number, value: number) {
 }
 
 /**
- * Recupera o portal de scroll da primeira landing page, com uma transição
- * progressiva entre a promessa do hero e uma demonstração concreta do produto.
+ * Transição em scroll: o ícone da app cresce até ocupar o ecrã e revelar
+ * uma demonstração concreta do produto.
  */
 export function ScrollStoryPortal({
-  word,
   ariaLabel,
   hint,
   actionLabel,
@@ -45,22 +43,35 @@ export function ScrollStoryPortal({
     const paint = () => {
       frame = 0;
       if (reducedMotion?.matches) {
-        section.style.setProperty("--story-progress", "1");
+        section.style.setProperty("--story-hero", "0");
+        section.style.setProperty("--story-hint", "0");
+        section.style.setProperty("--story-mark", "0");
         section.style.setProperty("--story-scale", "1");
         section.style.setProperty("--story-reveal", "1");
+        section.dataset.entered = "true";
+        section.dataset.heroLive = "false";
         return;
       }
 
       const bounds = section.getBoundingClientRect();
       const travel = Math.max(1, section.offsetHeight - window.innerHeight);
       const progress = clamp(-bounds.top / travel);
-      const zoom = smooth(0.08, 0.7, progress);
-      const reveal = smooth(0.58, 0.82, progress);
 
-      section.style.setProperty("--story-progress", progress.toFixed(4));
-      section.style.setProperty("--story-scale", String(1 + zoom * 20));
+      // Hero some → ícone aparece → cresce até preencher → dissolve no painel.
+      const hero = 1 - smooth(0, 0.2, progress);
+      const markIn = smooth(0.2, 0.34, progress);
+      const zoom = smooth(0.34, 0.6, progress);
+      const markOut = 1 - smooth(0.54, 0.7, progress);
+      const reveal = smooth(0.62, 0.84, progress);
+
+      section.style.setProperty("--story-hero", hero.toFixed(4));
+      section.style.setProperty("--story-hint", hero.toFixed(4));
+      section.style.setProperty("--story-mark", (markIn * markOut).toFixed(4));
+      // Ícone ~11.5rem: scale ~6–7 já preenche o pin; 16–20× deixava um blob.
+      section.style.setProperty("--story-scale", String(1 + zoom * 6.2));
       section.style.setProperty("--story-reveal", reveal.toFixed(4));
       section.dataset.entered = String(progress >= 0.78);
+      section.dataset.heroLive = String(hero > 0.12);
     };
 
     const schedule = () => {
@@ -89,38 +100,20 @@ export function ScrollStoryPortal({
       <div className="scroll-story__pin">
         <div className="scroll-story__front">{front}</div>
 
-        <svg
-          className="scroll-story__word"
-          viewBox="0 0 1200 620"
-          preserveAspectRatio="xMidYMid meet"
-          aria-hidden="true"
-          focusable="false"
-        >
-          <defs>
-            <clipPath id={`${contentId}-clip`}>
-              <text x="600" y="390" textAnchor="middle">
-                {word}
-              </text>
-            </clipPath>
-          </defs>
-          <g className="scroll-story__zoom">
-            <rect
-              x="0"
-              y="0"
-              width="1200"
-              height="620"
-              clipPath={`url(#${contentId}-clip)`}
-            />
-            <g clipPath={`url(#${contentId}-clip)`} className="scroll-story__grid">
-              {Array.from({ length: 14 }, (_, index) => (
-                <line key={`v-${index}`} x1={index * 96} y1="0" x2={index * 96} y2="620" />
-              ))}
-              {Array.from({ length: 8 }, (_, index) => (
-                <line key={`h-${index}`} x1="0" y1={index * 88} x2="1200" y2={index * 88} />
-              ))}
+        <div className="scroll-story__mark" aria-hidden="true">
+          <svg
+            className="scroll-story__zoom"
+            viewBox="0 0 128 128"
+            focusable="false"
+          >
+            <rect className="scroll-story__mark-tile" width="128" height="128" rx="28" />
+            <g className="scroll-story__mark-ink">
+              <path d="M39 22H29a7 7 0 0 0-7 7v10M89 22h10a7 7 0 0 1 7 7v10M22 89v10a7 7 0 0 0 7 7h10M106 89v10a7 7 0 0 1-7 7H89" />
+              <path d="M45 91V44a8 8 0 0 1 8-8h22a8 8 0 0 1 8 8v47l-9-5-10 6-10-6z" />
             </g>
-          </g>
-        </svg>
+            <path className="scroll-story__mark-core" d="M64 52a14 14 0 1 0 14 14H64Z" />
+          </svg>
+        </div>
 
         <div className="scroll-story__field" aria-hidden="true" />
         <div className="scroll-story__hint">

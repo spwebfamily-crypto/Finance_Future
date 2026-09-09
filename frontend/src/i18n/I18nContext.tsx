@@ -362,6 +362,39 @@ const en: Messages = {
     "{account} will be removed. Existing expenses and income will be unlinked, and this account's transfers removed without changing other account balances.",
   "Página inicial ExpenseSnap": "ExpenseSnap home",
   "Navegação da página": "Page navigation",
+  "Finanças pessoais, sem ruído": "Personal finance, without the noise",
+  "Para onde vai o seu dinheiro?": "Where is your money going?",
+  "Agora consegue ver.": "Now you can see it.",
+  "Contas, gastos e orçamento no mesmo sítio. Confirme o que mudou e planeie o mês com calma.":
+    "Accounts, spending and budget in one place. Review what changed and plan the month calmly.",
+  "Começar grátis": "Start for free",
+  "Sem cartão. Pode ligar o banco só em leitura.":
+    "No card needed. Bank connections are read-only.",
+  "Criar conta grátis": "Create a free account",
+  "Deslize para ver o painel": "Scroll to see the dashboard",
+  "Ver o produto": "See the product",
+  "O painel, à vista": "The dashboard, in view",
+  "Hoje, o mês e o que ainda pode gastar.": "Today, the month and what you can still spend.",
+  "O essencial aparece numa só vista, para perceber o que mudou antes de decidir.":
+    "The essentials appear in one view, so you can see what changed before you decide.",
+  "Três gestos. Uma rotina.": "Three gestures. One routine.",
+  "Do comprovativo à decisão.": "From receipt to decision.",
+  "Tudo o que saiu, junto.": "Everything that went out, together.",
+  "Escreva, importe ou fotografe o comprovativo. O arquivo fica simples de reler.":
+    "Type it, import a file or photograph the receipt. Your archive stays easy to reread.",
+  "O banco entra. Você decide.": "Your bank comes in. You decide.",
+  "Ligue as contas em modo de leitura. A palavra-passe nunca passa por aqui.":
+    "Connect accounts in read-only mode. Your password never passes through here.",
+  "Um plano que cabe no mês.": "A plan that fits the month.",
+  "Veja limites, compromissos e o que ainda pode gastar — sem ruído.":
+    "See limits, commitments and what you can still spend — without noise.",
+  "Privacidade à partida": "Privacy from the start",
+  "Os seus dados continuam seus.": "Your data stays yours.",
+  "A ligação ao banco é só de leitura. A palavra-passe nunca passa por aqui. Desliga quando quiser.":
+    "Bank connections are read-only. Your password never passes through here. Disconnect whenever you want.",
+  "Comece hoje": "Start today",
+  "Menos contas na cabeça. Mais clareza no mês.":
+    "Fewer sums in your head. More clarity in the month.",
   "Perceba o seu dinheiro.": "Understand your money.",
   "Depois decida com calma.": "Then decide calmly.",
   "Um lugar calmo para organizar despesas, acompanhar contas e preparar o que vem a seguir.":
@@ -416,6 +449,10 @@ const en: Messages = {
   "Resultado do dia imediatamente visível": "Today's result is immediately visible",
   "Categorias comparáveis sem ruído": "Comparable categories without noise",
   "Limites traduzidos em valor disponível": "Limits translated into available money",
+  "Abrir a minha conta": "Open my account",
+  "Abrir app": "Open app",
+  "Abrir menu": "Open menu",
+  "Fechar menu": "Close menu",
 };
 
 const es: Messages = {
@@ -773,6 +810,39 @@ const es: Messages = {
     "Se eliminará {account}. Los gastos e ingresos quedarán desvinculados y sus transferencias se eliminarán sin cambiar los saldos de las demás cuentas.",
   "Página inicial ExpenseSnap": "Inicio de ExpenseSnap",
   "Navegação da página": "Navegación de la página",
+  "Finanças pessoais, sem ruído": "Finanzas personales, sin ruido",
+  "Para onde vai o seu dinheiro?": "¿Adónde va tu dinero?",
+  "Agora consegue ver.": "Ahora puedes verlo.",
+  "Contas, gastos e orçamento no mesmo sítio. Confirme o que mudou e planeie o mês com calma.":
+    "Cuentas, gastos y presupuesto en un solo sitio. Confirma lo que cambió y planifica el mes con calma.",
+  "Começar grátis": "Empezar gratis",
+  "Sem cartão. Pode ligar o banco só em leitura.":
+    "Sin tarjeta. Puedes conectar el banco solo en lectura.",
+  "Criar conta grátis": "Crear cuenta gratis",
+  "Deslize para ver o painel": "Desplázate para ver el panel",
+  "Ver o produto": "Ver el producto",
+  "O painel, à vista": "El panel, a la vista",
+  "Hoje, o mês e o que ainda pode gastar.": "Hoy, el mes y lo que aún puedes gastar.",
+  "O essencial aparece numa só vista, para perceber o que mudou antes de decidir.":
+    "Lo esencial aparece en una sola vista, para entender qué cambió antes de decidir.",
+  "Três gestos. Uma rotina.": "Tres gestos. Una rutina.",
+  "Do comprovativo à decisão.": "Del recibo a la decisión.",
+  "Tudo o que saiu, junto.": "Todo lo que salió, junto.",
+  "Escreva, importe ou fotografe o comprovativo. O arquivo fica simples de reler.":
+    "Escríbelo, importa un archivo o fotografía el recibo. El archivo sigue siendo fácil de releer.",
+  "O banco entra. Você decide.": "El banco entra. Tú decides.",
+  "Ligue as contas em modo de leitura. A palavra-passe nunca passa por aqui.":
+    "Conecta las cuentas en modo de lectura. Tu contraseña nunca pasa por aquí.",
+  "Um plano que cabe no mês.": "Un plan que cabe en el mes.",
+  "Veja limites, compromissos e o que ainda pode gastar — sem ruído.":
+    "Mira límites, compromisos y lo que aún puedes gastar, sin ruido.",
+  "Privacidade à partida": "Privacidad desde el inicio",
+  "Os seus dados continuam seus.": "Tus datos siguen siendo tuyos.",
+  "A ligação ao banco é só de leitura. A palavra-passe nunca passa por aqui. Desliga quando quiser.":
+    "La conexión al banco es solo de lectura. Tu contraseña nunca pasa por aquí. Desconéctala cuando quieras.",
+  "Comece hoje": "Empieza hoy",
+  "Menos contas na cabeça. Mais clareza no mês.":
+    "Menos cuentas en la cabeza. Más claridad en el mes.",
   "Perceba o seu dinheiro.": "Entiende tu dinero.",
   "Depois decida com calma.": "Después decide con calma.",
   "Um lugar calmo para organizar despesas, acompanhar contas e preparar o que vem a seguir.":
@@ -820,13 +890,16 @@ const es: Messages = {
   "Deslize para transformar": "Desplázate para transformar",
   "Conhecer o ExpenseSnap": "Descubrir ExpenseSnap",
   "O dashboard, explicado": "El panel, explicado",
-  "Hoje, o mês e o plano. Sem andar à procura.":
-    "Hoy, el mes y tu plan. Sin tener que buscarlos.",
+  "Hoje, o mês e o plano. Sem andar à procura.": "Hoy, el mes y tu plan. Sin tener que buscarlos.",
   "Os movimentos do dia, as categorias e o orçamento aparecem numa única leitura, para perceber o que mudou antes de decidir.":
     "La actividad del día, las categorías y el presupuesto aparecen en una sola vista para entender qué ha cambiado antes de decidir.",
   "Resultado do dia imediatamente visível": "El resultado del día, visible de inmediato",
   "Categorias comparáveis sem ruído": "Categorías comparables sin ruido",
   "Limites traduzidos em valor disponível": "Límites traducidos en dinero disponible",
+  "Abrir a minha conta": "Abrir mi cuenta",
+  "Abrir app": "Abrir app",
+  "Abrir menu": "Abrir menú",
+  "Fechar menu": "Cerrar menú",
 };
 
 const catalogs: Record<AppLocale, Messages> = { "pt-PT": {}, "en-GB": en, "es-ES": es };

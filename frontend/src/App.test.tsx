@@ -1,8 +1,9 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import App from "./App";
 import { GuestRoute } from "./auth/ProtectedRoute";
+import { liveAppUrl } from "./config/liveApp";
 
 vi.mock("./auth/AuthContext", () => ({
   useAuth: () => ({
@@ -15,8 +16,6 @@ vi.mock("./auth/AuthContext", () => ({
     applyUser: vi.fn(),
   }),
 }));
-
-const resetToken = "a".repeat(64);
 
 function LocationProbe() {
   return <output aria-label="Rota atual">{useLocation().pathname}</output>;
@@ -33,23 +32,36 @@ describe("auth email routes", () => {
     expect(
       screen.getByRole("heading", {
         level: 1,
-        name: /^Saiba para onde vai o seu dinheiro\. Decida o que vem a seguir\.$/,
+        name: /^Para onde vai o seu dinheiro\? Agora consegue ver\.$/,
       }),
     ).toBeInTheDocument();
-    expect(screen.getAllByRole("link", { name: "Abrir a minha conta" })[0]).toHaveAttribute(
+    expect(screen.getAllByRole("link", { name: "Começar grátis" })[0]).toHaveAttribute(
       "href",
-      "/dashboard",
+      liveAppUrl("/register"),
+    );
+    expect(screen.getByRole("link", { name: "Entrar" })).toHaveAttribute(
+      "href",
+      liveAppUrl("/login"),
+    );
+    expect(screen.getByRole("link", { name: "Começar" })).toHaveAttribute(
+      "href",
+      liveAppUrl("/register"),
     );
   });
 
-  it("lets a logged-in user open /reset-password with a token", () => {
+  it("redirects app routes back to the landing page", () => {
     render(
-      <MemoryRouter initialEntries={[`/reset-password?token=${resetToken}`]}>
+      <MemoryRouter initialEntries={["/dashboard"]}>
         <App />
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole("heading", { name: "Escolha uma palavra-passe" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
+        level: 1,
+        name: /^Para onde vai o seu dinheiro\? Agora consegue ver\.$/,
+      }),
+    ).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Hoje" })).not.toBeInTheDocument();
   });
 
@@ -79,7 +91,7 @@ describe("public landing page", () => {
     );
 
     expect(
-      screen.getByRole("heading", { name: "Perceba o seu dinheiro. Depois decida com calma." }),
+      screen.getByRole("heading", { name: "Para onde vai o seu dinheiro? Agora consegue ver." }),
     ).toBeInTheDocument();
     expect(screen.getByText("Total de despesas em setembro")).toBeInTheDocument();
     expect(screen.getByRole("progressbar", { name: "Orçamento utilizado" })).toHaveAttribute(
@@ -87,5 +99,12 @@ describe("public landing page", () => {
       "81",
     );
     expect(screen.getByText("12,6%", { exact: false })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Criar conta grátis" })).toHaveAttribute(
+      "href",
+      liveAppUrl("/register"),
+    );
+    expect(
+      within(screen.getByRole("contentinfo")).getByRole("link", { name: "Privacidade" }),
+    ).toHaveAttribute("href", liveAppUrl("/privacy"));
   });
 });
