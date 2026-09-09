@@ -10,6 +10,7 @@ export interface TiltCardProps {
   className?: string;
   style?: CSSProperties;
   children: ReactNode;
+  "aria-label"?: string;
 }
 
 /**
@@ -25,6 +26,7 @@ export function TiltCard({
   className = "",
   style,
   children,
+  "aria-label": ariaLabel,
 }: TiltCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
@@ -72,6 +74,7 @@ export function TiltCard({
       }}
       onPointerMove={handlePointerMove}
       onPointerLeave={reset}
+      aria-label={ariaLabel}
     >
       {children}
       {spotlight && !reduceMotion && (

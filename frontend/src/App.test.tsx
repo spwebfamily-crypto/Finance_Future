@@ -69,3 +69,23 @@ describe("auth email routes", () => {
     expect(screen.queryByText("Esqueceu a palavra-passe?")).not.toBeInTheDocument();
   });
 });
+
+describe("public landing page", () => {
+  it("shows dashboard information and the monthly budget percentage", () => {
+    render(
+      <MemoryRouter initialEntries={["/"]}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "Perceba o seu dinheiro. Depois decida com calma." }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Total de despesas em setembro")).toBeInTheDocument();
+    expect(screen.getByRole("progressbar", { name: "Orçamento utilizado" })).toHaveAttribute(
+      "aria-valuenow",
+      "81",
+    );
+    expect(screen.getByText("12,6%", { exact: false })).toBeInTheDocument();
+  });
+});

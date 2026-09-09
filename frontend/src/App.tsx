@@ -243,6 +243,10 @@ export default function App() {
         <Route path="/verify-email" element={<VerifyEmailPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
 
+<<<<<<< Updated upstream
+=======
+        <Route path="/" element={<LandingPage />} />
+>>>>>>> Stashed changes
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </>

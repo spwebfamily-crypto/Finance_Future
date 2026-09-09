@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 import { motion, useReducedMotion } from "framer-motion";
 import {
   ArrowRight,
@@ -207,10 +208,80 @@ export function LandingPage() {
           >
             {menuOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
           </button>
+=======
+import {
+  ArrowDownRight,
+  ArrowRight,
+  ArrowUpRight,
+  Check,
+  Landmark,
+  LockKeyhole,
+  ReceiptText,
+  Sparkles,
+} from "lucide-react";
+import { Link } from "react-router-dom";
+import { Brand } from "../components/Brand";
+import { GradientWaveText } from "../components/GradientWaveText";
+import { ScrollStoryPortal } from "../components/ScrollStoryPortal";
+import { ThemeToggle } from "../components/ThemeToggle";
+import { TiltCard } from "../components/TiltCard";
+import { Gauge } from "../components/ui/gauge-1";
+import SpinningBorderButton from "../components/ui/spinning-border-button";
+import { LanguageSwitcher, useI18n } from "../i18n/I18nContext";
+
+const features = [
+  {
+    icon: ReceiptText,
+    number: "01",
+    title: "Tudo o que saiu, num só lugar.",
+    text: "Registe à mão, importe um ficheiro ou fotografe o comprovativo. O arquivo continua simples.",
+  },
+  {
+    icon: Landmark,
+    number: "02",
+    title: "O banco ajuda. Não manda.",
+    text: "Ligue as suas contas em modo de leitura e mantenha sempre o controlo sobre cada movimento.",
+  },
+  {
+    icon: Sparkles,
+    number: "03",
+    title: "Um plano que cabe na vida real.",
+    text: "Veja o mês com clareza, prepare compromissos e decida ao seu ritmo, sem ruído.",
+  },
+] as const;
+
+export function LandingPage() {
+  const { t } = useI18n();
+
+  return (
+    <main className="landing-page">
+      <a className="skip-link" href="#landing-content">
+        {t("Saltar para o conteúdo")}
+      </a>
+
+      <header className="landing-nav" aria-label={t("Navegação principal")}>
+        <Link to="/" className="brand-link" aria-label={t("Página inicial ExpenseSnap")}>
+          <Brand linked={false} />
+        </Link>
+        <nav className="landing-nav__links" aria-label={t("Navegação da página")}>
+          <a href="#como-funciona">{t("Como funciona")}</a>
+          <a href="#privacidade">{t("Privacidade")}</a>
+        </nav>
+        <div className="landing-nav__actions">
+          <ThemeToggle compact />
+          <LanguageSwitcher compact />
+          <Link className="button button--secondary landing-nav__login" to="/login">
+            {t("Entrar")}
+          </Link>
+          <Link className="button button--primary" to="/register">
+            {t("Começar")} <ArrowRight aria-hidden="true" />
+          </Link>
+>>>>>>> Stashed changes
         </div>
       </header>
 
       <div id="landing-content">
+<<<<<<< Updated upstream
         <section className="landing-hero">
           <motion.div
             className="landing-hero__glow"
@@ -428,6 +499,187 @@ export function LandingPage() {
           <a href="#privacidade">Privacidade</a>
           <Link to="/login">Entrar</Link>
         </div>
+=======
+        <ScrollStoryPortal
+          word={t("CLAREZA")}
+          ariaLabel={t("Da visão geral ao painel da aplicação")}
+          hint={t("Deslize para transformar")}
+          actionLabel={t("Conhecer o ExpenseSnap")}
+          front={
+            <section className="landing-hero" aria-labelledby="landing-title">
+              <p className="landing-kicker">
+                <span aria-hidden="true" /> {t("Dinheiro sem distrações")}
+              </p>
+              <h1 id="landing-title">
+                {t("Perceba o seu dinheiro.")}
+                <br />
+                <GradientWaveText ariaLabel={t("Depois decida com calma.")}>
+                  {t("Depois decida com calma.")}
+                </GradientWaveText>
+              </h1>
+              <div className="landing-hero__footer">
+                <p>
+                  {t(
+                    "Um lugar calmo para organizar despesas, acompanhar contas e preparar o que vem a seguir.",
+                  )}
+                </p>
+                <SpinningBorderButton
+                  className="landing-hero__cta"
+                  ariaLabel={t("Criar conta gratuitamente")}
+                >
+                  {t("Criar conta gratuitamente")}
+                </SpinningBorderButton>
+              </div>
+            </section>
+          }
+        >
+          <div className="landing-story-reveal">
+            <div className="landing-story-reveal__copy">
+              <p className="landing-kicker landing-kicker--story">
+                <span aria-hidden="true" /> {t("O dashboard, explicado")}
+              </p>
+              <h2>{t("Hoje, o mês e o plano. Sem andar à procura.")}</h2>
+              <p>
+                {t(
+                  "Os movimentos do dia, as categorias e o orçamento aparecem numa única leitura, para perceber o que mudou antes de decidir.",
+                )}
+              </p>
+              <ul>
+                <li>
+                  <Check aria-hidden="true" /> {t("Resultado do dia imediatamente visível")}
+                </li>
+                <li>
+                  <Check aria-hidden="true" /> {t("Categorias comparáveis sem ruído")}
+                </li>
+                <li>
+                  <Check aria-hidden="true" /> {t("Limites traduzidos em valor disponível")}
+                </li>
+              </ul>
+            </div>
+
+            <TiltCard
+              className="landing-ledger"
+              aria-label={t("Exemplo do painel financeiro")}
+              tiltLimit={3.5}
+              scale={1.004}
+              spotlight
+            >
+              <div className="landing-ledger__top">
+                <span>{t("Visão mensal")}</span>
+                <span>{t("Dados ilustrativos")}</span>
+              </div>
+              <div className="landing-ledger__grid">
+                <div className="landing-ledger__summary">
+                  <div className="landing-ledger__balance">
+                    <small>{t("Total de despesas em setembro")}</small>
+                    <strong>€ 1.284,30</strong>
+                    <span className="landing-ledger__change">
+                      <ArrowDownRight aria-hidden="true" /> 12,6% {t("menos do que em agosto")}
+                    </span>
+                  </div>
+                  <div className="landing-ledger__today">
+                    <p>{t("Movimento de hoje")}</p>
+                    <div>
+                      <span>
+                        <ArrowUpRight aria-hidden="true" />
+                        <small>{t("Entradas")}</small>
+                        <strong>+ € 850,00</strong>
+                      </span>
+                      <span>
+                        <ArrowDownRight aria-hidden="true" />
+                        <small>{t("Saídas")}</small>
+                        <strong>− € 42,80</strong>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="landing-ledger__gauge">
+                  <Gauge
+                    value={81}
+                    size={200}
+                    gradient
+                    primary="success"
+                    tickMarks
+                    label={t("Orçamento utilizado")}
+                    transition={{ length: 1200, delay: 200 }}
+                  />
+                  <p>
+                    <strong>{t("€ 316,40 disponíveis")}</strong>
+                    <small>{t("até ao limite definido para o mês")}</small>
+                  </p>
+                </div>
+              </div>
+              <div className="landing-ledger__categories">
+                <span>
+                  <i style={{ width: "72%" }} />
+                  <small>{t("Casa")}</small>
+                  <strong>72%</strong>
+                </span>
+                <span>
+                  <i style={{ width: "58%" }} />
+                  <small>{t("Alimentação")}</small>
+                  <strong>58%</strong>
+                </span>
+                <span>
+                  <i style={{ width: "43%" }} />
+                  <small>{t("Transportes")}</small>
+                  <strong>43%</strong>
+                </span>
+              </div>
+            </TiltCard>
+          </div>
+        </ScrollStoryPortal>
+
+        <section className="landing-features" id="como-funciona" aria-labelledby="features-title">
+          <div className="landing-section-heading">
+            <p className="eyebrow">{t("Menos trabalho. Mais contexto.")}</p>
+            <h2 id="features-title">{t("As suas finanças contam uma história simples.")}</h2>
+          </div>
+          <div className="landing-feature-grid">
+            {features.map(({ icon: Icon, number, title, text }) => (
+              <TiltCard key={number} className="landing-feature-card" tiltLimit={5} scale={1.008}>
+                <div className="landing-feature-card__top">
+                  <span>{number}</span>
+                  <span className="landing-feature-card__icon">
+                    <Icon aria-hidden="true" />
+                  </span>
+                </div>
+                <h3>{t(title)}</h3>
+                <p>{t(text)}</p>
+              </TiltCard>
+            ))}
+          </div>
+        </section>
+
+        <section className="landing-trust" id="privacidade" aria-labelledby="trust-title">
+          <div className="landing-trust__mark" aria-hidden="true">
+            <LockKeyhole />
+          </div>
+          <div>
+            <p className="eyebrow">{t("Privacidade por princípio")}</p>
+            <h2 id="trust-title">{t("A sua vida financeira continua a ser sua.")}</h2>
+          </div>
+          <p>
+            {t(
+              "A ligação bancária é apenas de leitura. A palavra-passe nunca passa pelo ExpenseSnap e pode desligar o acesso quando quiser.",
+            )}
+          </p>
+        </section>
+
+        <section className="landing-closing" aria-labelledby="closing-title">
+          <p className="eyebrow">{t("Comece pelo essencial")}</p>
+          <h2 id="closing-title">{t("Olhe para o mês. Depois decida.")}</h2>
+          <SpinningBorderButton ariaLabel={t("Criar a minha conta")}>
+            {t("Criar a minha conta")}
+          </SpinningBorderButton>
+        </section>
+      </div>
+
+      <footer className="landing-footer">
+        <Brand linked={false} compact />
+        <span>© {new Date().getFullYear()} ExpenseSnap</span>
+        <Link to="/privacy">{t("Privacidade")}</Link>
+>>>>>>> Stashed changes
       </footer>
     </main>
   );
