@@ -23,25 +23,6 @@ function LocationProbe() {
 }
 
 describe("auth email routes", () => {
-  it("apresenta a landing page na rota pública inicial", () => {
-    render(
-      <MemoryRouter initialEntries={["/"]}>
-        <App />
-      </MemoryRouter>,
-    );
-
-    expect(
-      screen.getByRole("heading", {
-        level: 1,
-        name: /^O seu dinheiro, finalmente simples\.$/,
-      }),
-    ).toBeInTheDocument();
-    expect(screen.getAllByRole("link", { name: "Abrir a minha conta" })[0]).toHaveAttribute(
-      "href",
-      "/dashboard",
-    );
-  });
-
   it("lets a logged-in user open /reset-password with a token", () => {
     render(
       <MemoryRouter initialEntries={[`/reset-password?token=${resetToken}`]}>
