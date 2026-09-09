@@ -1,34 +1,54 @@
 import { motion, useReducedMotion } from "framer-motion";
 import {
   ArrowRight,
+  BarChart3,
   Check,
   Landmark,
   LockKeyhole,
+  Menu,
+  ReceiptText,
   ScanLine,
   ShieldCheck,
   Sparkles,
+  Target,
   WalletCards,
+  X,
 } from "lucide-react";
+import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { Brand } from "../components/Brand";
 import { ThemeToggle } from "../components/ThemeToggle";
-import { TiltCard } from "../components/TiltCard";
-import { Gauge } from "../components/ui/Gauge";
-import { GlyphPortal } from "../components/ui/GlyphPortal";
 
 const movements = [
-  { merchant: "Continente", category: "Supermercado", amount: "- 42,80 €", tone: "lime" },
-  { merchant: "CP", category: "Transportes", amount: "- 18,20 €", tone: "blue" },
-  { merchant: "Delta Cafés", category: "Restauração", amount: "- 3,10 €", tone: "rose" },
+  ["Continente", "Supermercado", "− 42,80 €", "lime"],
+  ["CP", "Transportes", "− 18,20 €", "blue"],
+  ["Delta Cafés", "Restauração", "− 3,10 €", "rose"],
 ];
 
-function ProductPreview({ compact = false }: { compact?: boolean }) {
+function Reveal({ children, className = "" }: { children: ReactNode; className?: string }) {
+  const reduced = useReducedMotion();
   return (
-    <TiltCard
-      className={`landing-product ${compact ? "landing-product--compact" : ""}`}
-      tiltLimit={4}
-      spotlight={false}
+    <motion.div
+      className={className}
+      initial={reduced ? false : { opacity: 0, y: 28 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.18 }}
+      transition={{ duration: reduced ? 0 : 0.65, ease: [0.22, 1, 0.36, 1] }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+function ProductPreview() {
+  const reduced = useReducedMotion();
+  return (
+    <motion.div
+      className="landing-product"
+      initial={reduced ? false : { opacity: 0, y: 24, rotate: 1.5 }}
+      animate={{ opacity: 1, y: 0, rotate: 0 }}
+      transition={{ delay: reduced ? 0 : 0.18, duration: reduced ? 0 : 0.75 }}
     >
       <div className="landing-product__topline">
         <span>
@@ -51,48 +71,122 @@ function ProductPreview({ compact = false }: { compact?: boolean }) {
         <span className="landing-product__count">03</span>
       </div>
       <div className="landing-product__movements">
-        {movements.map((movement) => (
-          <div className="landing-movement" key={movement.merchant}>
+        {movements.map(([merchant, category, amount, tone], index) => (
+          <motion.div
+            className="landing-movement"
+            key={merchant}
+            initial={reduced ? false : { opacity: 0, x: 16 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: reduced ? 0 : 0.45 + index * 0.1 }}
+          >
             <span
-              className={`landing-movement__dot landing-movement__dot--${movement.tone}`}
+              className={`landing-movement__dot landing-movement__dot--${tone}`}
               aria-hidden="true"
             />
             <span>
-              <strong>{movement.merchant}</strong>
-              <small>{movement.category}</small>
+              <strong>{merchant}</strong>
+              <small>{category}</small>
             </span>
-            <b>{movement.amount}</b>
-          </div>
+            <b>{amount}</b>
+          </motion.div>
         ))}
       </div>
       <div className="landing-product__footer">
         <span>2 de 3 classificações sugeridas</span>
         <span aria-hidden="true">→</span>
       </div>
-    </TiltCard>
+    </motion.div>
+  );
+}
+
+function DashboardStory() {
+  return (
+    <div className="landing-dashboard" aria-label="Exemplo ilustrativo da visão financeira">
+      <div className="landing-dashboard__header">
+        <div>
+          <span>Visão geral</span>
+          <strong>Bom dia, Marta</strong>
+        </div>
+        <span>Setembro</span>
+      </div>
+      <div className="landing-dashboard__today">
+        <div>
+          <span>Entradas hoje</span>
+          <strong className="is-positive">+ 1.850 €</strong>
+        </div>
+        <div>
+          <span>Saídas hoje</span>
+          <strong>− 64,10 €</strong>
+        </div>
+        <div>
+          <span>Resultado</span>
+          <strong className="is-positive">+ 1.785,90 €</strong>
+        </div>
+      </div>
+      <div className="landing-dashboard__grid">
+        <div className="landing-dashboard__chart">
+          <span>Despesas por categoria</span>
+          <div>
+            <i style={{ width: "82%" }} />
+            <b>Casa</b>
+            <small>620 €</small>
+          </div>
+          <div>
+            <i style={{ width: "57%" }} />
+            <b>Alimentação</b>
+            <small>428 €</small>
+          </div>
+          <div>
+            <i style={{ width: "31%" }} />
+            <b>Transportes</b>
+            <small>234 €</small>
+          </div>
+        </div>
+        <div className="landing-dashboard__plan">
+          <span>Plano do mês</span>
+          <strong>68%</strong>
+          <div>
+            <i />
+          </div>
+          <small>1.020 € ainda disponíveis</small>
+        </div>
+      </div>
+      <p>Dados ilustrativos para apresentar o produto.</p>
+    </div>
   );
 }
 
 export function LandingPage() {
   const { isAuthenticated } = useAuth();
-  const reduceMotion = useReducedMotion();
+  const reduced = useReducedMotion();
+  const [menuOpen, setMenuOpen] = useState(false);
   const primaryHref = isAuthenticated ? "/dashboard" : "/register";
   const primaryLabel = isAuthenticated ? "Abrir a minha conta" : "Começar grátis";
-
   return (
     <main className="landing-page">
       <a className="skip-link" href="#landing-content">
         Saltar para o conteúdo
       </a>
-
       <header className="landing-nav" aria-label="Cabeçalho">
         <Link className="landing-nav__brand" to="/" aria-label="ExpenseSnap, início">
           <Brand linked={false} />
         </Link>
-        <nav className="landing-nav__links" aria-label="Navegação da apresentação">
-          <a href="#como-funciona">Como funciona</a>
-          <a href="#produto">Produto</a>
-          <a href="#privacidade">Privacidade</a>
+        <nav
+          className={`landing-nav__links ${menuOpen ? "is-open" : ""}`}
+          aria-label="Navegação da apresentação"
+        >
+          <a href="#como-funciona" onClick={() => setMenuOpen(false)}>
+            Como funciona
+          </a>
+          <a href="#produto" onClick={() => setMenuOpen(false)}>
+            Produto
+          </a>
+          <a href="#vantagens" onClick={() => setMenuOpen(false)}>
+            Vantagens
+          </a>
+          <a href="#privacidade" onClick={() => setMenuOpen(false)}>
+            Privacidade
+          </a>
         </nav>
         <div className="landing-nav__actions">
           <ThemeToggle compact />
@@ -104,82 +198,78 @@ export function LandingPage() {
           <Link className="button button--primary landing-nav__cta" to={primaryHref}>
             {isAuthenticated ? "Abrir app" : "Experimentar"}
           </Link>
+          <button
+            className="landing-nav__menu"
+            type="button"
+            aria-expanded={menuOpen}
+            aria-label={menuOpen ? "Fechar menu" : "Abrir menu"}
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            {menuOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
+          </button>
         </div>
       </header>
 
       <div id="landing-content">
-        <GlyphPortal
-          word="CLAREZA"
-          front={
-            <div className="landing-hero">
-              <motion.div
-                className="landing-hero__copy"
-                initial={reduceMotion ? false : { opacity: 0, y: 18 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: reduceMotion ? 0 : 0.6, ease: [0.22, 1, 0.36, 1] }}
-              >
-                <p className="landing-kicker">
-                  <Sparkles aria-hidden="true" /> Finanças pessoais, sem ruído
-                </p>
-                <h1>
-                  O seu dinheiro,
-                  <br />
-                  <em>finalmente simples.</em>
-                </h1>
-                <p className="landing-hero__intro">
-                  Ligue o banco, reveja os gastos do dia e perceba quanto pode usar — sem folhas de
-                  cálculo nem registos repetidos.
-                </p>
-                <div className="landing-hero__actions">
-                  <Link className="button button--primary landing-button--large" to={primaryHref}>
-                    {primaryLabel} <ArrowRight aria-hidden="true" />
-                  </Link>
-                  <a
-                    className="button button--secondary landing-button--large"
-                    href="#como-funciona"
-                  >
-                    Ver como funciona
-                  </a>
-                </div>
-                {!isAuthenticated && <small>Sem cartão. Configure ao seu ritmo.</small>}
-              </motion.div>
+        <section className="landing-hero">
+          <motion.div
+            className="landing-hero__glow"
+            aria-hidden="true"
+            animate={reduced ? undefined : { scale: [1, 1.08, 1], x: [0, 16, 0] }}
+            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+          />
+          <motion.div
+            className="landing-hero__copy"
+            initial={reduced ? false : { opacity: 0, y: 22 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: reduced ? 0 : 0.65 }}
+          >
+            <p className="landing-kicker">
+              <Sparkles aria-hidden="true" /> Finanças pessoais, sem ruído
+            </p>
+            <h1>
+              Saiba para onde vai o seu dinheiro. <em>Decida o que vem a seguir.</em>
+            </h1>
+            <p className="landing-hero__intro">
+              Contas, movimentos e orçamento numa vista simples. Sincronize quando quiser, confirme
+              o que importa e planeie o mês sem folhas de cálculo.
+            </p>
+            <div className="landing-hero__actions">
+              <Link className="button button--primary landing-button--large" to={primaryHref}>
+                {primaryLabel} <ArrowRight aria-hidden="true" />
+              </Link>
+              <a className="button button--secondary landing-button--large" href="#produto">
+                Explorar o produto
+              </a>
             </div>
-          }
-        >
-          <div className="landing-portal-reveal">
-            <div className="landing-portal-reveal__copy">
-              <p className="landing-kicker landing-kicker--light">Do banco para o seu plano</p>
-              <h2>
-                O banco lança.
-                <br />
-                Você só confirma.
-              </h2>
-              <p>
-                Os movimentos chegam organizados numa revisão curta, no momento certo. O resto do
-                dia continua a ser seu.
-              </p>
-            </div>
-            <ProductPreview compact />
+            {!isAuthenticated && <small>Sem cartão. Comece ao seu ritmo.</small>}
+          </motion.div>
+          <div className="landing-hero__visual">
+            <ProductPreview />
           </div>
-        </GlyphPortal>
+          <a className="landing-hero__scroll" href="#como-funciona">
+            <span>Descobrir</span>
+            <i aria-hidden="true" />
+          </a>
+        </section>
 
         <section className="landing-trust" aria-label="Princípios do produto">
-          <p>Feito para a sua rotina, não para ocupar o seu tempo.</p>
+          <p>Uma rotina financeira que cabe no seu dia.</p>
           <ul>
             <li>
-              <Check aria-hidden="true" /> Sincronização quando pede
+              <Check aria-hidden="true" /> Sincronização sob pedido
             </li>
             <li>
-              <Check aria-hidden="true" /> Revisão diária guiada
+              <Check aria-hidden="true" /> Confirmação humana
             </li>
             <li>
-              <Check aria-hidden="true" /> Dados sob o seu controlo
+              <Check aria-hidden="true" /> Dados sob controlo
             </li>
           </ul>
         </section>
 
         <section className="landing-section landing-how" id="como-funciona">
-          <div className="landing-section__intro">
+          <Reveal className="landing-section__intro">
             <p className="landing-kicker">Um fluxo, três momentos</p>
             <h2>
               Menos gestão.
@@ -187,112 +277,77 @@ export function LandingPage() {
               Mais decisão.
             </h2>
             <p>
-              O ExpenseSnap transforma movimentos bancários em informação que consegue realmente
-              usar.
+              O ExpenseSnap transforma movimentos dispersos numa visão que consegue usar todos os
+              dias.
             </p>
-          </div>
+          </Reveal>
           <ol className="landing-steps">
             <li>
               <span>01</span>
               <Landmark aria-hidden="true" />
-              <h3>Ligue as contas</h3>
-              <p>Centralize saldos e movimentos sem copiar dados entre aplicações.</p>
+              <h3>Junte as contas</h3>
+              <p>Adicione contas manuais ou ligue o banco para centralizar saldos e movimentos.</p>
             </li>
             <li>
               <span>02</span>
-              <Sparkles aria-hidden="true" />
-              <h3>Confirme o dia</h3>
-              <p>Ao sincronizar, reveja e classifique os novos gastos numa sequência curta.</p>
+              <ReceiptText aria-hidden="true" />
+              <h3>Reveja o que mudou</h3>
+              <p>
+                Confirme descrições e categorias numa sequência curta, sempre sob o seu controlo.
+              </p>
             </li>
             <li>
               <span>03</span>
-              <WalletCards aria-hidden="true" />
-              <h3>Ajuste o plano</h3>
-              <p>Veja o impacto no orçamento e escolha o próximo passo com contexto.</p>
+              <Target aria-hidden="true" />
+              <h3>Planeie com contexto</h3>
+              <p>Compare o mês, acompanhe limites e escolha o próximo passo com calma.</p>
             </li>
           </ol>
         </section>
 
-        <section className="landing-section landing-product-section" id="produto">
-          <div className="landing-product-section__visual">
-            <ProductPreview />
-          </div>
-          <div className="landing-product-section__copy">
-            <p className="landing-kicker">A sua manhã financeira</p>
-            <h2>
-              Tudo o que precisa.
-              <br />
-              Nada a mais.
-            </h2>
+        <section className="landing-showcase" id="produto">
+          <Reveal className="landing-showcase__copy">
+            <p className="landing-kicker landing-kicker--light">O dashboard, explicado</p>
+            <h2>Hoje, o mês e o plano. Sem andar à procura.</h2>
             <p>
-              Uma vista simples para saber onde está, o que mudou e o que ainda precisa da sua
-              atenção.
+              A informação principal do dashboard aparece aqui como demonstração: movimentos do dia,
+              categorias e orçamento numa única leitura.
             </p>
-            <ul className="landing-checklist">
+            <ul>
               <li>
-                <Check aria-hidden="true" />
-                <span>
-                  <strong>Saldos num só lugar</strong>Contas bancárias, cartões e dinheiro lado a
-                  lado.
-                </span>
+                <Check aria-hidden="true" /> Resultado do dia imediatamente visível
               </li>
               <li>
-                <Check aria-hidden="true" />
-                <span>
-                  <strong>Categorias sob controlo</strong>A sugestão acelera; a decisão continua a
-                  ser sua.
-                </span>
+                <Check aria-hidden="true" /> Categorias comparáveis sem ruído
               </li>
               <li>
-                <Check aria-hidden="true" />
-                <span>
-                  <strong>Um plano que se atualiza</strong>As despesas confirmadas refletem-se no
-                  orçamento.
-                </span>
+                <Check aria-hidden="true" /> Limites traduzidos em valor disponível
               </li>
             </ul>
-          </div>
-        </section>
-
-        <section className="landing-budget">
-          <div className="landing-budget__copy">
-            <p className="landing-kicker landing-kicker--dark">Exemplo de orçamento mensal</p>
-            <h2>
-              Perceba o mês
-              <br />
-              antes do fim do mês.
-            </h2>
-            <p>
-              O que já gastou, o que está reservado e quanto ainda pode decidir — traduzido em
-              linguagem clara.
-            </p>
-          </div>
-          <div className="landing-budget__gauge">
-            <Gauge value={68} label="Orçamento disponível" detail="1.020 € de 1.500 € por usar" />
-          </div>
-          <div className="landing-budget__note">
-            <span>Leitura rápida</span>
-            <p>
-              Os valores desta demonstração são ilustrativos. Na sua conta, o plano usa os seus
-              próprios dados.
-            </p>
-          </div>
+          </Reveal>
+          <Reveal className="landing-showcase__visual">
+            <DashboardStory />
+          </Reveal>
         </section>
 
         <section
           className="landing-section landing-features"
+          id="vantagens"
           aria-labelledby="landing-features-title"
         >
-          <div className="landing-section__intro">
-            <p className="landing-kicker">Pequenas fricções, removidas</p>
-            <h2 id="landing-features-title">Criado para continuar.</h2>
-          </div>
+          <Reveal className="landing-section__intro">
+            <p className="landing-kicker">Do registo à decisão</p>
+            <h2 id="landing-features-title">Mais contexto, menos trabalho.</h2>
+            <p>Escolha como registar, reveja apenas o necessário e mantenha o mês legível.</p>
+          </Reveal>
           <div className="landing-feature-grid">
             <article className="landing-feature landing-feature--wide">
               <ScanLine aria-hidden="true" />
               <div>
-                <h3>Fatura fotografada, despesa pronta</h3>
-                <p>Use OCR para aproveitar os dados do recibo e confirme apenas o necessário.</p>
+                <h3>Fotografe a fatura</h3>
+                <p>
+                  O leitor aproveita os dados do recibo no dispositivo. Confirme antes de guardar.
+                </p>
               </div>
               <div className="landing-receipt" aria-hidden="true">
                 <span>RECIBO</span>
@@ -304,13 +359,21 @@ export function LandingPage() {
             </article>
             <article className="landing-feature">
               <WalletCards aria-hidden="true" />
-              <h3>Movimentos e contas conectados</h3>
-              <p>O mesmo valor deixa de aparecer em sítios sem relação entre si.</p>
+              <h3>Contas no mesmo lugar</h3>
+              <p>Veja contas manuais e bancárias com origem e estado claramente identificados.</p>
+            </article>
+            <article className="landing-feature">
+              <BarChart3 aria-hidden="true" />
+              <h3>Um mês que se explica</h3>
+              <p>
+                Totais, tendência e categorias ajudam a perceber mudanças sem transformar tudo num
+                relatório.
+              </p>
             </article>
             <article className="landing-feature">
               <Sparkles aria-hidden="true" />
-              <h3>Revisão no momento certo</h3>
-              <p>Os gastos novos aparecem depois da sincronização — não antes.</p>
+              <h3>Sugestões, não decisões</h3>
+              <p>A automação acelera a organização; a palavra final continua a ser sua.</p>
             </article>
           </div>
         </section>
@@ -323,8 +386,8 @@ export function LandingPage() {
             <p className="landing-kicker landing-kicker--light">Privacidade por desenho</p>
             <h2>O seu dinheiro não é conteúdo.</h2>
             <p>
-              Consulte ligações, controle a sincronização e remova os seus dados a partir da própria
-              aplicação.
+              Controle as ligações, sincronize quando decidir e use as ferramentas de privacidade
+              dentro da aplicação.
             </p>
           </div>
           <ul>
@@ -332,16 +395,15 @@ export function LandingPage() {
               <LockKeyhole aria-hidden="true" /> Sessão protegida
             </li>
             <li>
-              <Check aria-hidden="true" /> Controlo das ligações bancárias
+              <Check aria-hidden="true" /> Ligações bancárias controláveis
             </li>
             <li>
-              <Check aria-hidden="true" /> Ferramentas de privacidade na app
+              <Check aria-hidden="true" /> Exportação e eliminação de dados
             </li>
           </ul>
         </section>
-
         <section className="landing-final">
-          <p className="landing-kicker">Comece pelo que já aconteceu hoje</p>
+          <p className="landing-kicker">Comece pelo que aconteceu hoje</p>
           <h2>
             Menos contas na cabeça.
             <br />
@@ -357,7 +419,6 @@ export function LandingPage() {
           )}
         </section>
       </div>
-
       <footer className="landing-footer">
         <Link to="/" aria-label="ExpenseSnap, início">
           <Brand linked={false} compact />

@@ -33,7 +33,7 @@ describe("auth email routes", () => {
     expect(
       screen.getByRole("heading", {
         level: 1,
-        name: /^O seu dinheiro, finalmente simples\.$/,
+        name: /^Saiba para onde vai o seu dinheiro\. Decida o que vem a seguir\.$/,
       }),
     ).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "Abrir a minha conta" })[0]).toHaveAttribute(
