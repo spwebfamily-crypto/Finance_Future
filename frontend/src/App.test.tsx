@@ -32,18 +32,18 @@ describe("auth email routes", () => {
     expect(
       screen.getByRole("heading", {
         level: 1,
-        name: /^Para onde vai o seu dinheiro\? Agora consegue ver\.$/,
+        name: /^Saiba para onde vai o seu dinheiro\. Decida o que vem a seguir\.$/,
       }),
     ).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "Começar grátis" })[0]).toHaveAttribute(
       "href",
       liveAppUrl("/register"),
     );
-    expect(screen.getByRole("link", { name: "Entrar" })).toHaveAttribute(
+    expect(screen.getAllByRole("link", { name: "Entrar" })[0]).toHaveAttribute(
       "href",
       liveAppUrl("/login"),
     );
-    expect(screen.getByRole("link", { name: "Começar" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Experimentar" })).toHaveAttribute(
       "href",
       liveAppUrl("/register"),
     );
@@ -59,7 +59,7 @@ describe("auth email routes", () => {
     expect(
       screen.getByRole("heading", {
         level: 1,
-        name: /^Para onde vai o seu dinheiro\? Agora consegue ver\.$/,
+        name: /^Saiba para onde vai o seu dinheiro\. Decida o que vem a seguir\.$/,
       }),
     ).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Hoje" })).not.toBeInTheDocument();
@@ -91,15 +91,21 @@ describe("public landing page", () => {
     );
 
     expect(
-      screen.getByRole("heading", { name: "Para onde vai o seu dinheiro? Agora consegue ver." }),
+      screen.getByRole("heading", {
+        name: "Saiba para onde vai o seu dinheiro. Decida o que vem a seguir.",
+      }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Total de despesas em setembro")).toBeInTheDocument();
-    expect(screen.getByRole("progressbar", { name: "Orçamento utilizado" })).toHaveAttribute(
+    expect(screen.getByText("3 gastos para confirmar")).toBeInTheDocument();
+    expect(screen.getByText("68%")).toBeInTheDocument();
+    expect(screen.getByRole("progressbar", { name: "Orçamento mensal utilizado" })).toHaveAttribute(
       "aria-valuenow",
       "81",
     );
-    expect(screen.getByText("12,6%", { exact: false })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Criar conta grátis" })).toHaveAttribute(
+    expect(
+      screen.getByLabelText("Pré-visualização do dashboard do ExpenseSnap num iPhone"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Disponível até ao fim do mês")).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "Começar grátis" }).at(-1)).toHaveAttribute(
       "href",
       liveAppUrl("/register"),
     );
