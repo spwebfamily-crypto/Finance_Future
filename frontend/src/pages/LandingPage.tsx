@@ -16,7 +16,7 @@ import {
   WalletCards,
   X,
 } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { Brand } from "../components/Brand";
 import AnimatedGradient from "../components/ui/animated-gradient";
@@ -143,17 +143,34 @@ function MobileDashboardPreview() {
 export function LandingPage() {
   const { t } = useI18n();
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const closeWithEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setMenuOpen(false);
+      menuButtonRef.current?.focus();
+    };
+
+    document.addEventListener("keydown", closeWithEscape);
+    return () => document.removeEventListener("keydown", closeWithEscape);
+  }, [menuOpen]);
+
+  const closeMenu = () => setMenuOpen(false);
+
   return (
     <main className="landing-page landing-page--product-led">
       <a className="skip-link" href="#landing-content">{t("Saltar para o conteúdo")}</a>
       <header className="landing-nav" aria-label={t("Navegação principal")}>
         <Link className="landing-nav__brand" to="/" aria-label={t("Página inicial ExpenseSnap")}><Brand linked={false} /></Link>
-        <nav className={`landing-nav__links ${menuOpen ? "is-open" : ""}`} aria-label={t("Navegação da página")}>
-          <a href="#como-funciona" onClick={() => setMenuOpen(false)}>{t("Como funciona")}</a><a href="#produto" onClick={() => setMenuOpen(false)}>{t("Produto")}</a><a href="#mobile" onClick={() => setMenuOpen(false)}>{t("Mobile")}</a><a href="#privacidade" onClick={() => setMenuOpen(false)}>{t("Privacidade")}</a>
+        <nav id="landing-navigation" className={`landing-nav__links ${menuOpen ? "is-open" : ""}`} aria-label={t("Navegação da página")}>
+          <a href="#como-funciona" onClick={closeMenu}>{t("Como funciona")}</a><a href="#produto" onClick={closeMenu}>{t("Produto")}</a><a href="#mobile" onClick={closeMenu}>{t("Mobile")}</a><a href="#privacidade" onClick={closeMenu}>{t("Privacidade")}</a>
         </nav>
         <div className="landing-nav__actions">
           <LanguageSwitcher compact /><a className="button button--secondary landing-nav__login" href={loginHref} rel="noreferrer">{t("Entrar")}</a><AntiMetalButton className="landing-nav__cta" href={registerHref} label={t("Experimentar")} />
-          <button className="landing-nav__menu" type="button" aria-expanded={menuOpen} aria-label={menuOpen ? t("Fechar menu") : t("Abrir menu")} onClick={() => setMenuOpen((open) => !open)}>{menuOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}</button>
+          <button ref={menuButtonRef} className="landing-nav__menu" type="button" aria-controls="landing-navigation" aria-expanded={menuOpen} aria-label={menuOpen ? t("Fechar menu") : t("Abrir menu")} onClick={() => setMenuOpen((open) => !open)}>{menuOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}</button>
         </div>
       </header>
 

@@ -13696,10 +13696,11 @@ a.auth-forgot {
     radial-gradient(ellipse 42% 28% at var(--light-rays-position) -4%, rgb(var(--light-rays-color-2-rgb) / 0.64), transparent 74%),
     radial-gradient(ellipse 26% 22% at var(--light-rays-position) 7%, rgb(var(--light-rays-color-1-rgb) / 0.26), transparent 82%);
   filter: blur(0.5rem);
-  opacity: 0.86;
+  opacity: calc(0.28 + var(--light-rays-intensity, 0.72) * 0.58);
   transform: scale(1.06);
   transform-origin: var(--light-rays-position) 0;
-  animation: light-rays-breathe 18s ease-in-out infinite alternate;
+  animation: light-rays-breathe var(--light-rays-duration, 18s) ease-in-out infinite alternate;
+  animation-play-state: var(--light-rays-play-state, running);
 }
 
 .light-rays__beam {
@@ -13716,10 +13717,11 @@ a.auth-forgot {
   clip-path: polygon(48.7% 0, 51.3% 0, 100% 100%, 0 100%);
   filter: blur(0.28rem);
   mix-blend-mode: screen;
-  opacity: 0.9;
+  opacity: calc(0.38 + var(--light-rays-intensity, 0.72) * 0.52);
   transform: rotate(var(--light-ray-rotation));
   transform-origin: 50% 0;
-  animation: light-rays-pulse 12s ease-in-out infinite alternate;
+  animation: light-rays-pulse calc(var(--light-rays-duration, 18s) * 0.72) ease-in-out infinite alternate;
+  animation-play-state: var(--light-rays-play-state, running);
 }
 
 .light-rays__beam--one { --light-ray-rotation: -34deg; --light-ray-opacity: 0.22; animation-delay: -4s; }
@@ -14534,5 +14536,68 @@ a.auth-forgot {
   .field input,
   .field select {
     border: 0.0625rem solid ButtonText;
+  }
+}
+
+/* Landing page repairs: keep navigation independent from older landing themes. */
+.landing-page.landing-page--product-led :is(#como-funciona, #produto, #mobile, #privacidade) {
+  scroll-margin-top: 5.5rem;
+}
+
+@media (max-width: 960px) {
+  .landing-page.landing-page--product-led .landing-nav {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .landing-page.landing-page--product-led .landing-nav__links {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    right: 1rem;
+    display: none;
+    width: min(18rem, calc(100vw - 2rem));
+    gap: 0.125rem;
+    padding: 0.625rem;
+    color: #f3f5ea;
+    background: #1c1d17;
+    border: 1px solid rgba(243, 245, 234, 0.14);
+    border-radius: 0.75rem;
+    box-shadow: 0 1.25rem 2.5rem rgb(0 0 0 / 28%);
+  }
+
+  .landing-page.landing-page--product-led .landing-nav__links.is-open {
+    display: grid;
+  }
+
+  .landing-page.landing-page--product-led .landing-nav__links.is-open a {
+    min-height: 2.75rem;
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0.625rem;
+    color: #e7eadf;
+    border-radius: 0.5rem;
+  }
+
+  .landing-page.landing-page--product-led .landing-nav__links.is-open a:hover,
+  .landing-page.landing-page--product-led .landing-nav__links.is-open a:focus-visible {
+    color: #caff4a;
+    background: rgba(202, 255, 74, 0.08);
+  }
+
+  .landing-page.landing-page--product-led .landing-nav__menu {
+    display: grid;
+    width: 2.75rem;
+    height: 2.75rem;
+    place-items: center;
+    padding: 0;
+    color: #caff4a;
+    background: #20231a;
+    border: 1px solid rgba(243, 245, 234, 0.16);
+    border-radius: 0.625rem;
+  }
+}
+
+@media (max-width: 680px) {
+  .landing-page.landing-page--product-led .landing-hero__actions > .anti-metal-button {
+    width: 100%;
   }
 }

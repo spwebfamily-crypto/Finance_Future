@@ -1,4 +1,5 @@
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import App from "./App";
@@ -83,6 +84,24 @@ describe("auth email routes", () => {
 });
 
 describe("public landing page", () => {
+  it("closes the mobile navigation with Escape and returns focus to its trigger", async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter initialEntries={["/"]}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    const menuButton = screen.getByRole("button", { name: "Abrir menu" });
+    await user.click(menuButton);
+    expect(menuButton).toHaveAttribute("aria-controls", "landing-navigation");
+    expect(menuButton).toHaveAttribute("aria-expanded", "true");
+
+    await user.keyboard("{Escape}");
+    expect(menuButton).toHaveAttribute("aria-expanded", "false");
+    expect(menuButton).toHaveFocus();
+  });
+
   it("shows dashboard information and the monthly budget percentage", () => {
     render(
       <MemoryRouter initialEntries={["/"]}>
