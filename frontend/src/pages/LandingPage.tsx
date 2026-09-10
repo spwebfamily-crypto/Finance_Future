@@ -19,10 +19,8 @@ import {
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { Brand } from "../components/Brand";
-import AnimatedGradient from "../components/ui/animated-gradient";
 import { GradientWaveText } from "../components/ui/gradient-wave-text";
 import { IPhoneMockup } from "../components/ui/iphone-mockup";
-import Rays from "../components/ui/light-rays";
 import { AntiMetalButton } from "../components/ui/anti-metal-button";
 import { GlyphPortal } from "../components/ui/glyph-portal";
 import { liveAppUrl } from "../config/liveApp";
@@ -178,56 +176,15 @@ export function LandingPage() {
       <div id="landing-content">
         <GlyphPortal
           className="landing-glyph-hero"
-          word="EXPENSESNAP"
-          scrollLength={2.3}
-          enterLabel={t("Entrar na secção")}
-          enterHint={t("Deslize para entrar")}
+          word="expensesnap"
+          scrollLength={1.6}
+          interactive={false}
+          enterLabel={t("Continuar")}
+          enterHint={t("Deslize para continuar")}
+          showEnter={false}
           chooseLetterLabel={t("Escolha uma letra")}
           ariaLabel={t("Portal visual do ExpenseSnap")}
           fontFamily="var(--font-display), Arial, sans-serif"
-          background={
-            <>
-              <AnimatedGradient
-                className="landing-hero__animated-gradient"
-                config={{
-                  preset: "custom",
-                  color1: "#1b1d16",
-                  color2: "#103f32",
-                  color3: "#718d34",
-                  rotation: -42,
-                  proportion: 24,
-                  scale: 0.38,
-                  speed: 10,
-                  distortion: 8,
-                  swirl: 34,
-                  swirlIterations: 4,
-                  softness: 90,
-                  offset: -8,
-                  shape: "Edge",
-                  shapeSize: 48,
-                }}
-                noise={{ opacity: 0.04, scale: 0.7 }}
-              />
-              <Rays
-                className="landing-hero__rays"
-                intensity={11}
-                rays={24}
-                reach={26}
-                position={74}
-                backgroundColor="transparent"
-                animation={{ animate: true, speed: 2.5 }}
-                raysColor={{ mode: "multi", color1: "#bbf451", color2: "#198266" }}
-              />
-              <div className="landing-hero__signal" aria-hidden="true"><i /><i /><i /><i /><i /></div>
-            </>
-          }
-          front={
-            <div className="landing-glyph-hero__front">
-              <Brand linked={false} compact />
-              <p className="landing-kicker"><Sparkles aria-hidden="true" /> {t("Finanças pessoais, sem ruído")}</p>
-              <p>{t("Uma nova forma de organizar o dinheiro.")}</p>
-            </div>
-          }
         >
           <div className="landing-portal-reveal">
             <div className="landing-portal-reveal__copy">

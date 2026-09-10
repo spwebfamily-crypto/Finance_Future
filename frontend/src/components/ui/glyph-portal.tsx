@@ -24,6 +24,7 @@ export interface GlyphPortalProps {
   annotations?: boolean;
   enterLabel?: string;
   enterHint?: string;
+  showEnter?: boolean;
   chooseLetterLabel?: string;
   ariaLabel?: string;
   className?: string;
@@ -93,6 +94,7 @@ export function GlyphPortal({
   annotations = false,
   enterLabel = "Conhecer o ExpenseSnap",
   enterHint = "Deslize para entrar",
+  showEnter = true,
   chooseLetterLabel = "Escolha uma letra",
   ariaLabel,
   className,
@@ -365,7 +367,7 @@ export function GlyphPortal({
         <label data-gp-touch-picker><span className="sr-only">{chooseLetterLabel}</span><select data-gp-select defaultValue=""><option value="" disabled>{chooseLetterLabel}</option>{characters.map(({ char, index }, characterIndex) => <option key={index} value={index}>{characterIndex + 1} · {char}</option>)}</select></label>
         {front && <div data-gp-front>{front}</div>}
         <span data-gp-fallback aria-hidden="true" style={{ fontFamily, fontWeight: weight }}>{text}</span>
-        <div data-gp-caption><span data-gp-hint aria-hidden="true">{interactive ? enterHint : ""}</span><a data-gp-enter href={`#${uid}-content`}>{enterLabel}<span aria-hidden="true">↘</span></a></div>
+        <div data-gp-caption><span data-gp-hint aria-hidden="true">{enterHint}</span>{showEnter && <a data-gp-enter href={`#${uid}-content`}>{enterLabel}<span aria-hidden="true">↘</span></a>}</div>
       </div>
       <div data-gp-content id={`${uid}-content`} tabIndex={-1}>{children}</div>
     </section>

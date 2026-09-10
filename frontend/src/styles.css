@@ -13657,10 +13657,12 @@ a.auth-forgot {
 
   .landing-page--product-led .landing-glyph-hero [data-gp-caption] {
     inset: auto 1rem 1.25rem;
+    justify-content: center;
   }
 
   .landing-page--product-led .landing-glyph-hero [data-gp-hint] {
-    display: none;
+    color: var(--silver);
+    letter-spacing: 0.04em;
   }
 
   .landing-page--product-led .landing-portal-reveal {
