@@ -367,6 +367,36 @@ describe("sync engine", () => {
     expect(await prisma.bankAccountLink.count({ where: { connectionId: connection.id } })).toBe(1);
   });
 
+  it("preserves a removed transaction tombstone on later syncs", async () => {
+    const connection = await seedConnection();
+    const sessionId = await seedSessionWithAccounts([
+      {
+        providerAccountId: "acc-1",
+        providerAccountHash: "hash-1",
+        displayName: "Conta à ordem",
+        pages: [[transaction({ entryReference: "removed-1", description: "Apagar" })]],
+      },
+    ]);
+    await linkSession(connection.id, sessionId);
+
+    const firstJob = await createJob(connection.id);
+    await processSyncJob(firstJob.id);
+    const stored = (await prisma.bankTransaction.findFirst({
+      where: { userId, providerEntryReference: "removed-1" },
+    }))!;
+    await prisma.bankTransaction.update({
+      where: { id: stored.id },
+      data: { status: "removed", classification: "ignored", excludedFromAnalytics: true },
+    });
+    expect((await prisma.bankTransaction.findUnique({ where: { id: stored.id } }))!.status).toBe("removed");
+
+    const secondJob = await createJob(connection.id);
+    await processSyncJob(secondJob.id);
+    const after = await prisma.bankTransaction.findUnique({ where: { id: stored.id } });
+    expect(after).toMatchObject({ status: "removed", classification: "ignored", excludedFromAnalytics: true });
+    expect(await prisma.bankTransaction.count({ where: { userId } })).toBe(1);
+  });
+
   it("keeps paging while a continuation key is returned, even for empty pages", async () => {
     const connection = await seedConnection();
     const sessionId = await seedSessionWithAccounts([

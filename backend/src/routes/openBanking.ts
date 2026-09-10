@@ -686,7 +686,7 @@ router.delete(
           data: { id: transaction.id, status: "removed", classification: "ignored" },
         });
       }
-      if (transaction.transferId) throw bankError(409, "BANK_TRANSACTION_TRANSFER_REVIEW_REQUIRED");
+      if (transaction.transferId) throw bankError(409, "BANK_TRANSFER_REVIEW_REQUIRED");
 
       const removed = await prisma.$transaction(async (client) => {
         if (transaction.expenseId) {

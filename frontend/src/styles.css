@@ -8844,3 +8844,49 @@ a.auth-forgot {
     border: 0.0625rem solid ButtonText;
   }
 }
+
+/* Apple-like hierarchy: one calm reading order, with action surfaces first. */
+.page--dashboard,
+.page--expenses,
+.page--planning,
+.invest-page {
+  gap: 1.25rem;
+}
+
+.page--dashboard > .page-header { order: 0; }
+.page--dashboard > .today-overview { order: 1; }
+.page--dashboard > .dashboard-shortcuts { order: 2; }
+.page--dashboard > .dashboard-total { order: 3; }
+.page--dashboard > .month-pulse { order: 4; }
+.page--dashboard > .dashboard-grid,
+.page--dashboard > .dashboard-section { order: 5; }
+
+.page--dashboard .dashboard-shortcut--primary {
+  box-shadow: 0 0.5rem 1.5rem color-mix(in srgb, var(--brand) 13%, transparent);
+}
+
+.page--expenses .filters-panel,
+.page--planning .planning-overview,
+.page--planning .planning-alerts,
+.page--planning .planning-calendar,
+.invest-page > section {
+  border-color: color-mix(in srgb, var(--line) 78%, transparent);
+  box-shadow: 0 0.75rem 2rem color-mix(in srgb, var(--ink-strong) 4%, transparent);
+}
+
+.bank-transaction-row__actions .button { min-height: 2.25rem; }
+
+@media (max-width: 40rem) {
+  .page--dashboard,
+  .page--expenses,
+  .page--planning,
+  .invest-page { gap: 1rem; }
+
+  .bank-transaction-row__actions { align-items: stretch; gap: 0.5rem; }
+  .bank-transaction-row__actions .button,
+  .bank-transaction-row__actions .field--inline {
+    flex: 1 1 100%;
+    min-width: 0;
+    width: 100%;
+  }
+}
