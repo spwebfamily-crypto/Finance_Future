@@ -31,6 +31,14 @@ function transactionDate(transaction: BankTransaction) {
   return transaction.bookingDate ?? transaction.valueDate ?? transaction.transactionDate;
 }
 
+function formatTransactionDate(transaction: BankTransaction, locale: string, fallback: string) {
+  const value = transactionDate(transaction);
+  if (!value) return fallback;
+  return new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short", year: "numeric" }).format(
+    new Date(value),
+  );
+}
+
 export function DailyBankReviewModal() {
   const { user } = useAuth();
   const { t, locale } = useI18n();
@@ -273,7 +281,9 @@ export function DailyBankReviewModal() {
                 <span className="daily-review-card__icon" aria-hidden="true">
                   <ReceiptText />
                 </span>
-                <span>{current.bankAccountLink.displayName}</span>
+                <span>
+                  {current.bankAccountLink.connection?.institutionName ?? t("Banco ligado")} · {current.bankAccountLink.displayName}
+                </span>
               </div>
               <div className="daily-review-card__body">
                 <div>
@@ -285,6 +295,7 @@ export function DailyBankReviewModal() {
               <div className="daily-review-card__meta" aria-label={t("Estado do movimento")}>
                 <span>{t(current.status === "pending" ? "Pendente" : "Contabilizado")}</span>
                 <span>{t("Movimento importado do banco")}</span>
+                <span>{formatTransactionDate(current, locale, t("Sem data"))}</span>
               </div>
             </TiltCard>
 
@@ -296,8 +307,8 @@ export function DailyBankReviewModal() {
                 disabled={busy}
                 onChange={(event) => setSelectedCategoryId(event.target.value)}
               >
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
+                {categories.map((category, index) => (
+                  <option key={category.id || `category-${index}`} value={category.id}>
                     {category.name}
                   </option>
                 ))}

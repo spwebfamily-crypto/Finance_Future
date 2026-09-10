@@ -491,6 +491,7 @@ export interface BankTransaction {
     maskedIban: string | null;
     accountId: string;
     connectionId: string;
+    connection?: { institutionName: string };
   };
   expense: {
     id: string;

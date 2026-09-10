@@ -547,6 +547,7 @@ router.get(
                 maskedIban: true,
                 accountId: true,
                 connectionId: true,
+                connection: { select: { institutionName: true } },
               },
             },
             expense: {

@@ -27,6 +27,7 @@ export function BankTransactionRow({
   busy = false,
   onCategoryChange,
   onConfirmExpense,
+  onDeleteTransaction,
   onToggleAnalytics,
 }: {
   transaction: BankTransaction;
@@ -34,6 +35,7 @@ export function BankTransactionRow({
   busy?: boolean;
   onCategoryChange: (transaction: BankTransaction, categoryId: string) => void;
   onConfirmExpense: (transaction: BankTransaction, categoryId: string) => void;
+  onDeleteTransaction: (transaction: BankTransaction) => void;
   onToggleAnalytics: (transaction: BankTransaction, excluded: boolean) => void;
 }) {
   const { t, locale } = useI18n();
@@ -89,6 +91,16 @@ export function BankTransactionRow({
             onClick={() => onConfirmExpense(transaction, selectedCategoryId)}
           >
             {t("Confirmar gasto")}
+          </button>
+        )}
+        {transaction.classification !== "internal_transfer" && (
+          <button
+            className="button button--danger button--small"
+            type="button"
+            disabled={busy}
+            onClick={() => onDeleteTransaction(transaction)}
+          >
+            {t("Apagar")}
           </button>
         )}
         <label className="switch">

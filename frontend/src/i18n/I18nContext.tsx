@@ -183,6 +183,7 @@ const en: Messages = {
   "Ainda não há movimentos para os filtros escolhidos.":
     "There are no transactions for the selected filters.",
   "Sem data": "No date",
+  "Banco ligado": "Linked bank",
   Pendente: "Pending",
   Categoria: "Category",
   "Não contar como despesa": "Do not count as an expense",
@@ -195,6 +196,13 @@ const en: Messages = {
   "Confirmar gasto": "Confirm expense",
   "Gasto confirmado.": "Expense confirmed.",
   "Não é um gasto": "Not an expense",
+  Apagar: "Delete",
+  "Apagar movimento": "Delete movement",
+  "Apagar movimento importado?": "Delete imported movement?",
+  "Este movimento será removido das despesas e não voltará a aparecer após nova sincronização.":
+    "This movement will be removed from expenses and will not appear again after a new sync.",
+  "Estado do movimento": "Movement status",
+  "Movimento importado do banco": "Movement imported from your bank",
   "Classifique os gastos de hoje": "Review today's bank movements",
   "Confirme uma categoria para manter os seus resumos organizados.":
     "Confirm a category to keep your summaries organised.",
@@ -553,6 +561,7 @@ const es: Messages = {
   "Ainda não há movimentos para os filtros escolhidos.":
     "No hay movimientos para los filtros seleccionados.",
   "Sem data": "Sin fecha",
+  "Banco ligado": "Banco conectado",
   Pendente: "Pendiente",
   Categoria: "Categoría",
   "Não contar como despesa": "No contar como gasto",
@@ -565,6 +574,13 @@ const es: Messages = {
   "Confirmar gasto": "Confirmar gasto",
   "Gasto confirmado.": "Gasto confirmado.",
   "Não é um gasto": "No es un gasto",
+  Apagar: "Eliminar",
+  "Apagar movimento": "Eliminar movimiento",
+  "Apagar movimento importado?": "¿Eliminar movimiento importado?",
+  "Este movimento será removido das despesas e não voltará a aparecer após nova sincronização.":
+    "Este movimiento se eliminará de los gastos y no volverá a aparecer tras una nueva sincronización.",
+  "Estado do movimento": "Estado del movimiento",
+  "Movimento importado do banco": "Movimiento importado del banco",
   "Classifique os gastos de hoje": "Revisa los movimientos de hoy",
   "Confirme uma categoria para manter os seus resumos organizados.":
     "Confirma una categoría para mantener tus resúmenes organizados.",

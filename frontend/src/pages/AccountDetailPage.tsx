@@ -5,6 +5,7 @@ import { BankBalance } from "../components/BankBalance";
 import { BankTransactionList } from "../components/BankTransactionList";
 import { ErrorState, LoadingState } from "../components/States";
 import { NoticeToast } from "../components/NoticeToast";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 import { PageHeader } from "../components/PageHeader";
 import { accountApi, categoryApi, openBankingApi } from "../api/resources";
 import { errorMessage } from "../api/client";
@@ -50,6 +51,8 @@ export function AccountDetailPage() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [busyTransactionId, setBusyTransactionId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<BankTransaction | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const load = useCallback(async () => {
     if (!accountId) return;
@@ -148,6 +151,21 @@ export function AccountDetailPage() {
       setError(errorMessage(requestError));
     } finally {
       setBusyTransactionId(null);
+    }
+  }
+
+  async function deleteTransaction() {
+    if (!deleteTarget || isDeleting) return;
+    setIsDeleting(true);
+    try {
+      await openBankingApi.deleteTransaction(deleteTarget.id);
+      setDeleteTarget(null);
+      setNotice(t("Movimento apagado."));
+      await load();
+    } catch (requestError) {
+      setError(errorMessage(requestError));
+    } finally {
+      setIsDeleting(false);
     }
   }
 
@@ -275,6 +293,7 @@ export function AccountDetailPage() {
             onConfirmExpense={(transaction, categoryId) =>
               void confirmExpense(transaction, categoryId)
             }
+            onDeleteTransaction={(transaction) => setDeleteTarget(transaction)}
             onToggleAnalytics={(transaction, excluded) =>
               void toggleAnalytics(transaction, excluded)
             }
@@ -303,6 +322,17 @@ export function AccountDetailPage() {
           </div>
         )}
       </section>
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title={t("Apagar movimento importado?")}
+        description={t(
+          "Este movimento será removido das despesas e não voltará a aparecer após nova sincronização.",
+        )}
+        confirmLabel={t("Apagar movimento")}
+        busy={isDeleting}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={() => void deleteTransaction()}
+      />
     </div>
   );
 }

@@ -12,6 +12,7 @@ import {
   WalletCards,
 } from "lucide-react";
 import { accountApi, openBankingApi } from "../api/resources";
+import { notifyBankSyncCompleted } from "../api/bank-sync-events";
 import { errorMessage } from "../api/client";
 import { BalanceCorrectionDialog } from "../components/BalanceCorrectionDialog";
 import { ConfirmDialog } from "../components/ConfirmDialog";
@@ -155,7 +156,10 @@ export function AccountsPage() {
         try {
           const job = await openBankingApi.syncJob(pending.jobId);
           if (job.status === "queued" || job.status === "running") remaining.push(pending);
-          else if (job.status === "completed") completed = true;
+          else if (job.status === "completed" || job.status === "partial") {
+            completed = true;
+            notifyBankSyncCompleted(pending.connectionId);
+          }
           else if (!cancelled)
             setError(t("A sincronização bancária não foi concluída. Tente novamente."));
         } catch {

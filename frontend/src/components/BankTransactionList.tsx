@@ -9,6 +9,7 @@ export function BankTransactionList({
   busyTransactionId = null,
   onCategoryChange,
   onConfirmExpense,
+  onDeleteTransaction,
   onToggleAnalytics,
 }: {
   transactions: BankTransaction[];
@@ -16,6 +17,7 @@ export function BankTransactionList({
   busyTransactionId?: string | null;
   onCategoryChange: (transaction: BankTransaction, categoryId: string) => void;
   onConfirmExpense: (transaction: BankTransaction, categoryId: string) => void;
+  onDeleteTransaction: (transaction: BankTransaction) => void;
   onToggleAnalytics: (transaction: BankTransaction, excluded: boolean) => void;
 }) {
   const { t } = useI18n();
@@ -37,6 +39,7 @@ export function BankTransactionList({
           busy={busyTransactionId === transaction.id}
           onCategoryChange={onCategoryChange}
           onConfirmExpense={onConfirmExpense}
+          onDeleteTransaction={onDeleteTransaction}
           onToggleAnalytics={onToggleAnalytics}
         />
       ))}

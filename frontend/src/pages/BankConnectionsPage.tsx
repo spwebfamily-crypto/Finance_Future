@@ -7,6 +7,7 @@ import { ErrorState, LoadingState } from "../components/States";
 import { NoticeToast } from "../components/NoticeToast";
 import { PageHeader } from "../components/PageHeader";
 import { openBankingApi } from "../api/resources";
+import { notifyBankSyncCompleted } from "../api/bank-sync-events";
 import { errorMessage } from "../api/client";
 import type { BankConnectionSummary, BankInstitution, BankRetention, BankSyncJob } from "../types";
 import { useI18n } from "../i18n/I18nContext";
@@ -97,6 +98,7 @@ export function BankConnectionsPage() {
             remaining.push(job);
           } else if (!cancelled) {
             hasFinishedJob = true;
+            notifyBankSyncCompleted(job.connectionId);
             setNotice(
               status.status === "completed"
                 ? t("Sincronização concluída. Os gastos contabilizados já estão em Despesas.")

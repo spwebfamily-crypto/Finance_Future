@@ -23,6 +23,7 @@ import { ConfirmDialog } from "../components/ConfirmDialog";
 import { EmailVerificationBanner } from "../components/EmailVerificationBanner";
 import { DailyBankReviewModal } from "../components/DailyBankReviewModal";
 import { openBankingApi } from "../api/resources";
+import { notifyBankSyncCompleted } from "../api/bank-sync-events";
 import { LanguageSwitcher, useI18n } from "../i18n/I18nContext";
 import {
   preloadAccountsPage,
@@ -61,6 +62,21 @@ const secondaryLinks = [
   { to: "/accounts/connections", label: "Bancos", preload: preloadBankConnectionsPage },
   { to: "/privacy", label: "Privacidade", preload: preloadPrivacyPage },
 ];
+
+async function waitForBankSync(jobId: string, connectionId: string) {
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    try {
+      const job = await openBankingApi.syncJob(jobId);
+      if (job.status !== "queued" && job.status !== "running") {
+        notifyBankSyncCompleted(connectionId);
+        return;
+      }
+    } catch {
+      return;
+    }
+    await new Promise((resolve) => window.setTimeout(resolve, 1500));
+  }
+}
 
 function DesktopNavigation() {
   const { t } = useI18n();
@@ -332,7 +348,10 @@ export function AppShell() {
         return Promise.allSettled(
           connections
             .filter((connection) => connection.status === "active" && connection.accountCount > 0)
-            .map((connection) => openBankingApi.sync(connection.id)),
+            .map(async (connection) => {
+              const job = await openBankingApi.sync(connection.id);
+              await waitForBankSync(job.jobId, connection.id);
+            }),
         );
       })
       .catch(() => undefined);

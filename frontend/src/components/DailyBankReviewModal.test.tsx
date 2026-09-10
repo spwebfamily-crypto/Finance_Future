@@ -7,6 +7,7 @@ const api = vi.hoisted(() => ({
   connections: vi.fn(),
   transactions: vi.fn(),
   reviewTransaction: vi.fn(),
+  deleteTransaction: vi.fn(),
   categories: vi.fn(),
 }));
 
@@ -15,6 +16,7 @@ vi.mock("../api/resources", () => ({
     connections: api.connections,
     transactions: api.transactions,
     reviewTransaction: api.reviewTransaction,
+    deleteTransaction: api.deleteTransaction,
   },
   categoryApi: { list: api.categories },
 }));
@@ -77,6 +79,7 @@ describe("DailyBankReviewModal", () => {
       meta: { page: 1, pageSize: 200, total: 1, pageCount: 1 },
     });
     api.reviewTransaction.mockResolvedValue({ id: "transaction-1", reviewedAt: today });
+    api.deleteTransaction.mockResolvedValue({ id: "transaction-1", status: "removed", classification: "ignored", reviewedAt: today });
   });
 
   it("opens after login for a linked bank and saves the selected category", async () => {
@@ -92,6 +95,7 @@ describe("DailyBankReviewModal", () => {
     await waitFor(() =>
       expect(api.reviewTransaction).toHaveBeenCalledWith("transaction-1", {
         categoryId: "category-food",
+        classification: "expense",
       }),
     );
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
