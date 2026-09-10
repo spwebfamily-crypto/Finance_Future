@@ -13474,6 +13474,240 @@ a.auth-forgot {
 }
 .landing-page--product-led .landing-nav__cta .anti-metal-button__signal { width: 2rem; }
 .landing-page--product-led .landing-button--large { width: 10.25rem; height: 3.125rem; }
+
+/* Glyph Portal hero: the field is decorative, while all product copy remains in the DOM. */
+.landing-page--product-led .landing-glyph-hero {
+  --gp-length: 2.3;
+  --gp-height: 100svh;
+  --gp-field: var(--abyss-deep);
+  --gp-ink: var(--mist);
+  --gp-foreground: var(--mist);
+  min-height: calc(var(--gp-length) * 100svh);
+  color: var(--mist);
+  background: var(--abyss-deep);
+}
+
+.landing-page--product-led .landing-glyph-hero [data-gp-pin] {
+  min-height: 34rem;
+}
+
+.landing-page--product-led .landing-glyph-hero [data-gp-field] {
+  overflow: hidden;
+  background: var(--abyss-deep);
+}
+
+.landing-page--product-led .landing-glyph-hero .landing-hero__animated-gradient,
+.landing-page--product-led .landing-glyph-hero .landing-hero__rays {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.landing-page--product-led .landing-glyph-hero .landing-hero__signal {
+  z-index: 1;
+}
+
+.landing-page--product-led .landing-glyph-hero__front {
+  display: grid;
+  min-height: 100%;
+  align-content: start;
+  justify-items: center;
+  gap: 1rem;
+  padding: clamp(9rem, 20vh, 13rem) clamp(1.25rem, 6vw, 6rem) 4rem;
+  color: var(--mist);
+  text-align: center;
+}
+
+.landing-page--product-led .landing-glyph-hero__front .brand {
+  position: absolute;
+  top: clamp(1.25rem, 4vw, 3rem);
+  left: clamp(1.25rem, 5vw, 5rem);
+}
+
+.landing-page--product-led .landing-glyph-hero__front .brand__word {
+  color: var(--abyss-deep) !important;
+}
+
+.landing-page--product-led .landing-glyph-hero__front .brand__word > span {
+  color: #176747 !important;
+}
+
+.landing-page--product-led .landing-glyph-hero__front .landing-kicker {
+  margin: 0;
+  color: var(--phosphor);
+}
+
+.landing-page--product-led .landing-glyph-hero__front > p:last-child {
+  max-width: 19ch;
+  margin: 0;
+  color: var(--abyss-deep);
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 4vw, 3.75rem);
+  letter-spacing: -0.05em;
+  line-height: 1.02;
+  text-wrap: balance;
+}
+
+.landing-page--product-led .landing-glyph-hero [data-gp-caption] {
+  color: var(--mist);
+}
+
+.landing-page--product-led .landing-glyph-hero [data-gp-hint] {
+  color: var(--silver);
+}
+
+.landing-page--product-led .landing-glyph-hero [data-gp-enter] {
+  padding: 0.7rem 1rem;
+  color: var(--abyss-deep);
+  background: var(--phosphor);
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.landing-page--product-led .landing-glyph-hero [data-gp-enter]:hover {
+  background: var(--mist);
+}
+
+.landing-page--product-led .landing-portal-reveal {
+  display: grid;
+  width: min(100%, 80rem);
+  grid-template-columns: minmax(0, 1.05fr) minmax(18rem, 0.95fr);
+  align-items: center;
+  gap: clamp(2rem, 6vw, 6rem);
+  margin: 0 auto;
+}
+
+.landing-page--product-led .landing-portal-reveal__copy {
+  min-width: 0;
+}
+
+.landing-page--product-led .landing-portal-reveal__copy .landing-kicker {
+  color: var(--phosphor);
+}
+
+.landing-page--product-led .landing-portal-reveal__copy h1 {
+  max-width: 12ch;
+  margin: 0;
+  color: var(--mist);
+  font-family: var(--font-display);
+  font-size: clamp(2.75rem, 5.5vw, 5.25rem);
+  letter-spacing: -0.06em;
+  line-height: 0.98;
+  text-wrap: balance;
+}
+
+.landing-page--product-led .landing-portal-reveal__copy > p:not(.landing-kicker) {
+  max-width: 36rem;
+  margin: 1.5rem 0 0;
+  color: var(--silver);
+  font-size: clamp(1rem, 1.5vw, 1.2rem);
+  line-height: 1.55;
+}
+
+.landing-page--product-led .landing-portal-reveal__copy > small {
+  display: block;
+  margin-top: 0.9rem;
+  color: var(--silver);
+}
+
+.landing-page--product-led .landing-portal-reveal__visual {
+  min-width: 0;
+}
+
+@media (max-width: 64rem) {
+  .landing-page--product-led .landing-glyph-hero {
+    --gp-length: 1.85;
+  }
+
+  .landing-page--product-led .landing-portal-reveal {
+    grid-template-columns: 1fr;
+    gap: 2.25rem;
+  }
+
+  .landing-page--product-led .landing-portal-reveal__visual {
+    width: min(100%, 38rem);
+  }
+}
+
+@media (max-width: 42rem) {
+  .landing-page--product-led .landing-glyph-hero {
+    --gp-length: 1.35;
+    min-height: calc(var(--gp-length) * 100svh);
+  }
+
+  .landing-page--product-led .landing-glyph-hero [data-gp-pin] {
+    min-height: 30rem;
+  }
+
+  .landing-page--product-led .landing-glyph-hero__front {
+    padding-inline: 1.25rem;
+  }
+
+  .landing-page--product-led .landing-glyph-hero__front .brand {
+    top: 1.25rem;
+    left: 1.25rem;
+  }
+
+  .landing-page--product-led .landing-glyph-hero__front > p:last-child {
+    max-width: 12ch;
+    font-size: clamp(2rem, 10vw, 3.3rem);
+  }
+
+  .landing-page--product-led .landing-glyph-hero [data-gp-caption] {
+    inset: auto 1rem 1.25rem;
+  }
+
+  .landing-page--product-led .landing-glyph-hero [data-gp-hint] {
+    display: none;
+  }
+
+  .landing-page--product-led .landing-portal-reveal {
+    gap: 2rem;
+  }
+
+  .landing-page--product-led .landing-portal-reveal__copy h1 {
+    font-size: clamp(2.65rem, 12vw, 4rem);
+  }
+
+  .landing-page--product-led .landing-portal-reveal__copy .landing-hero__actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .landing-page--product-led .landing-portal-reveal__copy .landing-hero__actions > * {
+    width: 100%;
+  }
+}
+
+@media (max-height: 30rem) and (orientation: landscape) {
+  .landing-page--product-led .landing-glyph-hero {
+    --gp-length: 1;
+    min-height: 100svh;
+  }
+
+  .landing-page--product-led .landing-glyph-hero [data-gp-pin] {
+    min-height: 24rem;
+  }
+
+  .landing-page--product-led .landing-glyph-hero [data-gp-caption] {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-page--product-led .landing-glyph-hero {
+    min-height: 0;
+  }
+
+  .landing-page--product-led .landing-glyph-hero .landing-hero__animated-gradient,
+  .landing-page--product-led .landing-glyph-hero .landing-hero__rays,
+  .landing-page--product-led .landing-glyph-hero .landing-hero__signal {
+    display: none;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .landing-page--product-led .anti-metal-button,
   .landing-page--product-led .anti-metal-button__signal,

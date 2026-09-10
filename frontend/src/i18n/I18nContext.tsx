@@ -569,6 +569,11 @@ const en: Messages = {
   "Abrir app": "Open app",
   "Abrir menu": "Open menu",
   "Fechar menu": "Close menu",
+  "Entrar na secção": "Enter section",
+  "Deslize para entrar": "Scroll to enter",
+  "Escolha uma letra": "Choose a letter",
+  "Portal visual do ExpenseSnap": "ExpenseSnap visual portal",
+  "Uma nova forma de organizar o dinheiro.": "A new way to organise your money.",
 };
 
 const es: Messages = {
@@ -1132,6 +1137,11 @@ const es: Messages = {
   "Abrir app": "Abrir app",
   "Abrir menu": "Abrir menú",
   "Fechar menu": "Cerrar menú",
+  "Entrar na secção": "Entrar en la sección",
+  "Deslize para entrar": "Desliza para entrar",
+  "Escolha uma letra": "Elige una letra",
+  "Portal visual do ExpenseSnap": "Portal visual de ExpenseSnap",
+  "Uma nova forma de organizar o dinheiro.": "Una nueva forma de organizar tu dinero.",
 };
 
 const catalogs: Record<AppLocale, Messages> = { "pt-PT": {}, "en-GB": en, "es-ES": es };

@@ -24,6 +24,7 @@ import { GradientWaveText } from "../components/ui/gradient-wave-text";
 import { IPhoneMockup } from "../components/ui/iphone-mockup";
 import Rays from "../components/ui/light-rays";
 import { AntiMetalButton } from "../components/ui/anti-metal-button";
+import { GlyphPortal } from "../components/ui/glyph-portal";
 import { liveAppUrl } from "../config/liveApp";
 import { LanguageSwitcher, useI18n } from "../i18n/I18nContext";
 
@@ -175,50 +176,70 @@ export function LandingPage() {
       </header>
 
       <div id="landing-content">
-        <section className="landing-hero" aria-labelledby="landing-title">
-          <AnimatedGradient
-            className="landing-hero__animated-gradient"
-            config={{
-              preset: "custom",
-              color1: "#1b1d16",
-              color2: "#103f32",
-              color3: "#718d34",
-              rotation: -42,
-              proportion: 24,
-              scale: 0.38,
-              speed: 10,
-              distortion: 8,
-              swirl: 34,
-              swirlIterations: 4,
-              softness: 90,
-              offset: -8,
-              shape: "Edge",
-              shapeSize: 48,
-            }}
-            noise={{ opacity: 0.04, scale: 0.7 }}
-            style={{ zIndex: 0 }}
-          />
-          <Rays
-            className="landing-hero__rays"
-            intensity={11}
-            rays={24}
-            reach={26}
-            position={74}
-            backgroundColor="transparent"
-            animation={{ animate: true, speed: 2.5 }}
-            raysColor={{ mode: "multi", color1: "#bbf451", color2: "#198266" }}
-            style={{ zIndex: 1 }}
-          />
-          <div className="landing-hero__signal" aria-hidden="true"><i /><i /><i /><i /><i /></div>
-          <div className="landing-hero__copy">
-            <p className="landing-kicker"><Sparkles aria-hidden="true" /> {t("Finanças pessoais, sem ruído")}</p>
-            <h1 id="landing-title"><GradientWaveText className="landing-hero__wave" speed={0.45} repeat inView customColors={["#f4f5ed", "#dceab7", "#bbf451", "#198266", "#bbf451", "#f4f5ed"]} ariaLabel={`${t("Saiba para onde vai o seu dinheiro.")} ${t("Decida o que vem a seguir.")}`}>{t("Saiba para onde vai o seu dinheiro.")}<br />{t("Decida o que vem a seguir.")}</GradientWaveText></h1>
-            <p className="landing-hero__lede">{t("Contas, movimentos e orçamento numa vista simples. Sincronize quando quiser, confirme o que importa e planeie o mês sem folhas de cálculo.")}</p>
-            <div className="landing-hero__actions"><AntiMetalButton className="landing-button--large" href={registerHref} label={t("Começar grátis")} /><a className="button button--secondary landing-button--large" href="#produto">{t("Explorar o produto")}</a></div>
-            <small>{t("Sem cartão. Comece ao seu ritmo.")}</small>
+        <GlyphPortal
+          className="landing-glyph-hero"
+          word="EXPENSESNAP"
+          scrollLength={2.3}
+          enterLabel={t("Entrar na secção")}
+          enterHint={t("Deslize para entrar")}
+          chooseLetterLabel={t("Escolha uma letra")}
+          ariaLabel={t("Portal visual do ExpenseSnap")}
+          fontFamily="var(--font-display), Arial, sans-serif"
+          background={
+            <>
+              <AnimatedGradient
+                className="landing-hero__animated-gradient"
+                config={{
+                  preset: "custom",
+                  color1: "#1b1d16",
+                  color2: "#103f32",
+                  color3: "#718d34",
+                  rotation: -42,
+                  proportion: 24,
+                  scale: 0.38,
+                  speed: 10,
+                  distortion: 8,
+                  swirl: 34,
+                  swirlIterations: 4,
+                  softness: 90,
+                  offset: -8,
+                  shape: "Edge",
+                  shapeSize: 48,
+                }}
+                noise={{ opacity: 0.04, scale: 0.7 }}
+              />
+              <Rays
+                className="landing-hero__rays"
+                intensity={11}
+                rays={24}
+                reach={26}
+                position={74}
+                backgroundColor="transparent"
+                animation={{ animate: true, speed: 2.5 }}
+                raysColor={{ mode: "multi", color1: "#bbf451", color2: "#198266" }}
+              />
+              <div className="landing-hero__signal" aria-hidden="true"><i /><i /><i /><i /><i /></div>
+            </>
+          }
+          front={
+            <div className="landing-glyph-hero__front">
+              <Brand linked={false} compact />
+              <p className="landing-kicker"><Sparkles aria-hidden="true" /> {t("Finanças pessoais, sem ruído")}</p>
+              <p>{t("Uma nova forma de organizar o dinheiro.")}</p>
+            </div>
+          }
+        >
+          <div className="landing-portal-reveal">
+            <div className="landing-portal-reveal__copy">
+              <p className="landing-kicker"><Sparkles aria-hidden="true" /> {t("Finanças pessoais, sem ruído")}</p>
+              <h1 id="landing-title"><GradientWaveText className="landing-hero__wave" speed={0.45} repeat inView customColors={["#f4f5ed", "#dceab7", "#bbf451", "#198266", "#bbf451", "#f4f5ed"]} ariaLabel={`${t("Saiba para onde vai o seu dinheiro.")} ${t("Decida o que vem a seguir.")}`}>{t("Saiba para onde vai o seu dinheiro.")}<br />{t("Decida o que vem a seguir.")}</GradientWaveText></h1>
+              <p>{t("Contas, movimentos e orçamento numa vista simples. Sincronize quando quiser, confirme o que importa e planeie o mês sem folhas de cálculo.")}</p>
+              <div className="landing-hero__actions"><AntiMetalButton className="landing-button--large" href={registerHref} label={t("Começar grátis")} /><a className="button button--secondary landing-button--large" href="#produto">{t("Explorar o produto")}</a></div>
+              <small>{t("Sem cartão. Comece ao seu ritmo.")}</small>
+            </div>
+            <div className="landing-portal-reveal__visual"><ProductPreview /></div>
           </div>
-          <div className="landing-hero__visual"><ProductPreview /></div>
-        </section>
+        </GlyphPortal>
 
         <section className="landing-principles" aria-label={t("Princípios do produto")}><p>{t("Uma rotina financeira que cabe no seu dia.")}</p><ul><li><Check aria-hidden="true" /> {t("Sincronização sob pedido")}</li><li><Check aria-hidden="true" /> {t("Confirmação humana")}</li><li><Check aria-hidden="true" /> {t("Dados sob controlo")}</li></ul></section>
 
