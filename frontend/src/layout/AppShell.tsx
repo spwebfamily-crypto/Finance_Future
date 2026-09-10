@@ -22,6 +22,7 @@ import { CommandPaletteProvider, CommandPaletteTrigger } from "../components/Com
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { EmailVerificationBanner } from "../components/EmailVerificationBanner";
 import { DailyBankReviewModal } from "../components/DailyBankReviewModal";
+import { openBankingApi } from "../api/resources";
 import { LanguageSwitcher, useI18n } from "../i18n/I18nContext";
 import {
   preloadAccountsPage,
@@ -314,10 +315,31 @@ export function AppShell() {
   const [isOffline, setIsOffline] = useState(
     () => typeof navigator !== "undefined" && !navigator.onLine,
   );
+  const autoSyncUserRef = useRef<string | null>(null);
 
   useEffect(() => {
     setMoreOpen(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    if (!user?.id || isOffline || autoSyncUserRef.current === user.id) return;
+    autoSyncUserRef.current = user.id;
+    let active = true;
+    void openBankingApi
+      .connections()
+      .then((connections) => {
+        if (!active) return;
+        return Promise.allSettled(
+          connections
+            .filter((connection) => connection.status === "active" && connection.accountCount > 0)
+            .map((connection) => openBankingApi.sync(connection.id)),
+        );
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [isOffline, user?.id]);
 
   useEffect(() => {
     const online = () => setIsOffline(false);

@@ -115,6 +115,7 @@ describe("materialization", () => {
       amount: "42.50",
       description: "Compra Continente",
       counterpartyName: "Continente",
+      classification: "expense",
     });
     const credit = await seedTransaction(link.id as string, {
       direction: "credit",
@@ -159,6 +160,7 @@ describe("materialization", () => {
       direction: "debit",
       amount: "30.00",
       description: "Comboio",
+      classification: "expense",
     });
 
     await materializeBookedTransactions(userId);
@@ -178,7 +180,7 @@ describe("materialization", () => {
     expect(stored!.classification).toBe("expense");
   });
 
-  it("never materializes pending transactions", async () => {
+  it("keeps an unreviewed pending transaction out of expenses", async () => {
     await seedCategory();
     const { link } = await seedBankAccount({ displayName: "Conta", hash: "hash-1" });
     await seedTransaction(link.id as string, {
@@ -190,8 +192,25 @@ describe("materialization", () => {
 
     const counters = await materializeBookedTransactions(userId);
 
-    expect(counters).toMatchObject({ expensesCreated: 0, skipped: 0 });
+    expect(counters).toMatchObject({ expensesCreated: 0, skipped: 1 });
     expect(await prisma.expense.count({ where: { userId } })).toBe(0);
+  });
+
+  it("materializes a pending debit after the user confirms it as an expense", async () => {
+    await seedCategory();
+    const { link } = await seedBankAccount({ displayName: "Conta", hash: "hash-1" });
+    await seedTransaction(link.id as string, {
+      status: "pending",
+      direction: "debit",
+      amount: "15.00",
+      description: "Pagamento pendente",
+      classification: "expense",
+    });
+
+    const counters = await materializeBookedTransactions(userId);
+
+    expect(counters.expensesCreated).toBe(1);
+    expect(await prisma.expense.count({ where: { userId } })).toBe(1);
   });
 
   it("treats a matching credit as a refund instead of income", async () => {
@@ -328,6 +347,7 @@ describe("internal transfer matching", () => {
       description: "Saída para outra conta",
       counterpartyAccountHash: hmacHex(`iban:${normalizeIban(ibanB)}`),
       bookingDate: "2026-08-10T00:00:00.000Z",
+      classification: "expense",
     });
     const credit = await seedTransaction(destination.link.id as string, {
       direction: "credit",

@@ -368,7 +368,13 @@ async function upsertTransaction(
   if (existing) {
     const updated = await prisma.bankTransaction.update({
       where: { id: existing.id },
-      data: values,
+      // Um movimento apagado pelo utilizador fica como tombstone. Atualizamos
+      // os dados vindos do banco para manter a deduplicação, mas nunca o
+      // reativamos nem o devolvemos à fila de revisão.
+      data: {
+        ...values,
+        status: existing.status === "removed" ? "removed" : transaction.status,
+      },
     });
     return { created: false, transaction: updated };
   }

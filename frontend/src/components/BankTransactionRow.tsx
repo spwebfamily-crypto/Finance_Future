@@ -26,17 +26,21 @@ export function BankTransactionRow({
   categories,
   busy = false,
   onCategoryChange,
+  onConfirmExpense,
   onToggleAnalytics,
 }: {
   transaction: BankTransaction;
   categories: Array<{ id: string; name: string }>;
   busy?: boolean;
   onCategoryChange: (transaction: BankTransaction, categoryId: string) => void;
+  onConfirmExpense: (transaction: BankTransaction, categoryId: string) => void;
   onToggleAnalytics: (transaction: BankTransaction, excluded: boolean) => void;
 }) {
   const { t, locale } = useI18n();
   const isPending = transaction.status === "pending";
   const isCredit = transaction.direction === "credit";
+  const needsReview = transaction.direction === "debit" && transaction.classification === "unreviewed";
+  const selectedCategoryId = transaction.expense?.categoryId ?? categories[0]?.id ?? "";
 
   return (
     <article className={`bank-transaction-row${isPending ? " bank-transaction-row--pending" : ""}`}>
@@ -58,13 +62,16 @@ export function BankTransactionRow({
       </strong>
 
       <div className="bank-transaction-row__actions">
-        {transaction.expense && (
+        {(transaction.expense || needsReview) && (
           <label className="field field--inline">
             <span>{t("Categoria")}</span>
             <select
-              value={transaction.expense.categoryId}
+              value={selectedCategoryId}
               disabled={busy}
-              onChange={(event) => onCategoryChange(transaction, event.target.value)}
+              onChange={(event) => {
+                if (needsReview) onConfirmExpense(transaction, event.target.value);
+                else onCategoryChange(transaction, event.target.value);
+              }}
             >
               {categories.map((category) => (
                 <option key={category.id} value={category.id}>
@@ -73,6 +80,16 @@ export function BankTransactionRow({
               ))}
             </select>
           </label>
+        )}
+        {needsReview && (
+          <button
+            className="button button--primary button--small"
+            type="button"
+            disabled={busy || !selectedCategoryId}
+            onClick={() => onConfirmExpense(transaction, selectedCategoryId)}
+          >
+            {t("Confirmar gasto")}
+          </button>
         )}
         <label className="switch">
           <input

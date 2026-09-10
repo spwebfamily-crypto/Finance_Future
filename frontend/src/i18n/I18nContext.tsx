@@ -188,13 +188,27 @@ const en: Messages = {
   "Não contar como despesa": "Do not count as an expense",
   "Conta ligada ao banco": "Bank-connected account",
   "Conta manual": "Manual account",
-  "Cada gasto contabilizado entra nas despesas. Pendentes e transferências próprias ficam de fora.":
-    "Each booked outgoing transaction becomes an expense. Pending items and internal transfers are excluded.",
+  "Os movimentos ficam por rever até confirmar se são gastos. Pendentes também podem entrar nas despesas.":
+    "Transactions stay to review until you confirm they are expenses. Pending items can also be included.",
+  "Confirme os débitos que são gastos. Pendentes e contabilizados ficam visíveis até decidir.":
+    "Confirm which debits are expenses. Pending and booked items stay visible until you decide.",
+  "Confirmar gasto": "Confirm expense",
+  "Gasto confirmado.": "Expense confirmed.",
+  "Não é um gasto": "Not an expense",
+  "Classifique os gastos de hoje": "Review today's bank movements",
+  "Confirme uma categoria para manter os seus resumos organizados.":
+    "Confirm a category to keep your summaries organised.",
+  "Sincronizado pelo banco": "Synced from your bank",
+  "Por classificar": "To review",
+  "Mais tarde": "Later",
+  "Guardar e continuar": "Save and continue",
+  Concluir: "Done",
+  "Entre para consultar as suas finanças.": "Sign in to see your finances.",
   "Saldo e movimentos desta conta.": "Balance and activity for this account.",
   Voltar: "Back",
   "Histórico da conta": "Account activity",
   "Débitos contabilizados aparecem em Despesas. Use a categoria para os organizar, ou exclua o que não quiser contar.":
-    "Booked debits appear in Expenses. Use categories to organise them, or exclude items you do not want to count.",
+    "Booked debits appear in Expenses. Confirm the ones you want to count and exclude anything else.",
   Estado: "Status",
   Classificação: "Classification",
   "Todos os estados": "All statuses",
@@ -544,8 +558,22 @@ const es: Messages = {
   "Não contar como despesa": "No contar como gasto",
   "Conta ligada ao banco": "Cuenta conectada al banco",
   "Conta manual": "Cuenta manual",
-  "Cada gasto contabilizado entra nas despesas. Pendentes e transferências próprias ficam de fora.":
-    "Cada cargo contabilizado se convierte en gasto. Los pendientes y transferencias internas quedan fuera.",
+  "Os movimentos ficam por rever até confirmar se são gastos. Pendentes também podem entrar nas despesas.":
+    "Los movimientos quedan pendientes de revisión hasta confirmar que son gastos. Los pendientes también pueden incluirse.",
+  "Confirme os débitos que são gastos. Pendentes e contabilizados ficam visíveis até decidir.":
+    "Confirma qué débitos son gastos. Los pendientes y contabilizados siguen visibles hasta decidir.",
+  "Confirmar gasto": "Confirmar gasto",
+  "Gasto confirmado.": "Gasto confirmado.",
+  "Não é um gasto": "No es un gasto",
+  "Classifique os gastos de hoje": "Revisa los movimientos de hoy",
+  "Confirme uma categoria para manter os seus resumos organizados.":
+    "Confirma una categoría para mantener tus resúmenes organizados.",
+  "Sincronizado pelo banco": "Sincronizado por el banco",
+  "Por classificar": "Por revisar",
+  "Mais tarde": "Más tarde",
+  "Guardar e continuar": "Guardar y continuar",
+  Concluir: "Listo",
+  "Entre para consultar as suas finanças.": "Inicia sesión para consultar tus finanzas.",
   "Saldo e movimentos desta conta.": "Saldo y movimientos de esta cuenta.",
   Voltar: "Volver",
   "Histórico da conta": "Historial de la cuenta",

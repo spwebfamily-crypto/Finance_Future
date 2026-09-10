@@ -510,4 +510,13 @@ export const openBankingApi = {
         { method: "PATCH", body: { ...input }, cacheResponse: false },
       ),
     ),
+  deleteTransaction: async (transactionId: string) =>
+    unwrap(
+      await apiRequest<
+        ApiEnvelope<Pick<BankTransaction, "id" | "status" | "classification" | "reviewedAt">>
+      >(`/open-banking/transactions/${transactionId}`, {
+        method: "DELETE",
+        cacheResponse: false,
+      }),
+    ),
 };

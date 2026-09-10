@@ -3,10 +3,12 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, Check, Landmark, ReceiptText, X } from "lucide-react";
 import { categoryApi, openBankingApi } from "../api/resources";
 import { errorMessage } from "../api/client";
+import { BANK_SYNC_COMPLETED_EVENT } from "../api/bank-sync-events";
 import { useAuth } from "../auth/AuthContext";
 import { useI18n } from "../i18n/I18nContext";
 import type { BankTransaction, Category } from "../types";
 import { TiltCard } from "./TiltCard";
+import { ConfirmDialog } from "./ConfirmDialog";
 
 function localDateKey(date: Date, timeZone: string) {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -41,6 +43,8 @@ export function DailyBankReviewModal() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
   const [error, setError] = useState("");
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
   const current = transactions[0] ?? null;
@@ -62,8 +66,7 @@ export function DailyBankReviewModal() {
           return;
         const [transactionResult, nextCategories] = await Promise.all([
           openBankingApi.transactions({
-            status: "booked",
-            from: shiftDateKey(today, -1),
+            from: shiftDateKey(today, -7),
             to: shiftDateKey(today, 1),
             pageSize: 200,
           }),
@@ -74,10 +77,11 @@ export function DailyBankReviewModal() {
           const date = transactionDate(transaction);
           return (
             transaction.direction === "debit" &&
-            transaction.classification === "expense" &&
+            transaction.classification === "unreviewed" &&
             !transaction.excludedFromAnalytics &&
             !transaction.reviewedAt &&
-            Boolean(transaction.expense) &&
+            transaction.status !== "rejected" &&
+            transaction.status !== "removed" &&
             Boolean(date) &&
             localDateKey(new Date(date!), userTimeZone) === today
           );
@@ -93,8 +97,10 @@ export function DailyBankReviewModal() {
     }
 
     void loadReviewQueue();
+    window.addEventListener(BANK_SYNC_COMPLETED_EVENT, loadReviewQueue);
     return () => {
       active = false;
+      window.removeEventListener(BANK_SYNC_COMPLETED_EVENT, loadReviewQueue);
     };
   }, [userId, userTimeZone]);
 
@@ -155,7 +161,10 @@ export function DailyBankReviewModal() {
     setBusy(true);
     setError("");
     try {
-      await openBankingApi.reviewTransaction(current.id, { categoryId: selectedCategoryId });
+      await openBankingApi.reviewTransaction(current.id, {
+        categoryId: selectedCategoryId,
+        classification: "expense",
+      });
       const remaining = transactions.slice(1);
       setTransactions(remaining);
       if (!remaining.length) {
@@ -167,6 +176,41 @@ export function DailyBankReviewModal() {
       setError(errorMessage(requestError));
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function ignoreAndContinue() {
+    if (!current || busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      await openBankingApi.reviewTransaction(current.id, { excludedFromAnalytics: true });
+      const remaining = transactions.slice(1);
+      setTransactions(remaining);
+      if (!remaining.length) setOpen(false);
+      else setSelectedCategoryId(remaining[0].expense?.categoryId ?? categories[0]?.id ?? "");
+    } catch (requestError) {
+      setError(errorMessage(requestError));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function deleteCurrent() {
+    if (!current || deleteBusy) return;
+    setDeleteBusy(true);
+    setError("");
+    try {
+      await openBankingApi.deleteTransaction(current.id);
+      const remaining = transactions.slice(1);
+      setTransactions(remaining);
+      setDeleteConfirmOpen(false);
+      if (!remaining.length) setOpen(false);
+      else setSelectedCategoryId(remaining[0].expense?.categoryId ?? categories[0]?.id ?? "");
+    } catch (requestError) {
+      setError(errorMessage(requestError));
+    } finally {
+      setDeleteBusy(false);
     }
   }
 
@@ -238,6 +282,10 @@ export function DailyBankReviewModal() {
                 </div>
                 <strong>{amount}</strong>
               </div>
+              <div className="daily-review-card__meta" aria-label={t("Estado do movimento")}>
+                <span>{t(current.status === "pending" ? "Pendente" : "Contabilizado")}</span>
+                <span>{t("Movimento importado do banco")}</span>
+              </div>
             </TiltCard>
 
             <label className="field daily-review-modal__field" htmlFor="daily-review-category">
@@ -272,6 +320,22 @@ export function DailyBankReviewModal() {
                 {t("Mais tarde")}
               </button>
               <button
+                className="button button--ghost"
+                type="button"
+                onClick={() => void ignoreAndContinue()}
+                disabled={busy}
+              >
+                <X aria-hidden="true" /> {t("Não é um gasto")}
+              </button>
+              <button
+                className="button button--danger button--small"
+                type="button"
+                onClick={() => setDeleteConfirmOpen(true)}
+                disabled={busy}
+              >
+                <X aria-hidden="true" /> {t("Apagar movimento")}
+              </button>
+              <button
                 className="button button--primary"
                 type="button"
                 onClick={() => void saveAndContinue()}
@@ -292,6 +356,17 @@ export function DailyBankReviewModal() {
           </motion.section>
         </motion.div>
       )}
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        title={t("Apagar movimento importado?")}
+        description={t(
+          "Este movimento será removido das despesas e não voltará a aparecer após nova sincronização.",
+        )}
+        confirmLabel={t("Apagar movimento")}
+        busy={deleteBusy}
+        onCancel={() => setDeleteConfirmOpen(false)}
+        onConfirm={() => void deleteCurrent()}
+      />
     </AnimatePresence>
   );
 }

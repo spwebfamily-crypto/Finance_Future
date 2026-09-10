@@ -13,10 +13,13 @@ export interface MaterializationCounters {
 }
 
 /**
- * Só movimentos contabilizados (`booked`) são materializados. Pendentes nunca
- * criam despesa nem rendimento e por isso não entram nas análises.
+ * Uma despesa só nasce depois de o utilizador a confirmar. A confirmação pode
+ * acontecer enquanto o banco ainda marca o movimento como pendente; por isso
+ * o materializador aceita os dois estados, mas apenas para classificações
+ * explícitas (`expense`). Rendimentos continuam a exigir um movimento
+ * contabilizado.
  */
-export const MATERIALIZABLE_STATUS = "booked";
+export const MATERIALIZABLE_STATUSES = ["booked", "pending"] as const;
 
 const REFUND_WINDOW_DAYS = 45;
 
@@ -228,7 +231,7 @@ export async function materializeBookedTransactions(
   const transactions = await prisma.bankTransaction.findMany({
     where: {
       userId,
-      status: MATERIALIZABLE_STATUS,
+      status: { in: [...MATERIALIZABLE_STATUSES] },
       ...(linkId ? { bankAccountLinkId: linkId } : {}),
     },
     orderBy: { bookingDate: "asc" },
@@ -254,11 +257,19 @@ export async function materializeBookedTransactions(
       continue;
     }
 
-    // 3) Débito = despesa
+    // 3) Débitos só entram depois de confirmação explícita. Isto evita que
+    // transferências, autorizações pendentes ou débitos desconhecidos criem
+    // falsos gastos no painel.
     if (transaction.direction === "debit") {
       if (transaction.transferId) {
         // Já emparelhado como transferência (mas classification não internal_transfer?).
         // Remove materialização órfã se houver.
+        const removed = await removeMaterialization(transaction);
+        if (removed) counters.dematerialized += 1;
+        counters.skipped += 1;
+        continue;
+      }
+      if (transaction.classification !== "expense") {
         const removed = await removeMaterialization(transaction);
         if (removed) counters.dematerialized += 1;
         counters.skipped += 1;
@@ -274,7 +285,11 @@ export async function materializeBookedTransactions(
       continue;
     }
 
-    // 4) Crédito = rendimento (exceto se já for transferência)
+    // 4) Crédito = rendimento contabilizado (exceto se já for transferência).
+    if (transaction.status !== "booked") {
+      counters.skipped += 1;
+      continue;
+    }
     if (transaction.transferId) {
       const removed = await removeMaterialization(transaction);
       if (removed) counters.dematerialized += 1;

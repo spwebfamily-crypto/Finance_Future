@@ -593,6 +593,7 @@ router.patch(
         where: { id: request.params.transactionId, userId: request.user!.id },
         select: {
           id: true,
+          direction: true,
           classification: true,
           expenseId: true,
           incomeId: true,
@@ -622,7 +623,10 @@ router.patch(
           ? "ignored"
           : input.excludedFromAnalytics === false && !input.classification
             ? "unreviewed"
-            : input.classification;
+            : input.classification ??
+              // Choosing a category in the review UI is the explicit
+              // confirmation that an outgoing movement is a real expense.
+              (input.categoryId && transaction.direction === "debit" ? "expense" : undefined);
 
       const updated = await prisma.$transaction(async (client) => {
         if (input.categoryId && transaction.expenseId) {
@@ -640,7 +644,7 @@ router.patch(
             ...(input.excludedFromAnalytics !== undefined
               ? { excludedFromAnalytics: input.excludedFromAnalytics }
               : {}),
-            ...(input.categoryId ? { reviewedAt: new Date() } : {}),
+            ...(input.categoryId || input.classification ? { reviewedAt: new Date() } : {}),
           },
           select: {
             id: true,
@@ -656,6 +660,56 @@ router.patch(
       await materializeBookedTransactions(request.user!.id);
 
       return response.json({ data: updated });
+    } catch (error) {
+      return next(error);
+    }
+  },
+);
+
+/**
+ * Apaga um movimento importado da experiência ativa sem perder o tombstone
+ * usado para impedir que a mesma referência volte numa sincronização futura.
+ */
+router.delete(
+  "/transactions/:transactionId",
+  requireAuth,
+  authenticatedLimiter,
+  async (request: AuthenticatedRequest, response, next) => {
+    try {
+      const transaction = await prisma.bankTransaction.findFirst({
+        where: { id: request.params.transactionId, userId: request.user!.id },
+        select: { id: true, expenseId: true, incomeId: true, transferId: true, status: true },
+      });
+      if (!transaction) throw bankError(404, "BANK_TRANSACTION_NOT_FOUND");
+      if (transaction.status === "removed") {
+        return response.json({
+          data: { id: transaction.id, status: "removed", classification: "ignored" },
+        });
+      }
+      if (transaction.transferId) throw bankError(409, "BANK_TRANSACTION_TRANSFER_REVIEW_REQUIRED");
+
+      const removed = await prisma.$transaction(async (client) => {
+        if (transaction.expenseId) {
+          await client.expense.delete({ where: { id: transaction.expenseId } });
+        }
+        if (transaction.incomeId) {
+          await client.income.delete({ where: { id: transaction.incomeId } });
+        }
+        return client.bankTransaction.update({
+          where: { id: transaction.id },
+          data: {
+            status: "removed",
+            classification: "ignored",
+            excludedFromAnalytics: true,
+            reviewedAt: new Date(),
+            expenseId: null,
+            incomeId: null,
+          },
+          select: { id: true, status: true, classification: true, reviewedAt: true },
+        });
+      });
+
+      return response.json({ data: removed });
     } catch (error) {
       return next(error);
     }

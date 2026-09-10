@@ -328,14 +328,12 @@ describe("sync engine", () => {
 
     const transactions = await prisma.bankTransaction.findMany({ where: { userId } });
     expect(transactions).toHaveLength(2);
-    expect(transactions.map((item) => item.classification).sort()).toEqual(["expense", "income"]);
+    expect(transactions.map((item) => item.classification).sort()).toEqual(["income", "unreviewed"]);
 
     const expenses = await prisma.expense.findMany({ where: { userId } });
     const incomes = await prisma.income.findMany({ where: { userId } });
-    expect(expenses).toHaveLength(1);
+    expect(expenses).toHaveLength(0);
     expect(incomes).toHaveLength(1);
-    expect(expenses[0]!.description).toBe("Compra");
-    expect(expenses[0]!.location).toBe("Movimento bancário");
     expect(String(incomes[0]!.amount)).toMatch(/1250/);
   });
 
