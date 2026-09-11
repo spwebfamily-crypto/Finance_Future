@@ -138,7 +138,55 @@ describe("enable banking http client", () => {
       throw new Error("network down");
     }) as unknown as typeof fetch;
     await expect(
-      enableBankingRequest("/sessions", { credentials, fetchImpl }),
+      enableBankingRequest("/sessions", {
+        credentials,
+        fetchImpl,
+        retryDelay: async () => undefined,
+      }),
     ).rejects.toMatchObject({ code: "provider_unavailable" });
+  });
+
+  it("retries a safe GET after Retry-After but never retries a POST", async () => {
+    let getCalls = 0;
+    const retryDelays: number[] = [];
+    const getFetch = (async () => {
+      getCalls += 1;
+      return getCalls === 1
+        ? new Response(JSON.stringify({ error: "ASPSP_RATE_LIMIT_EXCEEDED" }), {
+            status: 429,
+            headers: { "retry-after": "1" },
+          })
+        : new Response(JSON.stringify({ ok: true }), { status: 200 });
+    }) as unknown as typeof fetch;
+
+    await expect(
+      enableBankingRequest<{ ok: boolean }>("/accounts/1/balances", {
+        credentials,
+        fetchImpl: getFetch,
+        retryDelay: async (milliseconds) => {
+          retryDelays.push(milliseconds);
+        },
+      }),
+    ).resolves.toEqual({ ok: true });
+    expect(getCalls).toBe(2);
+    expect(retryDelays).toEqual([1_000]);
+
+    let postCalls = 0;
+    const postFetch = (async () => {
+      postCalls += 1;
+      return new Response(JSON.stringify({ error: "ASPSP_RATE_LIMIT_EXCEEDED" }), {
+        status: 429,
+      });
+    }) as unknown as typeof fetch;
+    await expect(
+      enableBankingRequest("/sessions", {
+        credentials,
+        method: "POST",
+        body: { code: "one-use" },
+        fetchImpl: postFetch,
+        retryDelay: async () => undefined,
+      }),
+    ).rejects.toMatchObject({ code: "provider_rate_limited" });
+    expect(postCalls).toBe(1);
   });
 });

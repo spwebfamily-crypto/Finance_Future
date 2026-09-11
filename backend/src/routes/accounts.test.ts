@@ -253,6 +253,29 @@ describe("account transfers", () => {
     expect(repositories.transferCreate).not.toHaveBeenCalled();
   });
 
+  it("rejects transfers between different currencies without converting", async () => {
+    repositories.accountFindMany.mockResolvedValue([
+      { id: accountId, currency: "EUR" },
+      { id: secondAccountId, currency: "USD" },
+    ]);
+
+    const response = await fetch(`${baseUrl}/api/accounts/transfers`, {
+      method: "POST",
+      headers: { Authorization: authorization(), "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fromAccountId: accountId,
+        toAccountId: secondAccountId,
+        amount: "250",
+        date: "2026-08-12",
+      }),
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(422);
+    expect(body.error.code).toBe("TRANSFER_CURRENCY_MISMATCH");
+    expect(repositories.transferCreate).not.toHaveBeenCalled();
+  });
+
   it("lists the latest transfers of the authenticated user with presented amounts", async () => {
     repositories.transferFindMany.mockResolvedValue([
       {

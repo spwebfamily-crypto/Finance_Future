@@ -145,6 +145,7 @@ async function materializeExpense(transaction: BankTransaction, categoryId: stri
         description,
         location,
         amount: transaction.amount,
+        currency: transaction.currency,
         date: transactionDate(transaction),
       },
     });
@@ -159,6 +160,7 @@ async function materializeExpense(transaction: BankTransaction, categoryId: stri
       description,
       location,
       amount: transaction.amount,
+      currency: transaction.currency,
       date: transactionDate(transaction),
     },
     select: { id: true },
@@ -183,6 +185,7 @@ async function materializeIncome(transaction: BankTransaction) {
         description,
         source: sanitizeText(transaction.counterpartyName, 120) || null,
         amount: transaction.amount,
+        currency: transaction.currency,
         date: transactionDate(transaction),
       },
     });
@@ -196,6 +199,7 @@ async function materializeIncome(transaction: BankTransaction) {
       description,
       source: sanitizeText(transaction.counterpartyName, 120) || null,
       amount: transaction.amount,
+      currency: transaction.currency,
       date: transactionDate(transaction),
     },
     select: { id: true },

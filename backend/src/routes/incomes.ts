@@ -13,6 +13,7 @@ const incomeSelect = {
   description: true,
   source: true,
   amount: true,
+  currency: true,
   date: true,
   createdAt: true,
   updatedAt: true,
@@ -26,7 +27,15 @@ function presentIncome(income: PublicIncome) {
 }
 
 async function accountBelongsToUser(accountId: string, userId: string) {
-  return prisma.account.findFirst({ where: { id: accountId, userId }, select: { id: true } });
+  return prisma.account.findFirst({
+    where: { id: accountId, userId },
+    select: { id: true, currency: true },
+  });
+}
+
+async function userCurrency(userId: string) {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { currency: true } });
+  return user?.currency ?? "EUR";
 }
 
 router.get("/", async (request: AuthenticatedRequest, response, next) => {
@@ -45,13 +54,17 @@ router.get("/", async (request: AuthenticatedRequest, response, next) => {
 router.post("/", async (request: AuthenticatedRequest, response, next) => {
   try {
     const input = incomeCreateSchema.parse(request.body);
-    if (input.accountId && !(await accountBelongsToUser(input.accountId, request.user!.id))) {
+    const account = input.accountId
+      ? await accountBelongsToUser(input.accountId, request.user!.id)
+      : null;
+    if (input.accountId && !account) {
       return sendError(response, 404, "ACCOUNT_NOT_FOUND", "Conta não encontrada.");
     }
     const income = await prisma.income.create({
       data: {
         ...input,
         source: input.source || null,
+        currency: account?.currency ?? (await userCurrency(request.user!.id)),
         accountId: input.accountId ?? null,
         userId: request.user!.id,
       },
@@ -68,16 +81,26 @@ router.patch("/:id", async (request: AuthenticatedRequest, response, next) => {
     const input = incomeUpdateSchema.parse(request.body);
     const existing = await prisma.income.findFirst({
       where: { id: request.params.id, userId: request.user!.id },
-      select: { id: true },
+      select: { id: true, currency: true, accountId: true },
     });
     if (!existing)
       return sendError(response, 404, "INCOME_NOT_FOUND", "Rendimento não encontrado.");
-    if (input.accountId && !(await accountBelongsToUser(input.accountId, request.user!.id))) {
+    const account =
+      input.accountId !== undefined && input.accountId !== null
+        ? await accountBelongsToUser(input.accountId, request.user!.id)
+        : null;
+    if (input.accountId && !account) {
       return sendError(response, 404, "ACCOUNT_NOT_FOUND", "Conta não encontrada.");
     }
     const income = await prisma.income.update({
       where: { id: existing.id },
-      data: { ...input, ...(input.source === undefined ? {} : { source: input.source || null }) },
+      data: {
+        ...input,
+        ...(input.source === undefined ? {} : { source: input.source || null }),
+        ...(input.accountId === undefined
+          ? {}
+          : { currency: account?.currency ?? (await userCurrency(request.user!.id)) }),
+      },
       select: incomeSelect,
     });
     return response.json({ data: presentIncome(income) });

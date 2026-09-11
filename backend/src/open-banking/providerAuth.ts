@@ -5,6 +5,8 @@ export const ENABLE_BANKING_BASE_URL = "https://api.enablebanking.com";
 /** A documentação fixa o TTL máximo do JWT da aplicação em 24 h; 5 min é suficiente. */
 export const ENABLE_BANKING_JWT_TTL_SECONDS = 300;
 const DEFAULT_TIMEOUT_MS = 15_000;
+const MAX_GET_ATTEMPTS = 3;
+const MAX_RETRY_DELAY_MS = 5_000;
 
 export interface EnableBankingCredentials {
   appId: string;
@@ -110,6 +112,22 @@ export interface EnableBankingRequestOptions {
   query?: Record<string, string | null | undefined>;
   timeoutMs?: number;
   fetchImpl?: typeof fetch;
+  retryDelay?: (milliseconds: number) => Promise<void>;
+}
+
+function retryAfterMilliseconds(response: Response): number | null {
+  const value = response.headers.get("retry-after");
+  if (!value) return null;
+  const seconds = Number(value);
+  if (Number.isFinite(seconds) && seconds >= 0)
+    return Math.min(seconds * 1_000, MAX_RETRY_DELAY_MS);
+  const date = Date.parse(value);
+  if (Number.isNaN(date)) return null;
+  return Math.min(Math.max(0, date - Date.now()), MAX_RETRY_DELAY_MS);
+}
+
+function retryable(error: ProviderError) {
+  return ["provider_rate_limited", "provider_timeout", "provider_unavailable"].includes(error.code);
 }
 
 export async function enableBankingRequest<T>(
@@ -123,6 +141,7 @@ export async function enableBankingRequest<T>(
     query,
     timeoutMs = DEFAULT_TIMEOUT_MS,
     fetchImpl = fetch,
+    retryDelay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds)),
   } = options;
 
   const url = new URL(`${ENABLE_BANKING_BASE_URL}${path}`);
@@ -130,45 +149,51 @@ export async function enableBankingRequest<T>(
     if (value !== undefined && value !== null && value !== "") url.searchParams.set(key, value);
   }
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-  const headers: Record<string, string> = {
-    Accept: "application/json",
-    Authorization: `Bearer ${createEnableBankingJwt(credentials)}`,
-  };
-  if (body !== undefined) headers["Content-Type"] = "application/json";
-
-  try {
-    const response = await fetchImpl(url.toString(), {
-      method,
-      headers,
-      body: body === undefined ? undefined : JSON.stringify(body),
-      signal: controller.signal,
-    });
-
-    const text = await response.text();
-    let parsed: unknown = null;
-    if (text) {
-      try {
-        parsed = JSON.parse(text) as unknown;
-      } catch {
-        throw new ProviderError("provider_invalid_response", response.status);
+  const attempts = method === "GET" ? MAX_GET_ATTEMPTS : 1;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    let retryAfter: number | null = null;
+    try {
+      const headers: Record<string, string> = {
+        Accept: "application/json",
+        Authorization: `Bearer ${createEnableBankingJwt(credentials)}`,
+      };
+      if (body !== undefined) headers["Content-Type"] = "application/json";
+      const response = await fetchImpl(url.toString(), {
+        method,
+        headers,
+        body: body === undefined ? undefined : JSON.stringify(body),
+        signal: controller.signal,
+      });
+      retryAfter = retryAfterMilliseconds(response);
+      const text = await response.text();
+      let parsed: unknown = null;
+      if (text) {
+        try {
+          parsed = JSON.parse(text) as unknown;
+        } catch {
+          throw new ProviderError("provider_invalid_response", response.status);
+        }
       }
+      if (!response.ok) throw mapEnableBankingError(response.status, parsed);
+      return parsed as T;
+    } catch (error) {
+      const mapped =
+        error instanceof ProviderError
+          ? error
+          : error instanceof Error && error.name === "AbortError"
+            ? new ProviderError("provider_timeout")
+            : new ProviderError("provider_unavailable");
+      if (attempt >= attempts || !retryable(mapped)) throw mapped;
+      const exponential = 250 * 2 ** (attempt - 1);
+      const jitter = Math.floor(Math.random() * 100);
+      await retryDelay(retryAfter ?? exponential + jitter);
+    } finally {
+      clearTimeout(timeout);
     }
-
-    if (!response.ok) {
-      throw mapEnableBankingError(response.status, parsed);
-    }
-    return parsed as T;
-  } catch (error) {
-    if (error instanceof ProviderError) throw error;
-    if (error instanceof Error && error.name === "AbortError") {
-      throw new ProviderError("provider_timeout");
-    }
-    throw new ProviderError("provider_unavailable");
-  } finally {
-    clearTimeout(timeout);
   }
+  throw new ProviderError("provider_unavailable");
 }
 
 export type { ProviderErrorCode };

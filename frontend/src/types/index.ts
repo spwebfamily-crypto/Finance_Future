@@ -42,6 +42,7 @@ export interface Expense {
   description: string;
   location: string;
   amount: string | number;
+  currency?: string | null;
   date: string;
   source?: "manual" | "bank";
   receiptImageUrl?: string | null;
@@ -87,6 +88,7 @@ export interface Income {
   accountId?: string | null;
   account?: FinancialAccount | null;
   amount: number;
+  currency?: string | null;
   date: string;
   createdAt: string;
   updatedAt: string;
@@ -292,8 +294,17 @@ export interface AnalyticsSummary {
   previousMonthTotal: number;
   changeAmount: number;
   changePercent: number | null;
+  totalsByCurrency?: Record<string, CurrencyAnalyticsTotal>;
   byDay?: DailyTotal[];
+  byDayByCurrency?: Record<string, DailyTotal[]>;
   byCategory: CategorySummary[];
+}
+
+export interface CurrencyAnalyticsTotal {
+  total: number;
+  previousMonthTotal: number;
+  changeAmount: number;
+  changePercent: number | null;
 }
 
 export interface TodayActivityItem {
@@ -301,6 +312,7 @@ export interface TodayActivityItem {
   type: "expense" | "income" | "transfer";
   description: string;
   amount: number;
+  currency: string;
   date: string;
   accountName: string | null;
   categoryName: string | null;
@@ -315,7 +327,14 @@ export interface TodaySummary {
   expenseTotal: number;
   incomeTotal: number;
   netTotal: number;
+  totalsByCurrency?: Record<string, TodayCurrencyTotals>;
   items: TodayActivityItem[];
+}
+
+export interface TodayCurrencyTotals {
+  expenseTotal: number;
+  incomeTotal: number;
+  netTotal: number;
 }
 
 export interface DailyTotal {
@@ -345,6 +364,7 @@ export interface LevelHistoryPoint {
 export interface TrendPoint {
   month: string;
   total: number;
+  totalsByCurrency?: Record<string, number>;
 }
 
 export interface AnalyticsTrend {

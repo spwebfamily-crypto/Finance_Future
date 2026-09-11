@@ -26,6 +26,7 @@ const repositories = vi.hoisted(() => ({
   attemptFindUnique: vi.fn(),
   attemptUpdateMany: vi.fn(),
   connectionCreate: vi.fn(),
+  connectionUpdate: vi.fn(),
   connectionFindMany: vi.fn(),
   connectionFindFirst: vi.fn(),
   jobCreate: vi.fn(),
@@ -80,11 +81,31 @@ vi.mock("../prisma.js", () => ({
           return row;
         },
       ),
+      update: repositories.connectionUpdate.mockImplementation(
+        async ({ where, data }: { where: { id: string }; data: Record<string, unknown> }) => {
+          const row = repositories.connections.find((connection) => connection.id === where.id);
+          if (!row) throw new Error("connection not found");
+          Object.assign(row, data, { updatedAt: new Date() });
+          return row;
+        },
+      ),
       findMany: repositories.connectionFindMany.mockImplementation(
-        async ({ where }: { where: { userId?: string; status?: { not?: string } } }) =>
+        async ({
+          where,
+        }: {
+          where: {
+            userId?: string;
+            status?: { not?: string };
+            provider?: string;
+            institutionId?: string;
+          };
+        }) =>
           repositories.connections.filter((connection) => {
             if (connection.userId !== where.userId) return false;
             if (where.status?.not && connection.status === where.status.not) return false;
+            if (where.provider && connection.provider !== where.provider) return false;
+            if (where.institutionId && connection.institutionId !== where.institutionId)
+              return false;
             return true;
           }),
       ),
@@ -295,6 +316,40 @@ describe("open banking institutions, authorization and callback", () => {
     expect(callback.status).toBe(303);
     expect(callback.headers.get("location")).toBe(
       "http://localhost:5173/accounts?bankConnection=success",
+    );
+  });
+
+  it("reuses a disconnected connection for the same provider account", async () => {
+    const existing = {
+      id: "connection-to-relink",
+      userId,
+      provider: "fake",
+      institutionId: "PT|Banco Demonstração",
+      institutionName: "Banco Demonstração",
+      institutionCountry: "PT",
+      status: "disconnected",
+      accounts: [{ providerAccountHash: "fake-account-hash-1" }],
+      updatedAt: new Date("2026-09-01T00:00:00.000Z"),
+    };
+    repositories.connections.push(existing);
+
+    const { body } = await startAuthorization();
+    const authorizationId = new URL(body.data.authorizationUrl).searchParams.get(
+      "authorizationId",
+    )!;
+    const bankRedirect = await fetch(
+      `${baseUrl}${new URL(body.data.authorizationUrl).pathname}?authorizationId=${authorizationId}`,
+      { redirect: "manual" },
+    );
+    const callbackUrl = new URL(bankRedirect.headers.get("location")!);
+    const callback = await fetch(localize(callbackUrl.toString()), { redirect: "manual" });
+
+    expect(callback.status).toBe(303);
+    expect(repositories.connections).toHaveLength(1);
+    expect(repositories.connections[0]).toMatchObject({ id: existing.id, status: "active" });
+    expect(repositories.connectionCreate).not.toHaveBeenCalled();
+    expect(repositories.connectionUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: existing.id } }),
     );
   });
 

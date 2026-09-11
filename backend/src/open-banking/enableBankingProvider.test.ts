@@ -233,7 +233,12 @@ describe("enable banking balances and transactions", () => {
       providerAccountId: account.uid,
     });
     expect(balances).toEqual([
-      { kind: "closing_booked", amount: "1250.30", currency: "EUR", referenceDate: "2026-08-30" },
+      {
+        kind: "closing_booked",
+        amount: "1250.30",
+        currency: "EUR",
+        referenceDate: "2026-08-30T00:00:00.000Z",
+      },
       { kind: "closing_available", amount: "1180.30", currency: "EUR", referenceDate: null },
       { kind: "expected", amount: "1170.00", currency: "EUR", referenceDate: null },
       {
@@ -242,6 +247,34 @@ describe("enable banking balances and transactions", () => {
         currency: "EUR",
         referenceDate: null,
       },
+    ]);
+  });
+
+  it("rejects balances without a valid amount or currency instead of inventing EUR", async () => {
+    const { provider } = stubRequest(() => ({
+      balances: [{ balance_type: "XPCD", balance_amount: { amount: "4000.00" } }],
+    }));
+
+    await expect(
+      provider.getBalances({ sessionId: "sess-1", providerAccountId: account.uid }),
+    ).rejects.toMatchObject({ code: "provider_invalid_response" });
+  });
+
+  it("applies the debit indicator to an unsigned balance", async () => {
+    const { provider } = stubRequest(() => ({
+      balances: [
+        {
+          balance_type: "XPCD",
+          credit_debit_indicator: "DBIT",
+          balance_amount: { amount: "42.10", currency: "EUR" },
+        },
+      ],
+    }));
+
+    await expect(
+      provider.getBalances({ sessionId: "sess-1", providerAccountId: account.uid }),
+    ).resolves.toEqual([
+      { kind: "expected", amount: "-42.10", currency: "EUR", referenceDate: null },
     ]);
   });
 

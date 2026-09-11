@@ -328,6 +328,7 @@ router.get("/transfers", async (request: AuthenticatedRequest, response, next) =
       select: {
         id: true,
         amount: true,
+        currency: true,
         description: true,
         date: true,
         createdAt: true,
@@ -353,12 +354,30 @@ router.post("/transfers", async (request: AuthenticatedRequest, response, next) 
     const input = transferCreateSchema.parse(request.body);
     const accounts = await prisma.account.findMany({
       where: { userId: request.user!.id, id: { in: [input.fromAccountId, input.toAccountId] } },
-      select: { id: true },
+      select: { id: true, currency: true },
     });
     if (accounts.length !== 2)
       return sendError(response, 404, "ACCOUNT_NOT_FOUND", "Uma das contas não foi encontrada.");
+    const fromAccount = accounts.find((account) => account.id === input.fromAccountId);
+    const toAccount = accounts.find((account) => account.id === input.toAccountId);
+    if (!fromAccount || !toAccount) {
+      return sendError(response, 404, "ACCOUNT_NOT_FOUND", "Uma das contas não foi encontrada.");
+    }
+    if (fromAccount.currency !== toAccount.currency) {
+      return sendError(
+        response,
+        422,
+        "TRANSFER_CURRENCY_MISMATCH",
+        "As transferências entre contas só podem usar a mesma moeda.",
+      );
+    }
     const transfer = await prisma.transfer.create({
-      data: { ...input, description: input.description || null, userId: request.user!.id },
+      data: {
+        ...input,
+        currency: fromAccount.currency,
+        description: input.description || null,
+        userId: request.user!.id,
+      },
       include: {
         fromAccount: { select: { id: true, name: true } },
         toAccount: { select: { id: true, name: true } },

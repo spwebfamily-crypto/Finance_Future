@@ -543,7 +543,7 @@ export function ExpensesPage() {
                     </div>
                   </div>
                   <p className="expense-row__amount">
-                    {formatCurrency(expense.amount, user?.currency)}
+                    {formatCurrency(expense.amount, expense.currency || user?.currency)}
                   </p>
                   <div className="expense-row__actions">
                     <Link

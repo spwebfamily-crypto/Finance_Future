@@ -123,6 +123,48 @@ export async function createConnection(
   session: ProviderSession,
 ): Promise<BankConnection> {
   const { syncIntervalMinutes } = getOpenBankingConfig();
+  const accountHashes = new Set(session.accounts.map((account) => account.providerAccountHash));
+  const candidates = await prisma.bankConnection.findMany({
+    where: {
+      userId: attempt.userId,
+      provider: attempt.provider,
+      institutionId: session.institutionId || attempt.institutionId,
+    },
+    select: {
+      id: true,
+      accounts: { select: { providerAccountHash: true } },
+      updatedAt: true,
+    },
+  });
+  const reusable = candidates
+    .map((connection) => ({
+      ...connection,
+      overlap: connection.accounts.filter((account) =>
+        accountHashes.has(account.providerAccountHash),
+      ).length,
+    }))
+    .filter((connection) => connection.overlap > 0)
+    .sort(
+      (left, right) =>
+        right.overlap - left.overlap || right.updatedAt.getTime() - left.updatedAt.getTime(),
+    )[0];
+
+  if (reusable) {
+    return prisma.bankConnection.update({
+      where: { id: reusable.id },
+      data: {
+        providerSessionCiphertext: encryptString(session.providerSessionId),
+        institutionName: session.institutionName || attempt.institutionName,
+        institutionCountry: session.institutionCountry || attempt.country,
+        status: "active",
+        consentExpiresAt: parseDate(session.consentExpiresAt),
+        disconnectedAt: null,
+        lastErrorCode: null,
+        lastErrorAt: null,
+        nextSyncAt: new Date(Date.now() + syncIntervalMinutes * 60_000),
+      },
+    });
+  }
   return prisma.bankConnection.create({
     data: {
       userId: attempt.userId,

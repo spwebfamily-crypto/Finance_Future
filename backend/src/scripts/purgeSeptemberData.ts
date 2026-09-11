@@ -9,6 +9,12 @@ function argument(name: string) {
 const year = Number(argument("year") ?? new Date().getUTCFullYear());
 const apply = process.argv.includes("--apply");
 
+if (apply) {
+  throw new Error(
+    "Operação destrutiva bloqueada: setembro só pode ser auditado em dry-run; restauração exige um fluxo separado com backup e confirmação explícita.",
+  );
+}
+
 if (!Number.isInteger(year) || year < 2000 || year > 2200) {
   throw new Error("Use --year=AAAA com um ano válido.");
 }

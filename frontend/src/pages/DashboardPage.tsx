@@ -501,7 +501,7 @@ export function DashboardPage() {
                         </div>
                         <strong className={`today-activity-list__amount is-${item.type}`}>
                           {item.type === "expense" ? "−" : item.type === "income" ? "+" : ""}
-                          {formatCurrency(item.amount, today.currency)}
+                          {formatCurrency(item.amount, item.currency || today.currency)}
                         </strong>
                       </li>
                     ))}

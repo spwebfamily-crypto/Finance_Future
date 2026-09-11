@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { ProviderError, type Institution, type ListInstitutionsInput } from "./contracts.js";
 import { hmacHex, maskIban, normalizeIban } from "./crypto.js";
 import {
@@ -5,7 +6,9 @@ import {
   mapBalanceType,
   mapSessionStatus,
   mapTransaction,
+  normalizeDate,
   normalizeCurrency,
+  normalizeSignedAmount,
   safeLogoUrl,
   sanitizeText,
 } from "./normalize.js";
@@ -66,6 +69,7 @@ interface RawBalances {
   balances?: Array<{
     balance_type?: unknown;
     balance_amount?: { amount?: unknown; currency?: unknown };
+    credit_debit_indicator?: unknown;
     reference_date?: unknown;
   }>;
 }
@@ -204,12 +208,23 @@ export class EnableBankingProvider implements OpenBankingProvider {
       { credentials: this.credentials },
     );
     return (response.balances ?? []).map((balance) => {
-      const currency = normalizeCurrency(balance.balance_amount?.currency) ?? "EUR";
+      const currency = normalizeCurrency(balance.balance_amount?.currency);
+      const normalizedAmount = normalizeSignedAmount(balance.balance_amount?.amount);
+      if (!currency || normalizedAmount === null) {
+        throw new ProviderError("provider_invalid_response");
+      }
+      const decimal = new Prisma.Decimal(normalizedAmount);
+      const amount =
+        balance.credit_debit_indicator === "DBIT"
+          ? decimal.abs().negated().toFixed(2)
+          : balance.credit_debit_indicator === "CRDT"
+            ? decimal.abs().toFixed(2)
+            : decimal.toFixed(2);
       return {
         kind: mapBalanceType(balance.balance_type),
-        amount: String(balance.balance_amount?.amount ?? "0"),
+        amount,
         currency,
-        referenceDate: typeof balance.reference_date === "string" ? balance.reference_date : null,
+        referenceDate: normalizeDate(balance.reference_date),
       };
     });
   }
@@ -285,13 +300,15 @@ function toAccount(raw: RawAccount): ProviderAccount {
     sanitizeText(raw.product, 80) ||
     "Conta bancária";
   const iban = typeof raw.account_id?.iban === "string" ? raw.account_id.iban : null;
+  const currency = normalizeCurrency(raw.currency);
+  if (!currency) throw new ProviderError("provider_invalid_response");
   return {
     providerAccountId: uid,
     providerAccountHash: hash,
     displayName,
     maskedIban: maskIban(iban),
     ibanHash: iban ? hmacHex(`iban:${normalizeIban(iban)}`) : null,
-    currency: normalizeCurrency(raw.currency) ?? "EUR",
+    currency,
     accountType: mapAccountType(raw.cash_account_type),
   };
 }

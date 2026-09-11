@@ -126,7 +126,9 @@ function descriptionsMatch(transaction: ProviderTransaction, candidate: PendingC
 
 /**
  * Procura o movimento pendente que corresponde a uma transação agora
- * contabilizada, quando não há referência estável para casar.
+ * contabilizada. Alguns bancos substituem a referência ao passar de pending
+ * para booked; por isso uma referência diferente não invalida uma combinação
+ * forte de conta, sentido, montante, moeda, data e descrição.
  * Devolve `null` quando a correspondência é ambígua: nesse caso nada é apagado
  * e o movimento fica para revisão.
  */
@@ -134,9 +136,7 @@ export function findPendingCandidate(
   transaction: ProviderTransaction,
   candidates: PendingCandidate[],
 ): { match: PendingCandidate } | { ambiguous: true } | null {
-  // Só se procura correspondência entre registos sem referência estável.
   const matches = candidates.filter((candidate) => {
-    if (candidate.providerEntryReference) return false;
     return datesWithinWindow(transaction, candidate) && descriptionsMatch(transaction, candidate);
   });
 

@@ -112,7 +112,50 @@ describe("analytics daily summary", () => {
     expect(repositories.expenseFindMany.mock.calls[0][0].select).toEqual({
       categoryId: true,
       amount: true,
+      currency: true,
       date: true,
+    });
+  });
+
+  it("keeps analytics totals separate when movements use different currencies", async () => {
+    repositories.expenseFindMany
+      .mockResolvedValueOnce([
+        {
+          categoryId,
+          amount: new Prisma.Decimal("10.00"),
+          currency: "EUR",
+          date: new Date("2026-07-03T08:00:00.000Z"),
+        },
+        {
+          categoryId,
+          amount: new Prisma.Decimal("20.00"),
+          currency: "USD",
+          date: new Date("2026-07-04T08:00:00.000Z"),
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          categoryId,
+          amount: new Prisma.Decimal("5.00"),
+          currency: "USD",
+        },
+      ]);
+
+    const response = await fetch(`${baseUrl}/api/analytics/summary?month=2026-07`, {
+      headers: { Authorization: authorization() },
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.data.total).toBe(10);
+    expect(body.data.totalsByCurrency).toEqual({
+      EUR: { total: 10, previousMonthTotal: 0, changeAmount: 10, changePercent: null },
+      USD: { total: 20, previousMonthTotal: 5, changeAmount: 15, changePercent: 300 },
+    });
+    expect(body.data.byDay).toEqual([{ day: "2026-07-03", total: 10 }]);
+    expect(body.data.byDayByCurrency).toEqual({
+      EUR: [{ day: "2026-07-03", total: 10 }],
+      USD: [{ day: "2026-07-04", total: 20 }],
     });
   });
 

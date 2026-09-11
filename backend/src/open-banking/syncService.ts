@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import type { BankAccountLink, BankConnection, BankSyncJob, BankTransaction } from "@prisma/client";
 import { prisma } from "../prisma.js";
 import { getOpenBankingConfig } from "./config.js";
-import { encryptString } from "./crypto.js";
+import { encryptString, hmacHex } from "./crypto.js";
 import { dedupeKeyFromTransaction, findPendingCandidate } from "./dedupe.js";
 import { ProviderError } from "./contracts.js";
 import type {
@@ -233,23 +233,42 @@ function accountTypeFor(type: string): "current" | "savings" | "cash" | "credit_
   }
 }
 
-/** Escolhe o saldo mais atual e o disponível a partir dos snapshots do banco. */
-export function selectBalances(balances: ProviderBalance[]) {
-  const current =
-    balances.find((balance) => balance.kind === "expected") ??
-    balances.find((balance) => balance.kind === "interim_booked") ??
-    balances.find((balance) => balance.kind === "closing_booked") ??
-    balances.find((balance) => balance.kind === "previously_closed_booked") ??
-    balances.find((balance) => balance.kind === "opening_booked") ??
-    null;
-  const available =
-    balances.find((balance) => balance.kind === "interim_available") ??
-    balances.find((balance) => balance.kind === "closing_available") ??
-    null;
+const CURRENT_BALANCE_PRIORITY = ["expected", "interim_booked", "closing_booked"] as const;
+const AVAILABLE_BALANCE_PRIORITY = ["interim_available", "closing_available"] as const;
+
+function newestBalance(
+  balances: ProviderBalance[],
+  kinds: readonly ProviderBalance["kind"][],
+) {
+  for (const kind of kinds) {
+    const candidates = balances
+      .filter((balance) => balance.kind === kind)
+      .sort((left, right) => (right.referenceDate ?? "").localeCompare(left.referenceDate ?? ""));
+    if (candidates[0]) return candidates[0];
+  }
+  return null;
+}
+
+/** Seleciona apenas snapshots atuais, válidos e na moeda da própria conta. */
+export function selectBalances(balances: ProviderBalance[], accountCurrency = "EUR") {
+  const compatible = balances.filter((balance) => {
+    if (balance.currency !== accountCurrency) return false;
+    try {
+      return new Prisma.Decimal(balance.amount).isFinite();
+    } catch {
+      return false;
+    }
+  });
+  const current = newestBalance(compatible, CURRENT_BALANCE_PRIORITY);
+  const available = newestBalance(compatible, AVAILABLE_BALANCE_PRIORITY);
   return {
     current: current ? new Prisma.Decimal(current.amount) : null,
     available: available ? new Prisma.Decimal(available.amount) : null,
     currency: current?.currency ?? available?.currency ?? null,
+    currentKind: current?.kind ?? null,
+    currentReferenceDate: current?.referenceDate ? new Date(current.referenceDate) : null,
+    availableKind: available?.kind ?? null,
+    availableReferenceDate: available?.referenceDate ? new Date(available.referenceDate) : null,
   };
 }
 
@@ -435,23 +454,37 @@ async function syncAccount(
   const context = { sessionId, providerAccountId: providerAccount.providerAccountId };
 
   const balances = await provider.getBalances(context);
-  const snapshot = selectBalances(balances);
+  const snapshot = selectBalances(balances, providerAccount.currency);
   if (snapshot.current !== null || snapshot.available !== null) {
+    const fetchedAt = new Date();
     await prisma.account.update({
       where: { id: link.accountId },
       data: {
         ...(snapshot.current !== null ? { providerCurrentBalance: snapshot.current } : {}),
         ...(snapshot.available !== null ? { providerAvailableBalance: snapshot.available } : {}),
-        providerBalanceUpdatedAt: new Date(),
+        providerBalanceType: snapshot.currentKind,
+        providerBalanceCurrency: snapshot.currency,
+        providerBalanceReferenceDate: snapshot.currentReferenceDate,
+        providerBalanceUpdatedAt: fetchedAt,
+        providerBalanceCorrelationId: hmacHex(
+          `balance:${connection.id}:${link.id}:${fetchedAt.toISOString()}`,
+        ),
       },
     });
   }
 
   let continuationKey: string | null = null;
+  const seenContinuationKeys = new Set<string>();
   let pages = 0;
   do {
     const page = await provider.getTransactions({ ...context, continuationKey });
     continuationKey = page.continuationKey;
+    if (continuationKey !== null) {
+      if (seenContinuationKeys.has(continuationKey)) {
+        throw new ProviderError("provider_invalid_response");
+      }
+      seenContinuationKeys.add(continuationKey);
+    }
     for (const transaction of page.transactions) {
       const result = await upsertTransaction(
         link,
@@ -466,6 +499,7 @@ async function syncAccount(
     pages += 1;
     // Continua mesmo quando uma página vem vazia mas devolve outra chave.
   } while (continuationKey !== null && pages < MAX_PAGES_PER_ACCOUNT);
+  if (continuationKey !== null) throw new ProviderError("provider_invalid_response");
 
   await prisma.bankAccountLink.update({
     where: { id: link.id },
@@ -541,10 +575,10 @@ export async function runSyncJob(job: BankSyncJob): Promise<SyncOutcome> {
         successfulAccountIds.push(providerAccount.providerAccountId);
       } catch (accountError) {
         // Log but continue with other accounts
-        console.error(
-          `[open-banking] Falha na sincronização da conta ${providerAccount.providerAccountId}:`,
-          accountError,
-        );
+        console.error("[open-banking] Falha na sincronização de uma conta", {
+          account: providerAccount.providerAccountHash.slice(0, 12),
+          code: sanitizedErrorCode(accountError),
+        });
         syncError = accountError;
       }
     }
@@ -557,13 +591,22 @@ export async function runSyncJob(job: BankSyncJob): Promise<SyncOutcome> {
       // Uma nova ligação à mesma conta pode voltar a devolver movimentos já
       // importados por uma ligação anterior. Remove apenas cópias comprovadas
       // pela referência estável antes de materializar despesas/rendimentos.
-      await cleanupStableBankTransactionDuplicates({ userId: connection.userId, apply: true });
+      const duplicateAudit = await cleanupStableBankTransactionDuplicates({
+        userId: connection.userId,
+        apply: false,
+      });
+      if (duplicateAudit.groupsFound > 0) {
+        console.warn("[open-banking] duplicados estáveis encontrados; limpeza automática bloqueada", {
+          groups: duplicateAudit.groupsFound,
+          candidates: duplicateAudit.transactionsRemoved,
+        });
+      }
       // Passamos o userId; o materialize filtra por status="booked" nas ligações
       // que foram processadas com sucesso. Como o materialize usa bankAccountLinkId
       // opcional, materializa tudo do utilizador — mas transações de contas que
       // falharam não terão status="booked" novo, então não são afetadas.
-      materialization = await materializeBookedTransactions(connection.userId);
       transfers = await matchInternalTransfers(connection.userId);
+      materialization = await materializeBookedTransactions(connection.userId);
     }
 
     const finalStatus = syncError ? "partial" : "completed";

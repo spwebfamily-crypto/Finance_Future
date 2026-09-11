@@ -34,6 +34,7 @@ vi.mock("../prisma.js", () => {
   };
   return {
     prisma: {
+      user: { findUnique: vi.fn().mockResolvedValue({ currency: "EUR" }) },
       category: { findFirst: repositories.categoryFindFirst },
       expense: {
         findFirst: repositories.expenseFindFirst,

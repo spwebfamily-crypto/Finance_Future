@@ -223,6 +223,29 @@ describe("dedupe keys", () => {
       ]),
     ).toBeNull();
   });
+
+  it("matches pending to booked when the provider replaces its reference", () => {
+    const candidate = {
+      id: "pending-1",
+      dedupeKey: "old",
+      providerEntryReference: "pending-reference",
+      bookingDate: new Date("2026-08-01T00:00:00.000Z"),
+      valueDate: null,
+      transactionDate: null,
+      description: "Compra mercado",
+      counterpartyAccountHash: null,
+    };
+    expect(
+      findPendingCandidate(
+        transaction({
+          entryReference: "booked-reference",
+          bookingDate: "2026-08-02",
+          description: "Compra mercado",
+        }),
+        [candidate],
+      ),
+    ).toEqual({ match: candidate });
+  });
 });
 
 describe("balance selection", () => {
@@ -268,6 +291,53 @@ describe("balance selection", () => {
     ]);
 
     expect(selected.current?.toFixed(2)).toBe("100.00");
+  });
+
+  it("never selects a balance from a different currency or a historical-only type", () => {
+    const selected = selectBalances(
+      [
+        { kind: "expected", amount: "4000.00", currency: "USD", referenceDate: null },
+        {
+          kind: "previously_closed_booked",
+          amount: "3900.00",
+          currency: "EUR",
+          referenceDate: "2026-08-29T00:00:00.000Z",
+        },
+        {
+          kind: "closing_booked",
+          amount: "125.00",
+          currency: "EUR",
+          referenceDate: "2026-08-30T00:00:00.000Z",
+        },
+      ],
+      "EUR",
+    );
+
+    expect(selected.current?.toFixed(2)).toBe("125.00");
+    expect(selected.currency).toBe("EUR");
+    expect(selected.currentKind).toBe("closing_booked");
+  });
+
+  it("chooses the newest snapshot within the same balance type", () => {
+    const selected = selectBalances(
+      [
+        {
+          kind: "closing_booked",
+          amount: "100.00",
+          currency: "EUR",
+          referenceDate: "2026-08-29T00:00:00.000Z",
+        },
+        {
+          kind: "closing_booked",
+          amount: "110.00",
+          currency: "EUR",
+          referenceDate: "2026-08-30T00:00:00.000Z",
+        },
+      ],
+      "EUR",
+    );
+    expect(selected.current?.toFixed(2)).toBe("110.00");
+    expect(selected.currentReferenceDate?.toISOString()).toBe("2026-08-30T00:00:00.000Z");
   });
 });
 
@@ -325,6 +395,11 @@ describe("sync engine", () => {
       "1180.30",
     );
     expect(account!.providerBalanceUpdatedAt).not.toBeNull();
+    expect(account).toMatchObject({
+      providerBalanceType: "closing_booked",
+      providerBalanceCurrency: "EUR",
+    });
+    expect(account!.providerBalanceCorrelationId).toMatch(/^[a-f0-9]{64}$/);
 
     const transactions = await prisma.bankTransaction.findMany({ where: { userId } });
     expect(transactions).toHaveLength(2);
@@ -418,6 +493,27 @@ describe("sync engine", () => {
 
     expect(outcome).toMatchObject({ status: "completed", transactionsCreated: 1 });
     expect(await prisma.bankTransaction.count({ where: { userId } })).toBe(1);
+  });
+
+  it("fails safely when pagination never reaches its bounded page limit", async () => {
+    const connection = await seedConnection();
+    const sessionId = await seedSessionWithAccounts([
+      {
+        providerAccountId: "acc-1",
+        providerAccountHash: "hash-1",
+        displayName: "Conta à ordem",
+        pages: Array.from({ length: 101 }, () => []),
+      },
+    ]);
+    await linkSession(connection.id, sessionId);
+
+    const outcome = await processSyncJob((await createJob(connection.id)).id);
+
+    expect(outcome).toMatchObject({
+      status: "partial",
+      errorCode: "PROVIDER_PROVIDER_INVALID_RESPONSE",
+    });
+    expect(await prisma.bankTransaction.count({ where: { userId } })).toBe(0);
   });
 
   it("updates the same record when a pending transaction becomes booked", async () => {

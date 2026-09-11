@@ -20,6 +20,64 @@ function sum(values: Prisma.Decimal[]) {
   return values.reduce((total, value) => total.add(value), new Prisma.Decimal(0));
 }
 
+type CurrencyTotals = {
+  total: number;
+  previousMonthTotal: number;
+  changeAmount: number;
+  changePercent: number | null;
+};
+
+type TodayCurrencyTotals = {
+  expenseTotal: number;
+  incomeTotal: number;
+  netTotal: number;
+};
+
+function movementCurrency(currency: string | null | undefined, fallback: string) {
+  return currency || fallback;
+}
+
+function sortedCurrencyKeys(...maps: Map<string, Prisma.Decimal>[]) {
+  return [...new Set(maps.flatMap((map) => [...map.keys()]))].sort();
+}
+
+function todayCurrencyTotals(
+  expenses: Array<{ amount: Prisma.Decimal; currency?: string | null }>,
+  incomes: Array<{ amount: Prisma.Decimal; currency?: string | null }>,
+  fallbackCurrency: string,
+) {
+  const expenseTotals = new Map<string, Prisma.Decimal>();
+  const incomeTotals = new Map<string, Prisma.Decimal>();
+  for (const expense of expenses) {
+    const currency = movementCurrency(expense.currency, fallbackCurrency);
+    expenseTotals.set(
+      currency,
+      (expenseTotals.get(currency) ?? new Prisma.Decimal(0)).add(expense.amount),
+    );
+  }
+  for (const income of incomes) {
+    const currency = movementCurrency(income.currency, fallbackCurrency);
+    incomeTotals.set(
+      currency,
+      (incomeTotals.get(currency) ?? new Prisma.Decimal(0)).add(income.amount),
+    );
+  }
+  return Object.fromEntries(
+    sortedCurrencyKeys(expenseTotals, incomeTotals).map((currency) => {
+      const expenseTotal = expenseTotals.get(currency) ?? new Prisma.Decimal(0);
+      const incomeTotal = incomeTotals.get(currency) ?? new Prisma.Decimal(0);
+      return [
+        currency,
+        {
+          expenseTotal: moneyNumber(expenseTotal),
+          incomeTotal: moneyNumber(incomeTotal),
+          netTotal: moneyNumber(incomeTotal.sub(expenseTotal)),
+        } satisfies TodayCurrencyTotals,
+      ];
+    }),
+  ) as Record<string, TodayCurrencyTotals>;
+}
+
 async function userContext(userId: string) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -75,6 +133,7 @@ router.get("/today", async (request: AuthenticatedRequest, response, next) => {
           id: true,
           description: true,
           amount: true,
+          currency: true,
           date: true,
           createdAt: true,
           category: { select: { name: true, icon: true } },
@@ -88,6 +147,7 @@ router.get("/today", async (request: AuthenticatedRequest, response, next) => {
           id: true,
           description: true,
           amount: true,
+          currency: true,
           date: true,
           createdAt: true,
           account: { select: { name: true, source: true } },
@@ -100,6 +160,7 @@ router.get("/today", async (request: AuthenticatedRequest, response, next) => {
           id: true,
           description: true,
           amount: true,
+          currency: true,
           date: true,
           createdAt: true,
           fromAccount: { select: { name: true } },
@@ -109,14 +170,19 @@ router.get("/today", async (request: AuthenticatedRequest, response, next) => {
       }),
     ]);
 
-    const expenseTotal = sum(expenses.map((item) => item.amount));
-    const incomeTotal = sum(incomes.map((item) => item.amount));
+    const totalsByCurrency = todayCurrencyTotals(expenses, incomes, context.currency);
+    const selectedTotals = totalsByCurrency[context.currency] ?? {
+      expenseTotal: 0,
+      incomeTotal: 0,
+      netTotal: 0,
+    };
     const items = [
       ...expenses.map((item) => ({
         id: item.id,
         type: "expense" as const,
         description: item.description,
         amount: moneyNumber(item.amount),
+        currency: movementCurrency(item.currency, context.currency),
         date: item.date,
         createdAt: item.createdAt,
         accountName: item.account?.name ?? null,
@@ -129,6 +195,7 @@ router.get("/today", async (request: AuthenticatedRequest, response, next) => {
         type: "income" as const,
         description: item.description,
         amount: moneyNumber(item.amount),
+        currency: movementCurrency(item.currency, context.currency),
         date: item.date,
         createdAt: item.createdAt,
         accountName: item.account?.name ?? null,
@@ -141,6 +208,7 @@ router.get("/today", async (request: AuthenticatedRequest, response, next) => {
         type: "transfer" as const,
         description: item.description || `Transferência para ${item.toAccount.name}`,
         amount: moneyNumber(item.amount),
+        currency: movementCurrency(item.currency, context.currency),
         date: item.date,
         createdAt: item.createdAt,
         accountName: `${item.fromAccount.name} → ${item.toAccount.name}`,
@@ -157,9 +225,10 @@ router.get("/today", async (request: AuthenticatedRequest, response, next) => {
         date: context.today,
         timeZone: context.timeZone,
         currency: context.currency,
-        expenseTotal: moneyNumber(expenseTotal),
-        incomeTotal: moneyNumber(incomeTotal),
-        netTotal: moneyNumber(incomeTotal.sub(expenseTotal)),
+        expenseTotal: selectedTotals.expenseTotal,
+        incomeTotal: selectedTotals.incomeTotal,
+        netTotal: selectedTotals.netTotal,
+        totalsByCurrency,
         items,
       },
     });
@@ -184,35 +253,82 @@ router.get("/summary", async (request: AuthenticatedRequest, response, next) => 
     const [expenses, previousExpenses] = await Promise.all([
       prisma.expense.findMany({
         where: { userId: request.user!.id, date: { gte: start, lt: end } },
-        select: { categoryId: true, amount: true, date: true },
+        select: { categoryId: true, amount: true, currency: true, date: true },
       }),
       prisma.expense.findMany({
         where: {
           userId: request.user!.id,
           date: { gte: previousBounds.start, lt: previousBounds.end },
         },
-        select: { categoryId: true, amount: true },
+        select: { categoryId: true, amount: true, currency: true },
       }),
     ]);
-    const amounts = new Map<string, Prisma.Decimal>();
-    const previousAmounts = new Map<string, Prisma.Decimal>();
+    const amountsByCurrency = new Map<string, Map<string, Prisma.Decimal>>();
+    const previousAmountsByCurrency = new Map<string, Map<string, Prisma.Decimal>>();
     const dailyAmounts = new Map<string, Prisma.Decimal>();
+    const dailyAmountsByCurrency = new Map<string, Map<string, Prisma.Decimal>>();
     for (const expense of expenses) {
+      const currency = movementCurrency(expense.currency, context.currency);
+      const amounts = amountsByCurrency.get(currency) ?? new Map<string, Prisma.Decimal>();
       amounts.set(
         expense.categoryId,
         (amounts.get(expense.categoryId) ?? new Prisma.Decimal(0)).add(expense.amount),
       );
+      amountsByCurrency.set(currency, amounts);
       const day = expense.date.toISOString().slice(0, 10);
-      dailyAmounts.set(day, (dailyAmounts.get(day) ?? new Prisma.Decimal(0)).add(expense.amount));
+      if (currency === context.currency) {
+        dailyAmounts.set(day, (dailyAmounts.get(day) ?? new Prisma.Decimal(0)).add(expense.amount));
+      }
+      const currencyDays =
+        dailyAmountsByCurrency.get(currency) ?? new Map<string, Prisma.Decimal>();
+      currencyDays.set(day, (currencyDays.get(day) ?? new Prisma.Decimal(0)).add(expense.amount));
+      dailyAmountsByCurrency.set(currency, currencyDays);
     }
-    for (const expense of previousExpenses)
+    for (const expense of previousExpenses) {
+      const currency = movementCurrency(expense.currency, context.currency);
+      const previousAmounts =
+        previousAmountsByCurrency.get(currency) ?? new Map<string, Prisma.Decimal>();
       previousAmounts.set(
         expense.categoryId,
         (previousAmounts.get(expense.categoryId) ?? new Prisma.Decimal(0)).add(expense.amount),
       );
+      previousAmountsByCurrency.set(currency, previousAmounts);
+    }
+    const amounts = amountsByCurrency.get(context.currency) ?? new Map<string, Prisma.Decimal>();
+    const previousAmounts =
+      previousAmountsByCurrency.get(context.currency) ?? new Map<string, Prisma.Decimal>();
     const total = sum([...amounts.values()]);
     const previousTotal = sum([...previousAmounts.values()]);
     const difference = total.sub(previousTotal);
+    const totalsByCurrency = Object.fromEntries(
+      sortedCurrencyKeys(
+        new Map(
+          [...amountsByCurrency.entries()].map(([currency, values]) => [
+            currency,
+            sum([...values.values()]),
+          ]),
+        ),
+        new Map(
+          [...previousAmountsByCurrency.entries()].map(([currency, values]) => [
+            currency,
+            sum([...values.values()]),
+          ]),
+        ),
+      ).map((currency) => {
+        const current = sum([...(amountsByCurrency.get(currency)?.values() ?? [])]);
+        const previous = sum([...(previousAmountsByCurrency.get(currency)?.values() ?? [])]);
+        const change = current.sub(previous);
+        return [
+          currency,
+          {
+            total: moneyNumber(current),
+            previousMonthTotal: moneyNumber(previous),
+            changeAmount: moneyNumber(change),
+            changePercent: previous.isZero() ? null : moneyNumber(change.div(previous).mul(100)),
+          } satisfies CurrencyTotals,
+        ];
+      }),
+    ) as Record<string, CurrencyTotals>;
     return response.json({
       data: {
         month,
@@ -224,10 +340,19 @@ router.get("/summary", async (request: AuthenticatedRequest, response, next) => 
         changePercent: previousTotal.isZero()
           ? null
           : moneyNumber(difference.div(previousTotal).mul(100)),
+        totalsByCurrency,
         // Total gasto por dia do mês (dias sem despesas ficam de fora).
         byDay: [...dailyAmounts.entries()]
           .sort(([a], [b]) => a.localeCompare(b))
           .map(([day, amount]) => ({ day, total: moneyNumber(amount) })),
+        byDayByCurrency: Object.fromEntries(
+          [...dailyAmountsByCurrency.entries()].map(([currency, days]) => [
+            currency,
+            [...days.entries()]
+              .sort(([a], [b]) => a.localeCompare(b))
+              .map(([day, amount]) => ({ day, total: moneyNumber(amount) })),
+          ]),
+        ),
         byCategory: categories.map((category) => {
           const amount = amounts.get(category.id) ?? new Prisma.Decimal(0);
           const previousAmount = previousAmounts.get(category.id) ?? new Prisma.Decimal(0);
@@ -263,11 +388,12 @@ router.get("/levels", async (request: AuthenticatedRequest, response, next) => {
       categoriesAndBudgets(request.user!.id),
       prisma.expense.findMany({
         where: { userId: request.user!.id, date: { gte: historyStart, lt: end } },
-        select: { categoryId: true, amount: true, date: true },
+        select: { categoryId: true, amount: true, currency: true, date: true },
       }),
     ]);
     const values = new Map<string, Map<string, Prisma.Decimal>>();
     for (const expense of expenses) {
+      if (movementCurrency(expense.currency, context.currency) !== context.currency) continue;
       const date = expense.date;
       const expenseMonth = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
       const categoryValues = values.get(expense.categoryId) ?? new Map<string, Prisma.Decimal>();
@@ -344,7 +470,7 @@ router.get("/trend", async (request: AuthenticatedRequest, response, next) => {
     const [expenses, categories] = await Promise.all([
       prisma.expense.findMany({
         where: { userId: request.user!.id, date: { gte: start, lt: end } },
-        select: { categoryId: true, amount: true, date: true },
+        select: { categoryId: true, amount: true, currency: true, date: true },
       }),
       prisma.category.findMany({
         where: { userId: request.user!.id },
@@ -353,9 +479,14 @@ router.get("/trend", async (request: AuthenticatedRequest, response, next) => {
       }),
     ]);
     const values = new Map<string, Map<string, Prisma.Decimal>>();
+    const totalsByCurrency = new Map<string, Prisma.Decimal>();
     for (const expense of expenses) {
+      const currency = movementCurrency(expense.currency, context.currency);
       const month = `${expense.date.getUTCFullYear()}-${String(expense.date.getUTCMonth() + 1).padStart(2, "0")}`;
+      const currencyTotal = totalsByCurrency.get(`${month}:${currency}`) ?? new Prisma.Decimal(0);
+      totalsByCurrency.set(`${month}:${currency}`, currencyTotal.add(expense.amount));
       const monthValues = values.get(month) ?? new Map<string, Prisma.Decimal>();
+      if (currency !== context.currency) continue;
       monthValues.set(
         expense.categoryId,
         (monthValues.get(expense.categoryId) ?? new Prisma.Decimal(0)).add(expense.amount),
@@ -371,6 +502,11 @@ router.get("/trend", async (request: AuthenticatedRequest, response, next) => {
           return {
             month,
             total: moneyNumber(sum([...monthValues.values()])),
+            totalsByCurrency: Object.fromEntries(
+              [...totalsByCurrency.entries()]
+                .filter(([key]) => key.startsWith(`${month}:`))
+                .map(([key, amount]) => [key.slice(month.length + 1), moneyNumber(amount)]),
+            ),
             categories: categories.map((category) => ({
               category: { id: category.id, name: category.name, icon: category.icon },
               amount: moneyNumber(monthValues.get(category.id) ?? new Prisma.Decimal(0)),

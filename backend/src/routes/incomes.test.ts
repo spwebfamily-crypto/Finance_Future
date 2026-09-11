@@ -18,6 +18,7 @@ const repositories = vi.hoisted(() => ({
 
 vi.mock("../prisma.js", () => ({
   prisma: {
+    user: { findUnique: vi.fn().mockResolvedValue({ currency: "EUR" }) },
     account: { findFirst: repositories.accountFindFirst },
     income: {
       findFirst: repositories.incomeFindFirst,

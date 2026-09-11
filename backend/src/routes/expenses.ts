@@ -66,6 +66,7 @@ const expensePublicSelect = {
   description: true,
   location: true,
   amount: true,
+  currency: true,
   date: true,
   receiptImageUrl: true,
   receiptMimeType: true,
@@ -112,7 +113,15 @@ async function categoryBelongsToUser(categoryId: string, userId: string) {
 }
 
 async function accountBelongsToUser(accountId: string, userId: string) {
-  return prisma.account.findFirst({ where: { id: accountId, userId }, select: { id: true } });
+  return prisma.account.findFirst({
+    where: { id: accountId, userId },
+    select: { id: true, currency: true },
+  });
+}
+
+async function userCurrency(userId: string) {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { currency: true } });
+  return user?.currency ?? "EUR";
 }
 
 function nextUtcDay(date: string) {
@@ -339,7 +348,10 @@ router.post(
       if (!category) {
         return sendError(response, 404, "CATEGORY_NOT_FOUND", "Categoria não encontrada.");
       }
-      if (input.accountId && !(await accountBelongsToUser(input.accountId, request.user!.id))) {
+      const account = input.accountId
+        ? await accountBelongsToUser(input.accountId, request.user!.id)
+        : null;
+      if (input.accountId && !account) {
         return sendError(response, 404, "ACCOUNT_NOT_FOUND", "Conta não encontrada.");
       }
 
@@ -348,6 +360,7 @@ router.post(
         description: input.description,
         location: input.location,
         amount: input.amount,
+        currency: account?.currency ?? (await userCurrency(request.user!.id)),
         date: input.date,
         categoryId: input.categoryId,
         accountId: input.accountId ?? null,
@@ -394,6 +407,8 @@ router.patch(
           receiptImageUrl: true,
           receiptMimeType: true,
           receiptFileSize: true,
+          currency: true,
+          accountId: true,
         },
       });
 
@@ -403,11 +418,19 @@ router.patch(
       if (input.categoryId && !(await categoryBelongsToUser(input.categoryId, request.user!.id))) {
         return sendError(response, 404, "CATEGORY_NOT_FOUND", "Categoria não encontrada.");
       }
-      if (input.accountId && !(await accountBelongsToUser(input.accountId, request.user!.id))) {
+      const account =
+        input.accountId !== undefined && input.accountId !== null
+          ? await accountBelongsToUser(input.accountId, request.user!.id)
+          : null;
+      if (input.accountId && !account) {
         return sendError(response, 404, "ACCOUNT_NOT_FOUND", "Conta não encontrada.");
       }
 
       const { removeReceipt, ...changes } = input;
+      const currencyChange =
+        input.accountId === undefined
+          ? {}
+          : { currency: account?.currency ?? (await userCurrency(request.user!.id)) };
       const receipt = request.file;
       const changesReceipt = Boolean(receipt || removeReceipt);
       let legacyReceiptToRemove = changesReceipt ? existing.receiptImageUrl : null;
@@ -432,7 +455,7 @@ router.patch(
       const updateExpense = (transaction: Prisma.TransactionClient) =>
         transaction.expense.update({
           where: { id: existing.id },
-          data: { ...changes, ...receiptChanges },
+          data: { ...changes, ...currencyChange, ...receiptChanges },
           select: expensePublicSelect,
         });
 
@@ -465,7 +488,7 @@ router.patch(
           )
         : await prisma.expense.update({
             where: { id: existing.id },
-            data: changes,
+            data: { ...changes, ...currencyChange },
             select: expensePublicSelect,
           });
 

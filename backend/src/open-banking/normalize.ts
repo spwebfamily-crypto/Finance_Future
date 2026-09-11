@@ -39,6 +39,14 @@ export function normalizeAmount(value: unknown): string | null {
   return new Prisma.Decimal(raw).abs().toDecimalPlaces(2).toFixed(2);
 }
 
+/** Montante com sinal preservado, usado por snapshots de saldo. */
+export function normalizeSignedAmount(value: unknown): string | null {
+  const raw =
+    typeof value === "number" ? value.toString() : typeof value === "string" ? value.trim() : null;
+  if (raw === null || !amountPattern.test(raw)) return null;
+  return new Prisma.Decimal(raw).toDecimalPlaces(2).toFixed(2);
+}
+
 export function normalizeCurrency(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const currency = value.trim().toUpperCase();
