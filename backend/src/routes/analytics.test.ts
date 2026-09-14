@@ -114,6 +114,7 @@ describe("analytics daily summary", () => {
       amount: true,
       currency: true,
       date: true,
+      account: { select: { currency: true } },
     });
   });
 
@@ -221,5 +222,41 @@ describe("analytics daily summary", () => {
       gte: expect.any(Date),
       lt: expect.any(Date),
     });
+  });
+
+  it("does not mix linked account currencies in today's totals", async () => {
+    repositories.expenseFindMany.mockResolvedValueOnce([
+      {
+        id: "expense-eur",
+        description: "EUR",
+        amount: new Prisma.Decimal("10.00"),
+        date: new Date("2026-09-02T00:00:00.000Z"),
+        createdAt: new Date("2026-09-02T10:00:00.000Z"),
+        category: { name: "Alimentação", icon: "utensils" },
+        account: { name: "Conta EUR", source: "bank", currency: "EUR" },
+        bankTransaction: { id: "bank-eur" },
+      },
+      {
+        id: "expense-usd",
+        description: "USD",
+        amount: new Prisma.Decimal("100.00"),
+        date: new Date("2026-09-02T00:00:00.000Z"),
+        createdAt: new Date("2026-09-02T11:00:00.000Z"),
+        category: { name: "Alimentação", icon: "utensils" },
+        account: { name: "Conta USD", source: "bank", currency: "USD" },
+        bankTransaction: { id: "bank-usd" },
+      },
+    ]);
+    repositories.incomeFindMany.mockResolvedValueOnce([]);
+    repositories.transferFindMany.mockResolvedValueOnce([]);
+
+    const response = await fetch(`${baseUrl}/api/analytics/today`, {
+      headers: { Authorization: authorization() },
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.data.expenseTotal).toBe(10);
+    expect(body.data.items.map((item: { id: string }) => item.id)).toEqual(["expense-eur"]);
   });
 });

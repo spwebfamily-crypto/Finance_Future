@@ -22,7 +22,8 @@ import { PageHeader } from "../components/PageHeader";
 import { NoticeToast } from "../components/NoticeToast";
 import { ErrorState, LoadingState } from "../components/States";
 import type { FinancialProfile } from "../types";
-import { formatCurrency } from "../utils/format";
+import { formatCurrency as formatCurrencyValue } from "../utils/format";
+import { useI18n } from "../i18n/I18nContext";
 
 interface StudyExample {
   kind: "ETF UCITS" | "Ação individual";
@@ -136,8 +137,8 @@ function finiteAmount(value: number) {
   return Number.isFinite(value) ? value : 0;
 }
 
-function formatMonths(value: number) {
-  return new Intl.NumberFormat("pt-PT", {
+function formatMonths(value: number, locale = "pt-PT") {
+  return new Intl.NumberFormat(locale, {
     minimumFractionDigits: value < 10 ? 1 : 0,
     maximumFractionDigits: 1,
   }).format(value);
@@ -145,6 +146,9 @@ function formatMonths(value: number) {
 
 export function InvestmentsPage() {
   const { user } = useAuth();
+  const { locale } = useI18n();
+  const formatCurrency = (value: string | number, currency?: string) =>
+    formatCurrencyValue(value, currency, locale);
   const location = useLocation();
   const reduceMotion = useReducedMotion();
   const [profile, setProfile] = useState<FinancialProfile | null>(null);
@@ -299,7 +303,7 @@ export function InvestmentsPage() {
                   <small>
                     {context.coverageMonths === null
                       ? "Sem base mensal suficiente para estimar cobertura."
-                      : `Corresponde a cerca de ${formatMonths(context.coverageMonths)} meses, se estivesse toda disponível para reserva.`}
+                      : `Corresponde a cerca de ${formatMonths(context.coverageMonths, locale)} meses, se estivesse toda disponível para reserva.`}
                   </small>
                 </dd>
               </div>

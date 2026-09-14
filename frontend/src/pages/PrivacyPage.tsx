@@ -6,19 +6,21 @@ import { PageHeader } from "../components/PageHeader";
 import { openBankingApi } from "../api/resources";
 import { errorMessage } from "../api/client";
 import type { BankConnectionStatus, BankConnectionSummary } from "../types";
+import { useI18n } from "../i18n/I18nContext";
 
 const connectionStatusLabels: Record<BankConnectionStatus, string> = {
-  pending: "Aguarda confirmação no banco",
-  active: "Ligação ativa",
-  reauth_required: "É preciso voltar a autorizar",
-  expired: "Consentimento expirado",
-  revoked: "Consentimento revogado",
-  disconnected: "Banco desligado",
-  error: "Erro na última sincronização",
+  pending: "status.connection.pending",
+  active: "status.connection.active",
+  reauth_required: "status.connection.reauth_required",
+  expired: "status.connection.expired",
+  revoked: "status.connection.revoked",
+  disconnected: "status.connection.disconnected",
+  error: "status.connection.error",
 };
 
 /** Centro de privacidade: bancos ligados, dados guardados e como os apagar. */
 export function PrivacyPage() {
+  const { t, formatDate } = useI18n();
   const [connections, setConnections] = useState<BankConnectionSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -44,9 +46,9 @@ export function PrivacyPage() {
   return (
     <div className="page page--privacy">
       <PageHeader
-        eyebrow="Privacidade"
-        title="Os seus dados bancários"
-        description="O que é guardado, para que serve e como revogar ou eliminar o acesso."
+        eyebrow={t("privacy.eyebrow")}
+        title={t("privacy.title")}
+        description={t("privacy.description")}
       />
 
       {error && !connections.length ? (
@@ -60,7 +62,7 @@ export function PrivacyPage() {
               type="button"
               onClick={() => void load()}
             >
-              Tentar novamente
+              {t("Tentar novamente")}
             </button>
           </div>
         )
@@ -69,48 +71,42 @@ export function PrivacyPage() {
       <section className="accounts-panel" aria-labelledby="privacy-data">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">Dados</p>
-            <h2 id="privacy-data">O que guardamos</h2>
+            <p className="eyebrow">{t("privacy.dataEyebrow")}</p>
+            <h2 id="privacy-data">{t("privacy.dataTitle")}</h2>
           </div>
           <ShieldCheck aria-hidden="true" />
         </div>
         <ul className="privacy-list">
           <li>
-            <strong>Nome da instituição e identificador da ligação</strong> — para mostrar que banco
-            está ligado.
+            <strong>{t("privacy.storedInstitution")}</strong> — {t("privacy.storedInstitutionDescription")}
           </li>
           <li>
-            <strong>Identificador da sessão, cifrado</strong> — necessário para ler saldos e
-            movimentos enquanto o consentimento existir.
+            <strong>{t("privacy.storedSession")}</strong> — {t("privacy.storedSessionDescription")}
           </li>
           <li>
-            <strong>IBAN mascarado e um hash da conta</strong> — apenas para apresentação e para
-            casar transferências entre as suas contas. O IBAN completo nunca é guardado.
+            <strong>{t("privacy.storedIban")}</strong> — {t("privacy.storedIbanDescription")}
           </li>
           <li>
-            <strong>Saldos e movimentos</strong> — descrição, valor, data, estado (pendente ou
-            contabilizado) e, quando existir, o nome da contraparte.
+            <strong>{t("privacy.storedTransactions")}</strong> — {t("privacy.storedTransactionsDescription")}
           </li>
           <li>
-            <strong>Despesas, rendimentos e transferências criadas</strong> — a partir de movimentos
-            contabilizados, para entrarem nas análises que já usa.
+            <strong>{t("privacy.storedRecords")}</strong> — {t("privacy.storedRecordsDescription")}
           </li>
         </ul>
         <p className="planning-disclosure__hint">
-          Nunca guardamos a palavra-passe do banco nem credenciais bancárias. Não há iniciação de
-          pagamentos.
+          {t("privacy.noPassword")}
         </p>
       </section>
 
       <section className="accounts-panel" aria-labelledby="privacy-connections">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">Ligações</p>
-            <h2 id="privacy-connections">Bancos ligados</h2>
+            <p className="eyebrow">{t("privacy.connectionsEyebrow")}</p>
+            <h2 id="privacy-connections">{t("privacy.connectionsTitle")}</h2>
           </div>
         </div>
         {isLoading ? (
-          <LoadingState label="A carregar as ligações" />
+          <LoadingState label={t("privacy.loading")} />
         ) : error && !connections.length ? null : liveConnections.length ? (
           <ul className="privacy-connections">
             {liveConnections.map((connection) => (
@@ -118,40 +114,38 @@ export function PrivacyPage() {
                 <div>
                   <strong>{connection.institutionName}</strong>
                   <p>
-                    Estado: {connectionStatusLabels[connection.status]}
+                    {t("privacy.status", { status: t(connectionStatusLabels[connection.status]) })}
                     {connection.lastSyncedAt
-                      ? ` · Última sincronização: ${new Date(connection.lastSyncedAt).toLocaleString("pt-PT")}`
-                      : " · Ainda sem sincronização"}
+                      ? ` · ${t("privacy.lastSync", { date: formatDate(connection.lastSyncedAt, { dateStyle: "medium", timeStyle: "short" }) })}`
+                      : ` · ${t("privacy.notSynced")}`}
                     {connection.consentExpiresAt
-                      ? ` · Consentimento até ${new Date(connection.consentExpiresAt).toLocaleDateString("pt-PT")}`
+                      ? ` · ${t("privacy.consentUntil", { date: formatDate(connection.consentExpiresAt, { dateStyle: "medium" }) })}`
                       : ""}
                   </p>
                 </div>
                 <Link className="button button--secondary" to="/accounts/connections">
-                  Gerir
+                  {t("privacy.manage")}
                 </Link>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="accounts-empty">Não tem bancos ligados.</p>
+          <p className="accounts-empty">{t("privacy.empty")}</p>
         )}
       </section>
 
       <section className="accounts-panel" aria-labelledby="privacy-rights">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">Controlo</p>
-            <h2 id="privacy-rights">Renovar, revogar e eliminar</h2>
+            <p className="eyebrow">{t("privacy.controlEyebrow")}</p>
+            <h2 id="privacy-rights">{t("privacy.controlTitle")}</h2>
           </div>
         </div>
         <p>
-          Pode renovar o consentimento quando o banco o exigir, desligar um banco conservando os
-          dados já importados ou apagar esses dados. A eliminação remove apenas o que veio do banco:
-          os registos manuais não são apagados.
+          {t("privacy.rightsDescription")}
         </p>
         <Link className="button button--primary" to="/accounts/connections">
-          Gerir ligações bancárias
+          {t("privacy.manageConnections")}
         </Link>
       </section>
     </div>

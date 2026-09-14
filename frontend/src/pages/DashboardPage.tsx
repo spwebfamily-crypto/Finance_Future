@@ -46,7 +46,10 @@ import type {
   SpendingLevelItem,
   TodaySummary,
 } from "../types";
-import { formatCurrency, parseSignedMoney, todayInputValue } from "../utils/format";
+import { formatCurrency as formatCurrencyValue, parseSignedMoney, todayInputValue } from "../utils/format";
+import { useI18n } from "../i18n/I18nContext";
+
+const formatCurrency = formatCurrencyValue;
 
 const palette = [
   "var(--chart-1)",
@@ -61,14 +64,14 @@ function currentMonth() {
   return todayInputValue().slice(0, 7);
 }
 
-function monthLabel(month: string) {
-  return new Intl.DateTimeFormat("pt-PT", { month: "long", year: "numeric" }).format(
+function monthLabel(month: string, locale = "pt-PT") {
+  return new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" }).format(
     new Date(`${month}-01T12:00:00`),
   );
 }
 
-function shortMonth(month: string) {
-  return new Intl.DateTimeFormat("pt-PT", { month: "short" })
+function shortMonth(month: string, locale = "pt-PT") {
+  return new Intl.DateTimeFormat(locale, { month: "short" })
     .format(new Date(`${month}-01T12:00:00`))
     .replace(".", "");
 }
@@ -85,6 +88,7 @@ const levelMeta = {
 } as const;
 
 export function DashboardPage() {
+  const { locale } = useI18n();
   const reduceMotion = useReducedMotion();
   const [month, setMonth] = useState(currentMonth);
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
@@ -198,7 +202,9 @@ export function DashboardPage() {
       name: item.category.name,
       fill: palette[index % palette.length],
     }));
-  const trendData = trend.map((item) => ({ ...item, label: shortMonth(item.month) }));
+  const formatCurrency = (value: string | number, currency?: string) =>
+    formatCurrencyValue(value, currency, locale);
+  const trendData = trend.map((item) => ({ ...item, label: shortMonth(item.month, locale) }));
   const hasTrendData = trendData.some((item) => item.total > 0);
   const monthPulse = useMemo(() => {
     const monitored = levels.filter((item) => item.budget);
@@ -519,7 +525,7 @@ export function DashboardPage() {
             <>
               <section className="dashboard-total" aria-labelledby="total-title">
                 <div>
-                  <p className="eyebrow">Total em {monthLabel(selectedMonth)}</p>
+                  <p className="eyebrow">Total em {monthLabel(selectedMonth, locale)}</p>
                   <h2 id="total-title">
                     <AnimatedCurrency value={summary.total} currency={currency} />
                   </h2>
@@ -715,7 +721,7 @@ export function DashboardPage() {
                           </LineChart>
                         </ResponsiveContainer>
                       </div>
-                      <TrendTable data={trendData} currency={currency} />
+                      <TrendTable data={trendData} currency={currency} locale={locale} />
                     </>
                   ) : (
                     <EmptyState
@@ -999,9 +1005,11 @@ function CategoryTable({
 function TrendTable({
   data,
   currency,
+  locale,
 }: {
   data: Array<{ month: string; total: number }>;
   currency: string;
+  locale: string;
 }) {
   return (
     <details className="chart-summary">
@@ -1016,7 +1024,7 @@ function TrendTable({
         <tbody>
           {data.map((item) => (
             <tr key={item.month}>
-              <td>{monthLabel(item.month)}</td>
+              <td>{monthLabel(item.month, locale)}</td>
               <td>{formatCurrency(item.total, currency)}</td>
             </tr>
           ))}

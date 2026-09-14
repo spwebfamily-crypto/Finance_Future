@@ -53,6 +53,12 @@ export function normalizeCurrency(value: unknown): string | null {
   return currencyPattern.test(currency) ? currency : null;
 }
 
+/** Data ISO curta exigida pelos campos de referência do contrato bancário. */
+export function normalizeReferenceDate(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  return normalizeDate(value);
+}
+
 export function mapBalanceType(value: unknown): ProviderBalanceKind {
   switch (value) {
     case "CLBD":
@@ -196,6 +202,9 @@ export function mapTransaction(
   raw: RawTransaction,
   hashCounterparty: (value: string) => string,
 ): ProviderTransaction {
+  if (raw.credit_debit_indicator !== "CRDT" && raw.credit_debit_indicator !== "DBIT") {
+    throw new Error("Transação sem sentido válido.");
+  }
   const direction = raw.credit_debit_indicator === "CRDT" ? "credit" : "debit";
   const amount = normalizeAmount(raw.transaction_amount?.amount);
   const currency = normalizeCurrency(raw.transaction_amount?.currency);

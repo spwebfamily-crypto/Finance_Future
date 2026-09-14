@@ -58,17 +58,20 @@ export function parseSignedMoney(value: string) {
   return Number.isFinite(parsed) ? (negative ? -parsed : parsed) : Number.NaN;
 }
 
-export function formatDate(value: string) {
-  const datePart = value.slice(0, 10);
+export function formatDate(
+  value: string | Date,
+  locale = "pt-PT",
+  options: Intl.DateTimeFormatOptions = { day: "2-digit", month: "short", year: "numeric" },
+) {
+  const rawValue = value instanceof Date ? value : value;
+  const datePart = typeof rawValue === "string" ? rawValue.slice(0, 10) : "";
   const date = /^\d{4}-\d{2}-\d{2}$/.test(datePart)
     ? new Date(`${datePart}T12:00:00`)
-    : new Date(value);
+    : rawValue instanceof Date
+      ? rawValue
+      : new Date(rawValue);
 
-  return new Intl.DateTimeFormat("pt-PT", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(date);
+  return new Intl.DateTimeFormat(locale, options).format(date);
 }
 
 export function toDateInputValue(value: string) {

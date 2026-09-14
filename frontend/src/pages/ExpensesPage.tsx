@@ -27,7 +27,8 @@ import { NoticeToast } from "../components/NoticeToast";
 import { CsvExpenseImport } from "../components/CsvExpenseImport";
 import { preloadExpenseFormPage } from "../routePreloads";
 import type { Category, Expense, ExpenseFilters, FinancialAccount } from "../types";
-import { formatCurrency, formatDate } from "../utils/format";
+import { formatCurrency as formatCurrencyValue, formatDate } from "../utils/format";
+import { useI18n } from "../i18n/I18nContext";
 
 interface FilterDraft {
   category: string;
@@ -70,6 +71,9 @@ const EXPENSES_PAGE_SIZE = 500;
 
 export function ExpensesPage() {
   const { user } = useAuth();
+  const { locale } = useI18n();
+  const formatCurrency = (value: string | number, currency?: string) =>
+    formatCurrencyValue(value, currency, locale);
   const reduceMotion = useReducedMotion();
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();

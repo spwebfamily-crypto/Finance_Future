@@ -43,7 +43,8 @@ import type {
   RecurringIncome,
   SavingsGoal,
 } from "../types";
-import { formatCurrency, formatDate, parseSignedMoney, todayInputValue } from "../utils/format";
+import { formatCurrency as formatCurrencyValue, formatDate, parseSignedMoney, todayInputValue } from "../utils/format";
+import { useI18n } from "../i18n/I18nContext";
 
 type DeleteTarget = {
   type: "income" | "goal" | "recurring" | "recurringIncome" | "debt";
@@ -118,6 +119,9 @@ type CalendarItem = {
 };
 
 export function PlanningPage() {
+  const { locale } = useI18n();
+  const formatCurrency = (value: string | number, currency?: string) =>
+    formatCurrencyValue(value, currency, locale);
   const { user } = useAuth();
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);

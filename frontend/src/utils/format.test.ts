@@ -19,6 +19,11 @@ describe("format helpers", () => {
     expect(formatDate("2026-08-07T00:00:00.000Z")).toMatch(/07/);
   });
 
+  it("formats dates with an explicit locale and options", () => {
+    expect(formatDate("2026-08-07", "en-GB", { dateStyle: "medium" })).toContain("7 Aug 2026");
+    expect(formatDate("2026-08-07", "es-ES", { dateStyle: "medium" })).toContain("7 ago 2026");
+  });
+
   it("parses grouped and signed monetary form values", () => {
     expect(parseMoney("1 500,50")).toBe(1500.5);
     expect(parseMoney("1.500,50")).toBe(1500.5);

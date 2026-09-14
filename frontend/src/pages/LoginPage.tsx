@@ -1,6 +1,6 @@
 import { useRef, useState, type FormEvent } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ArrowRight, CircleAlert, Eye, EyeOff } from "lucide-react";
+import { ArrowRight, CircleAlert, Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { errorMessage } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
@@ -69,6 +69,16 @@ export function LoginPage() {
           <div className="auth-form-heading">
             <h1 id="login-title">{t("Bem-vindo de volta")}</h1>
             <p className="form-intro">{t("Entre para consultar as suas finanças.")}</p>
+          </div>
+
+          <div className="auth-login-security" role="note">
+            <span className="auth-login-security__icon" aria-hidden="true">
+              <ShieldCheck />
+            </span>
+            <span>
+              <strong>{t("Sessão protegida")}</strong>
+              <small>{t("A palavra-passe nunca passa por aqui.")}</small>
+            </span>
           </div>
 
           <form className="stack-form" onSubmit={handleSubmit} noValidate>

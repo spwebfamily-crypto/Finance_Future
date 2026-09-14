@@ -64,8 +64,8 @@ O frontend fica em <http://localhost:5173>, a API em <http://localhost:3000/api>
 | `npm run db:seed` | Cria categorias base de forma idempotente |
 | `npm run test:e2e` | Testa registo, fotografia e criação de despesa no Chromium |
 | `npm run open-banking:sync` | Processa sincronizações bancárias agendadas (CLI/cron) |
-| `npm run open-banking:dedupe -w backend` | Audita movimentos bancários repetidos; use `-- --apply` para limpar cópias comprovadas |
-| `npm run data:purge-september -w backend -- --year=2026` | Pré-visualiza os dados de setembro; acrescente `--apply` para os apagar numa transação |
+| `npm run open-banking:dedupe -w backend` | Audita movimentos bancários repetidos; a limpeza aplicada continua separada e explícita |
+| `npm run data:purge-september -w backend -- --year=2026` | Pré-visualiza os dados de setembro; o purge destrutivo está bloqueado |
 
 ## Open Banking (somente leitura)
 

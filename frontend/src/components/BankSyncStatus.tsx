@@ -3,13 +3,13 @@ import type { BankConnectionStatus } from "../types";
 import { useI18n } from "../i18n/I18nContext";
 
 const labels: Record<BankConnectionStatus, string> = {
-  pending: "Aguarda confirmação no banco",
-  active: "Ligação ativa",
-  reauth_required: "É necessário renovar o consentimento",
-  expired: "Consentimento expirado",
-  revoked: "Consentimento revogado",
-  disconnected: "Banco desligado",
-  error: "Erro na última sincronização",
+  pending: "status.connection.pending",
+  active: "status.connection.active",
+  reauth_required: "status.connection.reauth_required",
+  expired: "status.connection.expired",
+  revoked: "status.connection.revoked",
+  disconnected: "status.connection.disconnected",
+  error: "status.connection.error",
 };
 
 const errorRecoveryHint =

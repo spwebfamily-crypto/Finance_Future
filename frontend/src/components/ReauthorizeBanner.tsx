@@ -1,4 +1,5 @@
 import { AlertTriangle } from "lucide-react";
+import { useI18n } from "../i18n/I18nContext";
 
 /** Aviso de renovação de consentimento, mostrado quando o banco exige reautorização. */
 export function ReauthorizeBanner({
@@ -12,22 +13,22 @@ export function ReauthorizeBanner({
   onRenew: () => void;
   busy?: boolean;
 }) {
+  const { t } = useI18n();
   const message =
     status === "expired"
-      ? `O consentimento do ${institutionName} expirou.`
+      ? t("O consentimento do {bank} expirou.", { bank: institutionName })
       : status === "revoked"
-        ? `O consentimento do ${institutionName} foi revogado no banco.`
-        : `O ${institutionName} pede uma renovação do consentimento.`;
+        ? t("O consentimento do {bank} foi revogado no banco.", { bank: institutionName })
+        : t("O {bank} pede uma renovação do consentimento.", { bank: institutionName });
 
   return (
     <div className="reauthorize-banner" role="status">
       <AlertTriangle aria-hidden="true" />
       <p>
-        {message} Os movimentos deixam de ser atualizados até renovar o acesso. Os dados já
-        importados continuam disponíveis.
+        {message} {t("Os movimentos deixam de ser atualizados até renovar o acesso. Os dados já importados continuam disponíveis.")}
       </p>
       <button type="button" className="button button--accent" onClick={onRenew} disabled={busy}>
-        Renovar acesso
+        {t("Renovar acesso")}
       </button>
     </div>
   );

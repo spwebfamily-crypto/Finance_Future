@@ -7,9 +7,11 @@ import { authApi } from "../api/resources";
 import { useAuth } from "../auth/AuthContext";
 import { AuthStory } from "../components/AuthStory";
 import { Spinner } from "../components/States";
+import { useI18n } from "../i18n/I18nContext";
 
 export function ResetPasswordPage() {
   const { logout } = useAuth();
+  const { t } = useI18n();
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token")?.trim() ?? "";
   const tokenLooksValid = /^[0-9a-f]{64}$/i.test(token);
@@ -26,12 +28,12 @@ export function ResetPasswordPage() {
     event.preventDefault();
     setError("");
     if (password.length < 8) {
-      setFieldError("Use pelo menos 8 caracteres.");
+      setFieldError(t("Use pelo menos 8 caracteres."));
       passwordRef.current?.focus();
       return;
     }
     if (password.length > 128) {
-      setFieldError("Use no máximo 128 caracteres.");
+      setFieldError(t("Use no máximo 128 caracteres."));
       passwordRef.current?.focus();
       return;
     }
@@ -64,27 +66,27 @@ export function ResetPasswordPage() {
               <span className="auth-status__icon" aria-hidden="true">
                 <ShieldQuestion />
               </span>
-              <p className="eyebrow">Link incompleto</p>
-              <h1>Falta o código de reposição</h1>
+              <p className="eyebrow">{t("reset.missingEyebrow")}</p>
+              <h1>{t("reset.missingTitle")}</h1>
               <p className="form-intro">
-                Abra o link diretamente a partir do email que recebeu, ou peça um novo.
+                {t("reset.missingDescription")}
               </p>
               <div className="auth-status__actions">
                 <Link className="button button--primary button--wide" to="/forgot-password">
-                  Pedir novo link <ArrowRight aria-hidden="true" />
+                  {t("reset.requestLink")} <ArrowRight aria-hidden="true" />
                 </Link>
               </div>
             </div>
           ) : done ? (
             <div className="auth-status auth-status--success">
-              <p className="eyebrow">Palavra-passe atualizada</p>
-              <h1>Já pode entrar</h1>
+              <p className="eyebrow">{t("reset.successEyebrow")}</p>
+              <h1>{t("reset.successTitleShort")}</h1>
               <p className="form-intro">
-                A nova palavra-passe está ativa. As sessões anteriores foram encerradas.
+                {t("reset.successDescriptionShort")}
               </p>
               <div className="auth-status__actions">
                 <Link className="button button--primary button--wide" to="/login">
-                  Entrar na conta <ArrowRight aria-hidden="true" />
+                  {t("reset.signIn")} <ArrowRight aria-hidden="true" />
                 </Link>
               </div>
             </div>
@@ -92,9 +94,9 @@ export function ResetPasswordPage() {
             <>
               <div className="auth-form-heading">
                 <div>
-                  <p className="eyebrow">Nova palavra-passe</p>
-                  <h1>Escolha uma palavra-passe</h1>
-                  <p className="form-intro">Use pelo menos 8 caracteres.</p>
+                  <p className="eyebrow">{t("reset.newPassword")}</p>
+                  <h1>{t("reset.title")}</h1>
+                  <p className="form-intro">{t("reset.passwordHint")}</p>
                 </div>
               </div>
 
@@ -114,7 +116,7 @@ export function ResetPasswordPage() {
                   )}
                 </AnimatePresence>
                 <label className="field">
-                  <span>Nova palavra-passe</span>
+                  <span>{t("reset.passwordLabel")}</span>
                   <span className="field__control field__control--password">
                     <LockKeyhole aria-hidden="true" />
                     <input
@@ -130,7 +132,7 @@ export function ResetPasswordPage() {
                         setPassword(event.target.value);
                         setFieldError("");
                       }}
-                      placeholder="Pelo menos 8 caracteres"
+                      placeholder={t("reset.passwordPlaceholder")}
                       aria-invalid={Boolean(fieldError)}
                       aria-describedby={fieldError ? "reset-password-error" : undefined}
                     />
@@ -138,7 +140,7 @@ export function ResetPasswordPage() {
                       className="field__action"
                       type="button"
                       onClick={() => setShowPassword((current) => !current)}
-                      aria-label={showPassword ? "Ocultar palavra-passe" : "Mostrar palavra-passe"}
+                      aria-label={showPassword ? t("reset.hidePassword") : t("reset.showPassword")}
                     >
                       {showPassword ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
                     </button>
@@ -155,10 +157,10 @@ export function ResetPasswordPage() {
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? (
-                    <Spinner label="A gravar" />
+                    <Spinner label={t("reset.saving")} />
                   ) : (
                     <>
-                      Guardar palavra-passe <ArrowRight aria-hidden="true" />
+                      {t("reset.save")} <ArrowRight aria-hidden="true" />
                     </>
                   )}
                 </button>
@@ -167,7 +169,7 @@ export function ResetPasswordPage() {
           )}
 
           <p className="auth-switch">
-            <Link to="/login">Voltar ao início de sessão</Link>
+            <Link to="/login">{t("reset.back")}</Link>
           </p>
         </motion.div>
       </section>

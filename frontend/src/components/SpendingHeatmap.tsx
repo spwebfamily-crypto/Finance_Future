@@ -4,6 +4,7 @@ import { Flame } from "lucide-react";
 import type { DailyTotal } from "../types";
 import { EmptyState } from "./States";
 import { todayInputValue } from "../utils/format";
+import { useI18n } from "../i18n/I18nContext";
 
 interface SpendingHeatmapProps {
   month: string;
@@ -25,6 +26,7 @@ function weekdayIndex(isoDay: string) {
 const weekdayLabels = ["seg", "ter", "qua", "qui", "sex", "sáb", "dom"];
 
 export function SpendingHeatmap({ month, byDay, currency }: SpendingHeatmapProps) {
+  const { locale } = useI18n();
   const { cells, peak } = useMemo(() => {
     const totals = new Map(byDay.map((entry) => [entry.day, entry.total]));
     const totalDays = daysInMonth(month);
@@ -38,7 +40,7 @@ export function SpendingHeatmap({ month, byDay, currency }: SpendingHeatmapProps
   }, [byDay, month]);
 
   const leadingBlanks = cells.length ? weekdayIndex(cells[0]!.iso) : 0;
-  const formatter = new Intl.DateTimeFormat("pt-PT", { day: "numeric", month: "long" });
+  const formatter = new Intl.DateTimeFormat(locale, { day: "numeric", month: "long" });
   const todayIso = todayInputValue();
 
   // Intensidade em 4 níveis; o pico do mês define o teto de cada escala.
@@ -80,7 +82,7 @@ export function SpendingHeatmap({ month, byDay, currency }: SpendingHeatmapProps
             {cells.map((cell) => {
               const level = intensity(cell.amount);
               const label = cell.amount
-                ? `${formatter.format(new Date(`${cell.iso}T12:00:00`))}: ${new Intl.NumberFormat("pt-PT", { style: "currency", currency }).format(cell.amount)}`
+                ? `${formatter.format(new Date(`${cell.iso}T12:00:00`))}: ${new Intl.NumberFormat(locale, { style: "currency", currency }).format(cell.amount)}`
                 : `${formatter.format(new Date(`${cell.iso}T12:00:00`))}: sem despesas`;
               return (
                 <span

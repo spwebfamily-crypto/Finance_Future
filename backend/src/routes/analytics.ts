@@ -37,6 +37,10 @@ function movementCurrency(currency: string | null | undefined, fallback: string)
   return currency || fallback;
 }
 
+function isInCurrency(account: { currency?: string | null } | null | undefined, currency: string) {
+  return !account?.currency || account.currency === currency;
+}
+
 function sortedCurrencyKeys(...maps: Map<string, Prisma.Decimal>[]) {
   return [...new Set(maps.flatMap((map) => [...map.keys()]))].sort();
 }
@@ -137,7 +141,7 @@ router.get("/today", async (request: AuthenticatedRequest, response, next) => {
           date: true,
           createdAt: true,
           category: { select: { name: true, icon: true } },
-          account: { select: { name: true, source: true } },
+          account: { select: { name: true, source: true, currency: true } },
           bankTransaction: { select: { id: true } },
         },
       }),
@@ -150,7 +154,7 @@ router.get("/today", async (request: AuthenticatedRequest, response, next) => {
           currency: true,
           date: true,
           createdAt: true,
-          account: { select: { name: true, source: true } },
+          account: { select: { name: true, source: true, currency: true } },
           bankTransaction: { select: { id: true } },
         },
       }),
@@ -163,21 +167,28 @@ router.get("/today", async (request: AuthenticatedRequest, response, next) => {
           currency: true,
           date: true,
           createdAt: true,
-          fromAccount: { select: { name: true } },
-          toAccount: { select: { name: true } },
+          fromAccount: { select: { name: true, currency: true } },
+          toAccount: { select: { name: true, currency: true } },
           bankTransactions: { select: { id: true }, take: 1 },
         },
       }),
     ]);
 
-    const totalsByCurrency = todayCurrencyTotals(expenses, incomes, context.currency);
+    const scopedExpenses = expenses.filter((item) => isInCurrency(item.account, context.currency));
+    const scopedIncomes = incomes.filter((item) => isInCurrency(item.account, context.currency));
+    const scopedTransfers = transfers.filter(
+      (item) =>
+        isInCurrency(item.fromAccount, context.currency) &&
+        isInCurrency(item.toAccount, context.currency),
+    );
+    const totalsByCurrency = todayCurrencyTotals(scopedExpenses, scopedIncomes, context.currency);
     const selectedTotals = totalsByCurrency[context.currency] ?? {
       expenseTotal: 0,
       incomeTotal: 0,
       netTotal: 0,
     };
     const items = [
-      ...expenses.map((item) => ({
+      ...scopedExpenses.map((item) => ({
         id: item.id,
         type: "expense" as const,
         description: item.description,
@@ -190,7 +201,7 @@ router.get("/today", async (request: AuthenticatedRequest, response, next) => {
         categoryIcon: item.category.icon,
         source: item.bankTransaction || item.account?.source === "bank" ? "bank" : "manual",
       })),
-      ...incomes.map((item) => ({
+      ...scopedIncomes.map((item) => ({
         id: item.id,
         type: "income" as const,
         description: item.description,
@@ -203,7 +214,7 @@ router.get("/today", async (request: AuthenticatedRequest, response, next) => {
         categoryIcon: null,
         source: item.bankTransaction || item.account?.source === "bank" ? "bank" : "manual",
       })),
-      ...transfers.map((item) => ({
+      ...scopedTransfers.map((item) => ({
         id: item.id,
         type: "transfer" as const,
         description: item.description || `Transferência para ${item.toAccount.name}`,
@@ -253,14 +264,25 @@ router.get("/summary", async (request: AuthenticatedRequest, response, next) => 
     const [expenses, previousExpenses] = await Promise.all([
       prisma.expense.findMany({
         where: { userId: request.user!.id, date: { gte: start, lt: end } },
-        select: { categoryId: true, amount: true, currency: true, date: true },
+        select: {
+          categoryId: true,
+          amount: true,
+          currency: true,
+          date: true,
+          account: { select: { currency: true } },
+        },
       }),
       prisma.expense.findMany({
         where: {
           userId: request.user!.id,
           date: { gte: previousBounds.start, lt: previousBounds.end },
         },
-        select: { categoryId: true, amount: true, currency: true },
+        select: {
+          categoryId: true,
+          amount: true,
+          currency: true,
+          account: { select: { currency: true } },
+        },
       }),
     ]);
     const amountsByCurrency = new Map<string, Map<string, Prisma.Decimal>>();
@@ -388,7 +410,13 @@ router.get("/levels", async (request: AuthenticatedRequest, response, next) => {
       categoriesAndBudgets(request.user!.id),
       prisma.expense.findMany({
         where: { userId: request.user!.id, date: { gte: historyStart, lt: end } },
-        select: { categoryId: true, amount: true, currency: true, date: true },
+        select: {
+          categoryId: true,
+          amount: true,
+          currency: true,
+          date: true,
+          account: { select: { currency: true } },
+        },
       }),
     ]);
     const values = new Map<string, Map<string, Prisma.Decimal>>();
@@ -470,7 +498,13 @@ router.get("/trend", async (request: AuthenticatedRequest, response, next) => {
     const [expenses, categories] = await Promise.all([
       prisma.expense.findMany({
         where: { userId: request.user!.id, date: { gte: start, lt: end } },
-        select: { categoryId: true, amount: true, currency: true, date: true },
+        select: {
+          categoryId: true,
+          amount: true,
+          currency: true,
+          date: true,
+          account: { select: { currency: true } },
+        },
       }),
       prisma.category.findMany({
         where: { userId: request.user!.id },

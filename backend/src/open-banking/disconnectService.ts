@@ -118,7 +118,7 @@ export async function disconnectConnection(
     });
 
     console.warn(
-      `[open-banking] ligação ${connectionId} desligada com dados conservados (${result.accountsKept} contas)`,
+      `[open-banking] ligação desligada com dados conservados (${result.accountsKept} contas)`,
     );
     return result;
   }
@@ -213,7 +213,7 @@ export async function disconnectConnection(
   });
 
   console.warn(
-    `[open-banking] ligação ${connectionId} desligada com dados eliminados (${result.transactionsDeleted} movimentos)`,
+    `[open-banking] ligação desligada com dados eliminados (${result.transactionsDeleted} movimentos)`,
   );
   return result;
 }

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useReducedMotion } from "framer-motion";
 import { formatCurrency } from "../utils/format";
+import { useI18n } from "../i18n/I18nContext";
 
 interface AnimatedCurrencyProps {
   value: number;
@@ -12,6 +13,7 @@ interface AnimatedCurrencyProps {
 // o utilizador prefere movimento reduzido.
 export function AnimatedCurrency({ value, currency, duration = 700 }: AnimatedCurrencyProps) {
   const reduceMotion = useReducedMotion();
+  const { locale } = useI18n();
   const [display, setDisplay] = useState(reduceMotion ? value : 0);
   const previousValue = useRef(0);
   const frameRef = useRef<number | null>(null);
@@ -36,5 +38,5 @@ export function AnimatedCurrency({ value, currency, duration = 700 }: AnimatedCu
     };
   }, [value, duration, reduceMotion]);
 
-  return <span aria-live="off">{formatCurrency(reduceMotion ? value : display, currency)}</span>;
+  return <span aria-live="off">{formatCurrency(reduceMotion ? value : display, currency, locale)}</span>;
 }

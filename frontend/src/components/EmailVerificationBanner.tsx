@@ -5,6 +5,7 @@ import { errorMessage } from "../api/client";
 import { authApi } from "../api/resources";
 import { useAuth } from "../auth/AuthContext";
 import { Spinner } from "./States";
+import { useI18n } from "../i18n/I18nContext";
 
 const DISMISS_KEY = "expensesnap.verify-banner-dismissed";
 
@@ -21,6 +22,7 @@ function wasDismissed() {
 
 export function EmailVerificationBanner() {
   const { user } = useAuth();
+  const { t } = useI18n();
   const reduceMotion = useReducedMotion();
   const [isDismissed, setIsDismissed] = useState(wasDismissed);
   const [resendState, setResendState] = useState<ResendState>("idle");
@@ -66,13 +68,13 @@ export function EmailVerificationBanner() {
           <MailCheck />
         </span>
         <div className="verify-banner__text">
-          <strong>{resendState === "sent" ? "Novo email enviado" : "Confirme o seu email"}</strong>
+          <strong>{resendState === "sent" ? t("auth.verify.sent") : t("auth.verify.title")}</strong>
           <span>
             {resendState === "sent"
-              ? `Verifique a caixa de entrada de ${user?.email} e a pasta de spam.`
+              ? t("auth.verify.sentDescription", { email: user?.email ?? "" })
               : resendState === "failed"
                 ? message
-                : `Enviámos um link para ${user?.email}. Confirmar protege o acesso à sua conta.`}
+                : t("auth.verify.pendingDescription", { email: user?.email ?? "" })}
           </span>
         </div>
         <div className="verify-banner__actions">
@@ -83,10 +85,10 @@ export function EmailVerificationBanner() {
             disabled={resendState === "sending" || resendState === "sent"}
           >
             {resendState === "sending" ? (
-              <Spinner label="A enviar" />
+              <Spinner label={t("A enviar")} />
             ) : (
               <>
-                <RefreshCw size={15} aria-hidden="true" /> Reenviar
+                <RefreshCw size={15} aria-hidden="true" /> {t("auth.verify.resend")}
               </>
             )}
           </button>
@@ -94,8 +96,8 @@ export function EmailVerificationBanner() {
             className="icon-button icon-button--quiet"
             type="button"
             onClick={dismiss}
-            aria-label="Dispensar aviso de verificação"
-            title="Dispensar"
+            aria-label={t("auth.verify.dismiss")}
+            title={t("auth.verify.dismissTitle")}
           >
             <X size={16} aria-hidden="true" />
           </button>

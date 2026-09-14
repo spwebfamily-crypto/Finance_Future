@@ -7,6 +7,7 @@ import { authApi } from "../api/resources";
 import { useAuth } from "../auth/AuthContext";
 import { AuthStory } from "../components/AuthStory";
 import { Spinner } from "../components/States";
+import { useI18n } from "../i18n/I18nContext";
 
 type Status = "verifying" | "success" | "error" | "missing";
 type ResendState = "idle" | "sending" | "sent" | "failed";
@@ -15,6 +16,7 @@ export function VerifyEmailPage() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token")?.trim() ?? "";
   const { isAuthenticated, applyUser } = useAuth();
+  const { t } = useI18n();
   const reduceMotion = useReducedMotion();
   const [status, setStatus] = useState<Status>(token ? "verifying" : "missing");
   const [message, setMessage] = useState("");
@@ -63,34 +65,32 @@ export function VerifyEmailPage() {
 
   const view = {
     verifying: {
-      icon: <Spinner hideLabel label="A confirmar o email" />,
+      icon: <Spinner hideLabel label={t("verify.verifyingTitle")} />,
       tone: "neutral" as const,
-      eyebrow: "Verificação",
-      title: "A confirmar o seu email",
-      description: "Só um instante — estamos a validar o link.",
+      eyebrow: t("verify.verificationEyebrow"),
+      title: t("verify.verifyingTitle"),
+      description: t("verify.verifyingDescription"),
     },
     success: {
       icon: <BadgeCheck aria-hidden="true" />,
       tone: "success" as const,
-      eyebrow: "Conta confirmada",
-      title: "Email verificado",
-      description:
-        "Obrigado. A sua conta está confirmada e pode continuar a organizar as suas finanças.",
+      eyebrow: t("verify.confirmedEyebrow"),
+      title: t("verify.confirmedTitle"),
+      description: t("verify.confirmedDescription"),
     },
     error: {
       icon: <MailWarning aria-hidden="true" />,
       tone: "danger" as const,
-      eyebrow: "Link inválido",
-      title: "Não conseguimos confirmar",
-      description: message || "O link é inválido ou já expirou. Peça um novo email de confirmação.",
+      eyebrow: t("verify.invalidEyebrow"),
+      title: t("verify.invalidTitle"),
+      description: message || t("verify.invalidDescription"),
     },
     missing: {
       icon: <ShieldQuestion aria-hidden="true" />,
       tone: "warning" as const,
-      eyebrow: "Verificação",
-      title: "Link incompleto",
-      description:
-        "Este endereço não inclui um código de verificação. Abra o link diretamente a partir do email que recebeu.",
+      eyebrow: t("verify.verificationEyebrow"),
+      title: t("reset.missingEyebrow"),
+      description: t("verify.missingDescription"),
     },
   }[status];
 
@@ -130,11 +130,11 @@ export function VerifyEmailPage() {
             {status === "success" &&
               (isAuthenticated ? (
                 <Link className="button button--primary button--wide" to="/dashboard">
-                  Ir para o painel <ArrowRight aria-hidden="true" />
+                  {t("verify.dashboard")} <ArrowRight aria-hidden="true" />
                 </Link>
               ) : (
                 <Link className="button button--primary button--wide" to="/login">
-                  Entrar na conta <ArrowRight aria-hidden="true" />
+                  {t("reset.signIn")} <ArrowRight aria-hidden="true" />
                 </Link>
               ))}
 
@@ -148,17 +148,17 @@ export function VerifyEmailPage() {
                     disabled={resendState === "sending" || resendState === "sent"}
                   >
                     {resendState === "sending" ? (
-                      <Spinner label="A enviar" />
+                      <Spinner label={t("verify.sending")} />
                     ) : (
                       <>
                         <RefreshCw aria-hidden="true" />
-                        {resendState === "sent" ? "Email enviado" : "Enviar novo email"}
+                        {resendState === "sent" ? t("verify.sent") : t("verify.newEmail")}
                       </>
                     )}
                   </button>
                   {resendState === "sent" && (
                     <p className="auth-status__hint" role="status">
-                      Enviámos um novo link. Verifique a caixa de entrada e o spam.
+                      {t("verify.sent")}
                     </p>
                   )}
                   {resendState === "failed" && (
@@ -167,17 +167,16 @@ export function VerifyEmailPage() {
                     </p>
                   )}
                   <Link className="button button--ghost button--wide" to="/dashboard">
-                    Continuar sem verificar
+                    {t("verify.continueUnverified")}
                   </Link>
                 </>
               ) : (
                 <>
                   <Link className="button button--primary button--wide" to="/login">
-                    Entrar para reenviar <ArrowRight aria-hidden="true" />
+                    {t("verify.signInToResend")} <ArrowRight aria-hidden="true" />
                   </Link>
                   <p className="auth-status__hint">
-                    Depois de entrar, pode pedir um novo email de confirmação a partir do aviso no
-                    topo da aplicação.
+                    {t("verify.afterSignInHint")}
                   </p>
                 </>
               ))}
@@ -185,9 +184,9 @@ export function VerifyEmailPage() {
 
           {status !== "success" && (
             <p className="auth-switch">
-              Ainda não tem conta?{" "}
+              {t("verify.noAccount")} {" "}
               <Link to="/register">
-                Criar conta <ArrowRight size={14} aria-hidden="true" />
+                {t("notFound.register")} <ArrowRight size={14} aria-hidden="true" />
               </Link>
             </p>
           )}

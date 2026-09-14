@@ -7,11 +7,9 @@ function argument(name: string) {
 }
 
 const year = Number(argument("year") ?? new Date().getUTCFullYear());
-const apply = process.argv.includes("--apply");
-
-if (apply) {
+if (process.argv.includes("--apply")) {
   throw new Error(
-    "Operação destrutiva bloqueada: setembro só pode ser auditado em dry-run; restauração exige um fluxo separado com backup e confirmação explícita.",
+    "Purge destrutivo de setembro está bloqueado permanentemente. Use apenas a pré-visualização sem --apply.",
   );
 }
 
@@ -56,78 +54,8 @@ async function main() {
     syncJobs: found.syncJobs,
   };
 
-  if (!apply) {
-    process.stdout.write(`${JSON.stringify({ mode: "dry-run", ...summary }, null, 2)}\n`);
-    process.stdout.write(
-      "Nada foi apagado. Repita com --apply depois de confirmar o destino da DATABASE_URL.\n",
-    );
-    return;
-  }
-
-  const expenseIds = found.bankTransactions.flatMap((item) =>
-    item.expenseId ? [item.expenseId] : [],
-  );
-  const incomeIds = found.bankTransactions.flatMap((item) =>
-    item.incomeId ? [item.incomeId] : [],
-  );
-  const transferIds = found.bankTransactions.flatMap((item) =>
-    item.transferId ? [item.transferId] : [],
-  );
-
-  const result = await prisma.$transaction(async (client) => {
-    const deletedBankTransactions = await client.bankTransaction.deleteMany({
-      where: effectiveBankDate,
-    });
-    const deletedExpenses = await client.expense.deleteMany({
-      where: {
-        OR: [{ date: inPeriod }, ...(expenseIds.length ? [{ id: { in: expenseIds } }] : [])],
-      },
-    });
-    const deletedIncomes = await client.income.deleteMany({
-      where: { OR: [{ date: inPeriod }, ...(incomeIds.length ? [{ id: { in: incomeIds } }] : [])] },
-    });
-    const deletedTransfers = await client.transfer.deleteMany({
-      where: {
-        OR: [{ date: inPeriod }, ...(transferIds.length ? [{ id: { in: transferIds } }] : [])],
-      },
-    });
-    const deletedSyncJobs = await client.bankSyncJob.deleteMany({ where: { createdAt: inPeriod } });
-
-    await client.recurringExpense.updateMany({
-      where: { lastPaidAt: inPeriod },
-      data: { lastPaidAt: null },
-    });
-    await client.recurringIncome.updateMany({
-      where: { lastReceivedAt: inPeriod },
-      data: { lastReceivedAt: null },
-    });
-    await client.bankAccountLink.updateMany({
-      data: { lastTransactionSyncAt: null },
-    });
-    await client.bankConnection.updateMany({
-      data: { lastSyncedAt: null, nextSyncAt: null },
-    });
-    await client.account.updateMany({
-      where: { source: "bank" },
-      data: {
-        providerCurrentBalance: null,
-        providerAvailableBalance: null,
-        providerBalanceUpdatedAt: null,
-      },
-    });
-
-    return {
-      bankTransactions: deletedBankTransactions.count,
-      expenses: deletedExpenses.count,
-      incomes: deletedIncomes.count,
-      transfers: deletedTransfers.count,
-      syncJobs: deletedSyncJobs.count,
-    };
-  });
-
-  process.stdout.write(
-    `${JSON.stringify({ mode: "applied", period: `${year}-09`, deleted: result }, null, 2)}\n`,
-  );
+  process.stdout.write(`${JSON.stringify({ mode: "dry-run", ...summary }, null, 2)}\n`);
+  process.stdout.write("Nada foi apagado: este comando é somente leitura.\n");
 }
 
 main()

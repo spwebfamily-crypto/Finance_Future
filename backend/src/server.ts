@@ -23,7 +23,7 @@ const server = app.listen(env.PORT, "0.0.0.0", () => {
 const AUTO_SYNC_TICK_MS = 60_000;
 let automaticSyncRunning = false;
 async function runAutomaticSync() {
-  if (!openBanking.enabled || automaticSyncRunning) return;
+  if (!openBanking.enabled || !openBanking.automaticSyncEnabled || automaticSyncRunning) return;
   automaticSyncRunning = true;
   try {
     await processDueConnections(10);
@@ -37,11 +37,11 @@ async function runAutomaticSync() {
   }
 }
 
-const automaticSyncTimer = openBanking.enabled
+const automaticSyncTimer = openBanking.enabled && openBanking.automaticSyncEnabled
   ? setInterval(() => void runAutomaticSync(), AUTO_SYNC_TICK_MS)
   : null;
 automaticSyncTimer?.unref();
-if (openBanking.enabled) void runAutomaticSync();
+if (openBanking.enabled && openBanking.automaticSyncEnabled) void runAutomaticSync();
 
 // Evita que uploads deliberadamente lentos retenham os poucos slots de
 // processamento da instância indefinidamente, sem penalizar uma rede móvel normal.

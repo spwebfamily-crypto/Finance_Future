@@ -3,6 +3,7 @@ import { BankBalance } from "./BankBalance";
 import { BankSyncStatus } from "./BankSyncStatus";
 import { Spinner } from "./States";
 import type { AccountType, FinancialAccount } from "../types";
+import { useI18n } from "../i18n/I18nContext";
 
 const typeLabels: Record<AccountType, string> = {
   current: "À ordem",
@@ -24,6 +25,7 @@ export function BankAccountCard({
   busy?: boolean;
   onSync?: () => void;
 }) {
+  const { t } = useI18n();
   const isLinked = account.source === "bank";
 
   return (
@@ -33,11 +35,11 @@ export function BankAccountCard({
           <Landmark />
         </span>
         <div>
-          <p className="bank-account-card__type">{typeLabels[account.type]}</p>
+          <p className="bank-account-card__type">{t(typeLabels[account.type])}</p>
           <h3>{account.name}</h3>
         </div>
         <span className={`account-badge account-badge--${isLinked ? "bank" : "manual"}`}>
-          {isLinked ? "Ligada ao banco" : "Manual"}
+          {isLinked ? t("Ligada ao banco") : t("Manual")}
         </span>
       </header>
 
@@ -61,8 +63,8 @@ export function BankAccountCard({
 
       {isLinked && onSync && (
         <button type="button" className="button button--primary" onClick={onSync} disabled={busy}>
-          {busy ? <Spinner label="A sincronizar" /> : <RefreshCw aria-hidden="true" />}
-          <span>Sincronizar</span>
+          {busy ? <Spinner label={t("A sincronizar")} /> : <RefreshCw aria-hidden="true" />}
+          <span>{t("Sincronizar")}</span>
         </button>
       )}
     </article>
