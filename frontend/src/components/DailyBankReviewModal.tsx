@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ArrowRight, Check, Landmark, ReceiptText, X } from "lucide-react";
+import { ArrowRight, Check, Landmark, ReceiptText, ShieldCheck, X } from "lucide-react";
 import { categoryApi, openBankingApi } from "../api/resources";
 import { errorMessage } from "../api/client";
 import { BANK_SYNC_COMPLETED_EVENT } from "../api/bank-sync-events";
@@ -276,13 +276,16 @@ export function DailyBankReviewModal() {
               <strong>{transactions.length}</strong>
             </div>
 
-            <TiltCard className="daily-review-card">
+            <TiltCard className="daily-review-card" tiltLimit={5} scale={1.008}>
               <div className="daily-review-card__top">
                 <span className="daily-review-card__icon" aria-hidden="true">
                   <ReceiptText />
                 </span>
-                <span>
+                <span className="daily-review-card__source">
                   {current.bankAccountLink.connection?.institutionName ?? t("Banco ligado")} · {current.bankAccountLink.displayName}
+                </span>
+                <span className="daily-review-card__verified" aria-label={t("Movimento importado do banco")}>
+                  <ShieldCheck aria-hidden="true" />
                 </span>
               </div>
               <div className="daily-review-card__body">
@@ -290,7 +293,10 @@ export function DailyBankReviewModal() {
                   <h3>{current.description}</h3>
                   <p>{current.counterpartyName || t("Movimento bancário")}</p>
                 </div>
-                <strong>{amount}</strong>
+                <div className="daily-review-card__amount">
+                  <span>{t("Confirmar gasto")}</span>
+                  <strong>{amount}</strong>
+                </div>
               </div>
               <div className="daily-review-card__meta" aria-label={t("Estado do movimento")}>
                 <span>{t(current.status === "pending" ? "Pendente" : "Contabilizado")}</span>

@@ -151,7 +151,7 @@ export type AccountType = "current" | "savings" | "cash" | "credit_card" | "othe
 
 export type AccountSource = "manual" | "bank";
 
-export type BalanceSource = "derived" | "provider";
+export type BalanceSource = "derived" | "provider" | "unavailable";
 
 export interface FinancialAccount {
   id: string;
@@ -161,7 +161,7 @@ export interface FinancialAccount {
   currency?: string;
   openingBalance: number;
   creditLimit?: number | null;
-  currentBalance?: number;
+  currentBalance?: number | null;
   availableBalance?: number | null;
   derivedBalance?: number;
   providerBalance?: number | null;

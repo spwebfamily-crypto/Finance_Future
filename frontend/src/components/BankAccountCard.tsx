@@ -4,6 +4,7 @@ import { BankSyncStatus } from "./BankSyncStatus";
 import { Spinner } from "./States";
 import type { AccountType, FinancialAccount } from "../types";
 import { useI18n } from "../i18n/I18nContext";
+import { accountBalanceValue } from "../utils/accountBalance";
 
 const typeLabels: Record<AccountType, string> = {
   current: "À ordem",
@@ -44,10 +45,7 @@ export function BankAccountCard({
       </header>
 
       <BankBalance
-        currentBalance={account.currentBalance ?? account.openingBalance}
-        availableBalance={isLinked ? account.availableBalance : null}
-        derivedBalance={account.derivedBalance}
-        balanceDelta={account.balanceDelta}
+        currentBalance={accountBalanceValue(account)}
         balanceSource={account.balanceSource ?? "derived"}
         balanceAsOf={account.balanceAsOf ?? null}
         currency={account.currency ?? currency}

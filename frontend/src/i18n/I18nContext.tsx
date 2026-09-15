@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { pageMessages, type PageTranslationKey } from "./pageMessages";
 
 export const supportedLocales = ["pt-PT", "en-GB", "es-ES"] as const;
 export type AppLocale = (typeof supportedLocales)[number];
@@ -766,7 +767,7 @@ const es: Messages = {
  * supported so existing screens can migrate incrementally without changing
  * API/provider/status identifiers.
  */
-export const semanticMessages: Record<AppLocale, Messages> = {
+export const semanticMessages = {
   "pt-PT": {
     "language.label": "Idioma",
     "language.aria": "Idioma / Language / Idioma",
@@ -781,7 +782,8 @@ export const semanticMessages: Record<AppLocale, Messages> = {
     "auth.verify.sent": "Novo email enviado",
     "auth.verify.title": "Confirme o seu email",
     "auth.verify.sentDescription": "Verifique a caixa de entrada de {email} e a pasta de spam.",
-    "auth.verify.pendingDescription": "Enviámos um link para {email}. Confirmar protege o acesso à sua conta.",
+    "auth.verify.pendingDescription":
+      "Enviámos um link para {email}. Confirmar protege o acesso à sua conta.",
     "auth.verify.resend": "Reenviar",
     "auth.verify.dismiss": "Dispensar aviso de verificação",
     "auth.verify.dismissTitle": "Dispensar",
@@ -805,15 +807,21 @@ export const semanticMessages: Record<AppLocale, Messages> = {
     "privacy.storedInstitution": "Nome da instituição e identificador da ligação",
     "privacy.storedInstitutionDescription": "para mostrar que banco está ligado.",
     "privacy.storedSession": "Identificador da sessão, cifrado",
-    "privacy.storedSessionDescription": "necessário para ler saldos e movimentos enquanto o consentimento existir.",
+    "privacy.storedSessionDescription":
+      "necessário para ler saldos e movimentos enquanto o consentimento existir.",
     "privacy.storedIban": "IBAN mascarado e um hash da conta",
-    "privacy.storedIbanDescription": "apenas para apresentação e para casar transferências entre as suas contas. O IBAN completo nunca é guardado.",
+    "privacy.storedIbanDescription":
+      "apenas para apresentação e para casar transferências entre as suas contas. O IBAN completo nunca é guardado.",
     "privacy.storedTransactions": "Saldos e movimentos",
-    "privacy.storedTransactionsDescription": "descrição, valor, data, estado (pendente ou contabilizado) e, quando existir, o nome da contraparte.",
+    "privacy.storedTransactionsDescription":
+      "descrição, valor, data, estado (pendente ou contabilizado) e, quando existir, o nome da contraparte.",
     "privacy.storedRecords": "Despesas, rendimentos e transferências criadas",
-    "privacy.storedRecordsDescription": "a partir de movimentos contabilizados, para entrarem nas análises que já usa.",
-    "privacy.noPassword": "Nunca guardamos a palavra-passe do banco nem credenciais bancárias. Não há iniciação de pagamentos.",
-    "privacy.rightsDescription": "Pode renovar o consentimento quando o banco o exigir, desligar um banco conservando os dados já importados ou apagar esses dados. A eliminação remove apenas o que veio do banco: os registos manuais não são apagados.",
+    "privacy.storedRecordsDescription":
+      "a partir de movimentos contabilizados, para entrarem nas análises que já usa.",
+    "privacy.noPassword":
+      "Nunca guardamos a palavra-passe do banco nem credenciais bancárias. Não há iniciação de pagamentos.",
+    "privacy.rightsDescription":
+      "Pode renovar o consentimento quando o banco o exigir, desligar um banco conservando os dados já importados ou apagar esses dados. A eliminação remove apenas o que veio do banco: os registos manuais não são apagados.",
     "notFound.eyebrow": "Página não encontrada",
     "notFound.title": "Esta conta não fecha.",
     "notFound.description": "O endereço pode ter mudado, ou a página nunca chegou a existir.",
@@ -823,7 +831,8 @@ export const semanticMessages: Record<AppLocale, Messages> = {
     "notFound.signIn": "Entrar na conta",
     "notFound.register": "Criar conta",
     "reset.invalidTitle": "Link inválido ou expirado",
-    "reset.invalidDescription": "Peça um novo link de recuperação para escolher outra palavra-passe.",
+    "reset.invalidDescription":
+      "Peça um novo link de recuperação para escolher outra palavra-passe.",
     "reset.requestLink": "Pedir novo link",
     "reset.successTitle": "Palavra-passe atualizada",
     "reset.successDescription": "Já pode entrar com a nova palavra-passe.",
@@ -837,10 +846,12 @@ export const semanticMessages: Record<AppLocale, Messages> = {
     "reset.back": "Voltar ao início de sessão",
     "reset.missingEyebrow": "Link incompleto",
     "reset.missingTitle": "Falta o código de reposição",
-    "reset.missingDescription": "Abra o link diretamente a partir do email que recebeu, ou peça um novo.",
+    "reset.missingDescription":
+      "Abra o link diretamente a partir do email que recebeu, ou peça um novo.",
     "reset.successEyebrow": "Palavra-passe atualizada",
     "reset.successTitleShort": "Já pode entrar",
-    "reset.successDescriptionShort": "A nova palavra-passe está ativa. As sessões anteriores foram encerradas.",
+    "reset.successDescriptionShort":
+      "A nova palavra-passe está ativa. As sessões anteriores foram encerradas.",
     "reset.passwordHint": "Use pelo menos 8 caracteres.",
     "reset.passwordPlaceholder": "Pelo menos 8 caracteres",
     "reset.passwordLabel": "Nova palavra-passe",
@@ -863,17 +874,63 @@ export const semanticMessages: Record<AppLocale, Messages> = {
     "verify.verifyingDescription": "Só um instante — estamos a validar o link.",
     "verify.confirmedEyebrow": "Conta confirmada",
     "verify.confirmedTitle": "Email verificado",
-    "verify.confirmedDescription": "Obrigado. A sua conta está confirmada e pode continuar a organizar as suas finanças.",
+    "verify.confirmedDescription":
+      "Obrigado. A sua conta está confirmada e pode continuar a organizar as suas finanças.",
     "verify.invalidEyebrow": "Link inválido",
     "verify.invalidTitle": "Não conseguimos confirmar",
-    "verify.invalidDescription": "O link é inválido ou já expirou. Peça um novo email de confirmação.",
-    "verify.missingDescription": "Este endereço não inclui um código de verificação. Abra o link diretamente a partir do email que recebeu.",
+    "verify.invalidDescription":
+      "O link é inválido ou já expirou. Peça um novo email de confirmação.",
+    "verify.missingDescription":
+      "Este endereço não inclui um código de verificação. Abra o link diretamente a partir do email que recebeu.",
     "verify.dashboard": "Ir para o painel",
     "verify.newEmail": "Enviar novo email",
     "verify.continueUnverified": "Continuar sem verificar",
     "verify.signInToResend": "Entrar para reenviar",
-    "verify.afterSignInHint": "Depois de entrar, pode pedir um novo email de confirmação a partir do aviso no topo da aplicação.",
+    "verify.afterSignInHint":
+      "Depois de entrar, pode pedir um novo email de confirmação a partir do aviso no topo da aplicação.",
     "verify.noAccount": "Ainda não tem conta?",
+    "Movimento do dia": "Movimento do dia",
+    "Ver todos": "Ver todos",
+    Entradas: "Entradas",
+    Saídas: "Saídas",
+    "Resultado do dia": "Resultado do dia",
+    "Saldo das contas": "Saldo das contas",
+    "Adicionar ou ligar uma conta": "Adicionar ou ligar uma conta",
+    Atividade: "Atividade",
+    "{count} movimento": "{count} movimento",
+    "{count} movimentos": "{count} movimentos",
+    Banco: "Banco",
+    "Ainda não há movimentos hoje.": "Ainda não há movimentos hoje.",
+    "Total em {month}": "Total em {month}",
+    "Inclui os gastos das contas ligadas ao banco.":
+      "Inclui os gastos das contas ligadas ao banco.",
+    "Ligue um banco para os gastos contabilizados entrarem sozinhos.":
+      "Ligue um banco para os gastos contabilizados entrarem sozinhos.",
+    "Sem comparação": "Sem comparação",
+    "Igual ao mês anterior": "Igual ao mês anterior",
+    "{amount} face ao mês anterior": "{amount} face ao mês anterior",
+    "Estado do mês": "Estado do mês",
+    "Orçamento acompanhado": "Orçamento acompanhado",
+    "Utilização do orçamento acompanhado": "Utilização do orçamento acompanhado",
+    "{percent}% utilizado": "{percent}% utilizado",
+    "Definir limites": "Definir limites",
+    Distribuição: "Distribuição",
+    "Por categoria": "Por categoria",
+    "Requer atenção": "Requer atenção",
+    "Uma categoria ultrapassou o limite ou o ritmo previsto.":
+      "Uma categoria ultrapassou o limite ou o ritmo previsto.",
+    "{count} categorias ultrapassaram o limite ou o ritmo previsto.":
+      "{count} categorias ultrapassaram o limite ou o ritmo previsto.",
+    "A acompanhar": "A acompanhar",
+    "Uma categoria está acima do ritmo habitual.": "Uma categoria está acima do ritmo habitual.",
+    "{count} categorias estão acima do ritmo habitual.":
+      "{count} categorias estão acima do ritmo habitual.",
+    "Mês sob controlo": "Mês sob controlo",
+    "Os limites definidos estão dentro do ritmo esperado.":
+      "Os limites definidos estão dentro do ritmo esperado.",
+    "Defina um limite": "Defina um limite",
+    "Os orçamentos tornam os sinais deste mês mais úteis.":
+      "Os orçamentos tornam os sinais deste mês mais úteis.",
   },
   "en-GB": {
     "language.label": "Language",
@@ -889,7 +946,8 @@ export const semanticMessages: Record<AppLocale, Messages> = {
     "auth.verify.sent": "New email sent",
     "auth.verify.title": "Confirm your email",
     "auth.verify.sentDescription": "Check the inbox for {email} and the spam folder.",
-    "auth.verify.pendingDescription": "We sent a link to {email}. Confirming protects access to your account.",
+    "auth.verify.pendingDescription":
+      "We sent a link to {email}. Confirming protects access to your account.",
     "auth.verify.resend": "Resend",
     "auth.verify.dismiss": "Dismiss email verification notice",
     "auth.verify.dismissTitle": "Dismiss",
@@ -913,15 +971,21 @@ export const semanticMessages: Record<AppLocale, Messages> = {
     "privacy.storedInstitution": "Institution name and connection identifier",
     "privacy.storedInstitutionDescription": "to show which bank is connected.",
     "privacy.storedSession": "Encrypted session identifier",
-    "privacy.storedSessionDescription": "needed to read balances and transactions while consent exists.",
+    "privacy.storedSessionDescription":
+      "needed to read balances and transactions while consent exists.",
     "privacy.storedIban": "Masked IBAN and an account hash",
-    "privacy.storedIbanDescription": "for display and matching transfers between your accounts. The full IBAN is never stored.",
+    "privacy.storedIbanDescription":
+      "for display and matching transfers between your accounts. The full IBAN is never stored.",
     "privacy.storedTransactions": "Balances and transactions",
-    "privacy.storedTransactionsDescription": "description, amount, date, status (pending or booked) and, when available, counterparty name.",
+    "privacy.storedTransactionsDescription":
+      "description, amount, date, status (pending or booked) and, when available, counterparty name.",
     "privacy.storedRecords": "Expenses, income and transfers created",
-    "privacy.storedRecordsDescription": "from booked transactions so they can appear in the analyses you already use.",
-    "privacy.noPassword": "We never store your bank password or banking credentials. Payments cannot be initiated.",
-    "privacy.rightsDescription": "You can renew consent when your bank requires it, disconnect a bank while keeping imported data, or delete that data. Deletion only removes data imported from the bank; manual records are not deleted.",
+    "privacy.storedRecordsDescription":
+      "from booked transactions so they can appear in the analyses you already use.",
+    "privacy.noPassword":
+      "We never store your bank password or banking credentials. Payments cannot be initiated.",
+    "privacy.rightsDescription":
+      "You can renew consent when your bank requires it, disconnect a bank while keeping imported data, or delete that data. Deletion only removes data imported from the bank; manual records are not deleted.",
     "notFound.eyebrow": "Page not found",
     "notFound.title": "This account does not balance.",
     "notFound.description": "The address may have changed, or the page may never have existed.",
@@ -945,10 +1009,12 @@ export const semanticMessages: Record<AppLocale, Messages> = {
     "reset.back": "Back to sign in",
     "reset.missingEyebrow": "Incomplete link",
     "reset.missingTitle": "The reset code is missing",
-    "reset.missingDescription": "Open the link directly from the email you received, or request a new one.",
+    "reset.missingDescription":
+      "Open the link directly from the email you received, or request a new one.",
     "reset.successEyebrow": "Password updated",
     "reset.successTitleShort": "You can now sign in",
-    "reset.successDescriptionShort": "Your new password is active. Previous sessions have been signed out.",
+    "reset.successDescriptionShort":
+      "Your new password is active. Previous sessions have been signed out.",
     "reset.passwordHint": "Use at least 8 characters.",
     "reset.passwordPlaceholder": "At least 8 characters",
     "reset.passwordLabel": "New password",
@@ -971,17 +1037,63 @@ export const semanticMessages: Record<AppLocale, Messages> = {
     "verify.verifyingDescription": "Just a moment — we are validating the link.",
     "verify.confirmedEyebrow": "Account confirmed",
     "verify.confirmedTitle": "Email verified",
-    "verify.confirmedDescription": "Thank you. Your account is confirmed and you can continue organising your finances.",
+    "verify.confirmedDescription":
+      "Thank you. Your account is confirmed and you can continue organising your finances.",
     "verify.invalidEyebrow": "Invalid link",
     "verify.invalidTitle": "We could not confirm it",
-    "verify.invalidDescription": "The link is invalid or has expired. Request a new confirmation email.",
-    "verify.missingDescription": "This address does not include a verification code. Open the link directly from the email you received.",
+    "verify.invalidDescription":
+      "The link is invalid or has expired. Request a new confirmation email.",
+    "verify.missingDescription":
+      "This address does not include a verification code. Open the link directly from the email you received.",
     "verify.dashboard": "Go to dashboard",
     "verify.newEmail": "Send a new email",
     "verify.continueUnverified": "Continue without verifying",
     "verify.signInToResend": "Sign in to resend",
-    "verify.afterSignInHint": "After signing in, you can request a new confirmation email from the notice at the top of the app.",
+    "verify.afterSignInHint":
+      "After signing in, you can request a new confirmation email from the notice at the top of the app.",
     "verify.noAccount": "Don't have an account yet?",
+    "Movimento do dia": "Today's activity",
+    "Ver todos": "View all",
+    Entradas: "Income",
+    Saídas: "Outgoings",
+    "Resultado do dia": "Today's net",
+    "Saldo das contas": "Account balances",
+    "Adicionar ou ligar uma conta": "Add or connect an account",
+    Atividade: "Activity",
+    "{count} movimento": "{count} transaction",
+    "{count} movimentos": "{count} transactions",
+    Banco: "Bank",
+    "Ainda não há movimentos hoje.": "There are no transactions today yet.",
+    "Total em {month}": "Total in {month}",
+    "Inclui os gastos das contas ligadas ao banco.":
+      "Includes spending from connected bank accounts.",
+    "Ligue um banco para os gastos contabilizados entrarem sozinhos.":
+      "Connect a bank to add booked spending automatically.",
+    "Sem comparação": "No comparison",
+    "Igual ao mês anterior": "Same as last month",
+    "{amount} face ao mês anterior": "{amount} compared with last month",
+    "Estado do mês": "Month status",
+    "Orçamento acompanhado": "Tracked budget",
+    "Utilização do orçamento acompanhado": "Tracked budget usage",
+    "{percent}% utilizado": "{percent}% used",
+    "Definir limites": "Set limits",
+    Distribuição: "Breakdown",
+    "Por categoria": "By category",
+    "Requer atenção": "Needs attention",
+    "Uma categoria ultrapassou o limite ou o ritmo previsto.":
+      "One category exceeded its limit or expected pace.",
+    "{count} categorias ultrapassaram o limite ou o ritmo previsto.":
+      "{count} categories exceeded their limit or expected pace.",
+    "A acompanhar": "Keep an eye on this",
+    "Uma categoria está acima do ritmo habitual.": "One category is above its usual pace.",
+    "{count} categorias estão acima do ritmo habitual.":
+      "{count} categories are above their usual pace.",
+    "Mês sob controlo": "Month under control",
+    "Os limites definidos estão dentro do ritmo esperado.":
+      "Your limits are within the expected pace.",
+    "Defina um limite": "Set a limit",
+    "Os orçamentos tornam os sinais deste mês mais úteis.":
+      "Budgets make this month's signals more useful.",
   },
   "es-ES": {
     "language.label": "Idioma",
@@ -997,7 +1109,8 @@ export const semanticMessages: Record<AppLocale, Messages> = {
     "auth.verify.sent": "Nuevo correo enviado",
     "auth.verify.title": "Confirma tu correo",
     "auth.verify.sentDescription": "Revisa la bandeja de entrada de {email} y la carpeta de spam.",
-    "auth.verify.pendingDescription": "Enviamos un enlace a {email}. Confirmarlo protege el acceso a tu cuenta.",
+    "auth.verify.pendingDescription":
+      "Enviamos un enlace a {email}. Confirmarlo protege el acceso a tu cuenta.",
     "auth.verify.resend": "Reenviar",
     "auth.verify.dismiss": "Descartar aviso de verificación",
     "auth.verify.dismissTitle": "Descartar",
@@ -1021,15 +1134,21 @@ export const semanticMessages: Record<AppLocale, Messages> = {
     "privacy.storedInstitution": "Nombre de la institución e identificador de la conexión",
     "privacy.storedInstitutionDescription": "para mostrar qué banco está conectado.",
     "privacy.storedSession": "Identificador de sesión cifrado",
-    "privacy.storedSessionDescription": "necesario para leer saldos y movimientos mientras exista el consentimiento.",
+    "privacy.storedSessionDescription":
+      "necesario para leer saldos y movimientos mientras exista el consentimiento.",
     "privacy.storedIban": "IBAN oculto y hash de la cuenta",
-    "privacy.storedIbanDescription": "solo para mostrar y relacionar transferencias entre tus cuentas. El IBAN completo nunca se guarda.",
+    "privacy.storedIbanDescription":
+      "solo para mostrar y relacionar transferencias entre tus cuentas. El IBAN completo nunca se guarda.",
     "privacy.storedTransactions": "Saldos y movimientos",
-    "privacy.storedTransactionsDescription": "descripción, importe, fecha, estado (pendiente o contabilizado) y, cuando exista, nombre de la contraparte.",
+    "privacy.storedTransactionsDescription":
+      "descripción, importe, fecha, estado (pendiente o contabilizado) y, cuando exista, nombre de la contraparte.",
     "privacy.storedRecords": "Gastos, ingresos y transferencias creados",
-    "privacy.storedRecordsDescription": "a partir de movimientos contabilizados para incluirlos en los análisis que ya usas.",
-    "privacy.noPassword": "Nunca guardamos tu contraseña bancaria ni tus credenciales. No se pueden iniciar pagos.",
-    "privacy.rightsDescription": "Puedes renovar el consentimiento cuando el banco lo pida, desconectar un banco conservando los datos importados o eliminar esos datos. La eliminación solo borra lo importado del banco; los registros manuales no se borran.",
+    "privacy.storedRecordsDescription":
+      "a partir de movimientos contabilizados para incluirlos en los análisis que ya usas.",
+    "privacy.noPassword":
+      "Nunca guardamos tu contraseña bancaria ni tus credenciales. No se pueden iniciar pagos.",
+    "privacy.rightsDescription":
+      "Puedes renovar el consentimiento cuando el banco lo pida, desconectar un banco conservando los datos importados o eliminar esos datos. La eliminación solo borra lo importado del banco; los registros manuales no se borran.",
     "notFound.eyebrow": "Página no encontrada",
     "notFound.title": "Esta cuenta no cuadra.",
     "notFound.description": "La dirección puede haber cambiado o la página quizá nunca existió.",
@@ -1053,10 +1172,12 @@ export const semanticMessages: Record<AppLocale, Messages> = {
     "reset.back": "Volver a iniciar sesión",
     "reset.missingEyebrow": "Enlace incompleto",
     "reset.missingTitle": "Falta el código de recuperación",
-    "reset.missingDescription": "Abre el enlace directamente desde el correo que recibiste o pide uno nuevo.",
+    "reset.missingDescription":
+      "Abre el enlace directamente desde el correo que recibiste o pide uno nuevo.",
     "reset.successEyebrow": "Contraseña actualizada",
     "reset.successTitleShort": "Ya puedes entrar",
-    "reset.successDescriptionShort": "La nueva contraseña está activa. Se cerraron las sesiones anteriores.",
+    "reset.successDescriptionShort":
+      "La nueva contraseña está activa. Se cerraron las sesiones anteriores.",
     "reset.passwordHint": "Usa al menos 8 caracteres.",
     "reset.passwordPlaceholder": "Al menos 8 caracteres",
     "reset.passwordLabel": "Nueva contraseña",
@@ -1079,24 +1200,79 @@ export const semanticMessages: Record<AppLocale, Messages> = {
     "verify.verifyingDescription": "Un momento — estamos validando el enlace.",
     "verify.confirmedEyebrow": "Cuenta confirmada",
     "verify.confirmedTitle": "Correo verificado",
-    "verify.confirmedDescription": "Gracias. Tu cuenta está confirmada y puedes seguir organizando tus finanzas.",
+    "verify.confirmedDescription":
+      "Gracias. Tu cuenta está confirmada y puedes seguir organizando tus finanzas.",
     "verify.invalidEyebrow": "Enlace no válido",
     "verify.invalidTitle": "No pudimos confirmarlo",
-    "verify.invalidDescription": "El enlace no es válido o ha caducado. Pide un nuevo correo de confirmación.",
-    "verify.missingDescription": "Esta dirección no incluye un código de verificación. Abre el enlace directamente desde el correo que recibiste.",
+    "verify.invalidDescription":
+      "El enlace no es válido o ha caducado. Pide un nuevo correo de confirmación.",
+    "verify.missingDescription":
+      "Esta dirección no incluye un código de verificación. Abre el enlace directamente desde el correo que recibiste.",
     "verify.dashboard": "Ir al panel",
     "verify.newEmail": "Enviar un correo nuevo",
     "verify.continueUnverified": "Continuar sin verificar",
     "verify.signInToResend": "Entrar para reenviar",
-    "verify.afterSignInHint": "Después de entrar, puedes pedir un nuevo correo de confirmación desde el aviso en la parte superior de la aplicación.",
+    "verify.afterSignInHint":
+      "Después de entrar, puedes pedir un nuevo correo de confirmación desde el aviso en la parte superior de la aplicación.",
     "verify.noAccount": "¿Aún no tienes cuenta?",
+    "Movimento do dia": "Actividad de hoy",
+    "Ver todos": "Ver todos",
+    Entradas: "Ingresos",
+    Saídas: "Salidas",
+    "Resultado do dia": "Resultado de hoy",
+    "Saldo das contas": "Saldo de las cuentas",
+    "Adicionar ou ligar uma conta": "Añadir o conectar una cuenta",
+    Atividade: "Actividad",
+    "{count} movimento": "{count} movimiento",
+    "{count} movimentos": "{count} movimientos",
+    Banco: "Banco",
+    "Ainda não há movimentos hoje.": "Todavía no hay movimientos hoy.",
+    "Total em {month}": "Total en {month}",
+    "Inclui os gastos das contas ligadas ao banco.":
+      "Incluye los gastos de las cuentas bancarias conectadas.",
+    "Ligue um banco para os gastos contabilizados entrarem sozinhos.":
+      "Conecta un banco para añadir automáticamente los gastos contabilizados.",
+    "Sem comparação": "Sin comparación",
+    "Igual ao mês anterior": "Igual que el mes anterior",
+    "{amount} face ao mês anterior": "{amount} respecto al mes anterior",
+    "Estado do mês": "Estado del mes",
+    "Orçamento acompanhado": "Presupuesto supervisado",
+    "Utilização do orçamento acompanhado": "Uso del presupuesto supervisado",
+    "{percent}% utilizado": "{percent}% utilizado",
+    "Definir limites": "Definir límites",
+    Distribuição: "Distribución",
+    "Por categoria": "Por categoría",
+    "Requer atenção": "Requiere atención",
+    "Uma categoria ultrapassou o limite ou o ritmo previsto.":
+      "Una categoría superó el límite o el ritmo previsto.",
+    "{count} categorias ultrapassaram o limite ou o ritmo previsto.":
+      "{count} categorías superaron el límite o el ritmo previsto.",
+    "A acompanhar": "A vigilar",
+    "Uma categoria está acima do ritmo habitual.":
+      "Una categoría está por encima del ritmo habitual.",
+    "{count} categorias estão acima do ritmo habitual.":
+      "{count} categorías están por encima del ritmo habitual.",
+    "Mês sob controlo": "Mes bajo control",
+    "Os limites definidos estão dentro do ritmo esperado.":
+      "Los límites definidos están dentro del ritmo esperado.",
+    "Defina um limite": "Define un límite",
+    "Os orçamentos tornam os sinais deste mês mais úteis.":
+      "Los presupuestos hacen más útiles las señales de este mes.",
   },
-};
+} satisfies Record<AppLocale, Messages>;
+
+/** Stable keys for newly migrated UI. Phrase keys remain accepted while the
+ * legacy screens are moved domain by domain. */
+export type TranslationKey = keyof (typeof semanticMessages)["pt-PT"] | PageTranslationKey;
+const semanticCatalogs: Record<AppLocale, Messages> = semanticMessages;
 
 const catalogs: Record<AppLocale, Messages> = {
-  "pt-PT": Object.fromEntries([...Object.keys(en), ...Object.keys(es)].map((key) => [key, key])),
-  "en-GB": { ...en, ...semanticMessages["en-GB"] },
-  "es-ES": { ...es, ...semanticMessages["es-ES"] },
+  "pt-PT": {
+    ...Object.fromEntries([...Object.keys(en), ...Object.keys(es)].map((key) => [key, key])),
+    ...pageMessages["pt-PT"],
+  },
+  "en-GB": { ...en, ...semanticMessages["en-GB"], ...pageMessages["en-GB"] },
+  "es-ES": { ...es, ...semanticMessages["es-ES"], ...pageMessages["es-ES"] },
 };
 
 function interpolate(message: string, values?: Record<string, string | number>) {
@@ -1113,17 +1289,21 @@ function initialLocale(): AppLocale {
 interface I18nValue {
   locale: AppLocale;
   setLocale: (locale: AppLocale) => void;
-  t: (source: string, values?: Record<string, string | number>) => string;
+  t: (source: TranslationKey | string, values?: Record<string, string | number>) => string;
   formatDate: (value: string | Date, options?: Intl.DateTimeFormatOptions) => string;
   formatNumber: (value: number, options?: Intl.NumberFormatOptions) => string;
   formatCurrency: (value: number, currency?: string) => string;
-  plural: (count: number, forms: { one: string; other: string }, values?: Record<string, string | number>) => string;
+  plural: (
+    count: number,
+    forms: { one: string; other: string },
+    values?: Record<string, string | number>,
+  ) => string;
 }
 
 const fallbackValue: I18nValue = {
   locale: "pt-PT",
   setLocale: () => undefined,
-  t: (source, values) => interpolate(semanticMessages["pt-PT"][source] ?? source, values),
+  t: (source, values) => interpolate(semanticCatalogs["pt-PT"][source] ?? source, values),
   formatDate: (input, options) =>
     new Intl.DateTimeFormat("pt-PT", options).format(
       typeof input === "string" ? new Date(input) : input,
@@ -1131,7 +1311,8 @@ const fallbackValue: I18nValue = {
   formatNumber: (value, options) => new Intl.NumberFormat("pt-PT", options).format(value),
   formatCurrency: (value, currency = "EUR") =>
     new Intl.NumberFormat("pt-PT", { style: "currency", currency }).format(value),
-  plural: (count, forms, values) => interpolate(count === 1 ? forms.one : forms.other, { count, ...values }),
+  plural: (count, forms, values) =>
+    interpolate(count === 1 ? forms.one : forms.other, { count, ...values }),
 };
 
 const I18nContext = createContext<I18nValue>(fallbackValue);
@@ -1151,8 +1332,8 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       t: (source, values) =>
         interpolate(
           catalogs[locale][source] ??
-            semanticMessages[locale][source] ??
-            semanticMessages["pt-PT"][source] ??
+            semanticCatalogs[locale][source] ??
+            semanticCatalogs["pt-PT"][source] ??
             source,
           values,
         ),
@@ -1164,10 +1345,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       formatCurrency: (value, currency = "EUR") =>
         new Intl.NumberFormat(locale, { style: "currency", currency }).format(value),
       plural: (count, forms, values) =>
-        interpolate(
-          count === 1 ? forms.one : forms.other,
-          { count, ...values },
-        ),
+        interpolate(count === 1 ? forms.one : forms.other, { count, ...values }),
     }),
     [locale],
   );
@@ -1183,7 +1361,9 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
   const { locale, setLocale, t } = useI18n();
   return (
     <label className={`language-switcher${compact ? " language-switcher--compact" : ""}`}>
-      <span className={compact ? "sr-only" : "language-switcher__label"}>{t("language.label")}</span>
+      <span className={compact ? "sr-only" : "language-switcher__label"}>
+        {t("language.label")}
+      </span>
       <select
         value={locale}
         onChange={(event) => setLocale(event.target.value as AppLocale)}

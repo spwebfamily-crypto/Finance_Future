@@ -3,15 +3,27 @@ ALTER TABLE "Income" ADD COLUMN "currency" TEXT;
 ALTER TABLE "Transfer" ADD COLUMN "currency" TEXT;
 
 UPDATE "Expense" AS movement
-SET "currency" = COALESCE(account."currency", owner."currency")
+SET "currency" = COALESCE(
+  (
+    SELECT account."currency"
+    FROM "Account" AS account
+    WHERE account."id" = movement."accountId"
+  ),
+  owner."currency"
+)
 FROM "User" AS owner
-LEFT JOIN "Account" AS account ON account."id" = movement."accountId"
 WHERE owner."id" = movement."userId";
 
 UPDATE "Income" AS movement
-SET "currency" = COALESCE(account."currency", owner."currency")
+SET "currency" = COALESCE(
+  (
+    SELECT account."currency"
+    FROM "Account" AS account
+    WHERE account."id" = movement."accountId"
+  ),
+  owner."currency"
+)
 FROM "User" AS owner
-LEFT JOIN "Account" AS account ON account."id" = movement."accountId"
 WHERE owner."id" = movement."userId";
 
 UPDATE "Transfer" AS movement

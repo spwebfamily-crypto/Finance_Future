@@ -2,10 +2,11 @@ import { ArrowRight, LayoutDashboard, Plus, ReceiptText } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { useI18n } from "../i18n/I18nContext";
+import { routes } from "../routes";
 
 const shortcuts = [
-  { to: "/expenses", label: "notFound.activity", Icon: ReceiptText },
-  { to: "/expenses/new", label: "notFound.newExpense", Icon: Plus },
+  { to: routes.expenses, label: "notFound.activity", Icon: ReceiptText },
+  { to: routes.newExpense, label: "notFound.newExpense", Icon: Plus },
 ];
 
 export function NotFoundPage() {
@@ -23,7 +24,7 @@ export function NotFoundPage() {
       <div className="not-found__actions">
         {isAuthenticated ? (
           <>
-            <Link className="button button--primary" to="/dashboard">
+            <Link className="button button--primary" to={routes.dashboard}>
               <LayoutDashboard aria-hidden="true" /> {t("notFound.home")}
             </Link>
             {shortcuts.map(({ to, label, Icon }) => (
@@ -34,10 +35,10 @@ export function NotFoundPage() {
           </>
         ) : (
           <>
-            <Link className="button button--primary" to="/login">
+            <Link className="button button--primary" to={routes.login}>
               {t("notFound.signIn")} <ArrowRight aria-hidden="true" />
             </Link>
-            <Link className="button button--secondary" to="/register">
+            <Link className="button button--secondary" to={routes.register}>
               {t("notFound.register")}
             </Link>
           </>

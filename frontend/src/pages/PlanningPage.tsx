@@ -43,8 +43,14 @@ import type {
   RecurringIncome,
   SavingsGoal,
 } from "../types";
-import { formatCurrency as formatCurrencyValue, formatDate, parseSignedMoney, todayInputValue } from "../utils/format";
+import {
+  formatCurrency as formatCurrencyValue,
+  formatDate,
+  parseSignedMoney,
+  todayInputValue,
+} from "../utils/format";
 import { useI18n } from "../i18n/I18nContext";
+import { accountBalanceValue } from "../utils/accountBalance";
 
 type DeleteTarget = {
   type: "income" | "goal" | "recurring" | "recurringIncome" | "debt";
@@ -248,14 +254,11 @@ export function PlanningPage() {
   );
   const monthlyExpenses = summary?.total || 0;
   const monthlyAvailable = monthlyIncome - monthlyExpenses;
-  const totalAccountBalance = useMemo(
-    () =>
-      accounts.reduce(
-        (total, account) => total + (account.currentBalance ?? account.openingBalance),
-        0,
-      ),
-    [accounts],
-  );
+  const totalAccountBalance = useMemo(() => {
+    const balances = accounts.map(accountBalanceValue);
+    if (balances.some((balance) => balance === null)) return null;
+    return balances.reduce<number>((total, balance) => total + (balance ?? 0), 0);
+  }, [accounts]);
   const upcoming = useMemo(
     () =>
       recurring
@@ -808,7 +811,11 @@ export function PlanningPage() {
           <span>
             <CreditCard aria-hidden="true" /> Saldo nas contas
           </span>
-          <strong>{formatCurrency(totalAccountBalance, currency)}</strong>
+          <strong>
+            {totalAccountBalance === null
+              ? "Ainda sem sincronização"
+              : formatCurrency(totalAccountBalance, currency)}
+          </strong>
           <small>
             {accounts.length
               ? `${accounts.length} conta${accounts.length === 1 ? "" : "s"} ligada${accounts.length === 1 ? "" : "s"}`

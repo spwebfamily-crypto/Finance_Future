@@ -1,0 +1,22 @@
+/** Central route contract for navigation, redirects and API return paths. */
+export const routes = {
+  home: "/dashboard",
+  login: "/login",
+  register: "/register",
+  forgotPassword: "/forgot-password",
+  resetPassword: "/reset-password",
+  verifyEmail: "/verify-email",
+  onboarding: "/onboarding",
+  dashboard: "/dashboard",
+  expenses: "/expenses",
+  newExpense: "/expenses/new",
+  editExpense: (expenseId: string) => `/expenses/${encodeURIComponent(expenseId)}/edit`,
+  categories: "/categories",
+  planning: "/planning",
+  accounts: "/accounts",
+  connectAccount: "/accounts/connect",
+  bankConnections: "/accounts/connections",
+  account: (accountId: string) => `/accounts/${encodeURIComponent(accountId)}`,
+  privacy: "/privacy",
+  investments: "/investments",
+} as const;

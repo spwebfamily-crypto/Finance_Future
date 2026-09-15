@@ -100,4 +100,31 @@ describe("DailyBankReviewModal", () => {
     );
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
+
+  it("keeps the payment visible and explains the error when confirmation fails", async () => {
+    const user = userEvent.setup();
+    api.reviewTransaction.mockRejectedValueOnce(new Error("A ligação ao banco falhou."));
+    render(<DailyBankReviewModal />);
+
+    await user.click(
+      await screen.findByRole("button", { name: /Concluir|Guardar e continuar/i }),
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("A ligação ao banco falhou.");
+    expect(screen.getByRole("heading", { name: "Café Central" })).toBeInTheDocument();
+  });
+
+  it("marks a payment as excluded without creating an expense", async () => {
+    const user = userEvent.setup();
+    render(<DailyBankReviewModal />);
+
+    await user.click(await screen.findByRole("button", { name: "Não é um gasto" }));
+
+    await waitFor(() =>
+      expect(api.reviewTransaction).toHaveBeenCalledWith("transaction-1", {
+        excludedFromAnalytics: true,
+      }),
+    );
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
 });

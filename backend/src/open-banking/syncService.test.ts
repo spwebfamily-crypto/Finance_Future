@@ -403,13 +403,47 @@ describe("sync engine", () => {
 
     const transactions = await prisma.bankTransaction.findMany({ where: { userId } });
     expect(transactions).toHaveLength(2);
-    expect(transactions.map((item) => item.classification).sort()).toEqual(["income", "unreviewed"]);
+    expect(transactions.map((item) => item.classification).sort()).toEqual([
+      "income",
+      "unreviewed",
+    ]);
 
     const expenses = await prisma.expense.findMany({ where: { userId } });
     const incomes = await prisma.income.findMany({ where: { userId } });
     expect(expenses).toHaveLength(0);
     expect(incomes).toHaveLength(1);
     expect(String(incomes[0]!.amount)).toMatch(/1250/);
+  });
+
+  it("clears an old bank balance when the latest sync returns no current snapshot", async () => {
+    const connection = await seedConnection();
+    const sessionId = await seedSessionWithAccounts([
+      {
+        providerAccountId: "acc-balance",
+        providerAccountHash: "hash-balance",
+        displayName: "Conta bancária",
+        balances: [
+          { kind: "closing_booked", amount: "900.00", currency: "EUR", referenceDate: null },
+        ],
+        pages: [[]],
+      },
+    ]);
+    await linkSession(connection.id, sessionId);
+    await processSyncJob((await createJob(connection.id)).id);
+
+    const link = await prisma.bankAccountLink.findFirst({ where: { connectionId: connection.id } });
+    expect(
+      (await prisma.account.findUnique({
+        where: { id: link!.accountId },
+      }))!.providerCurrentBalance?.toString(),
+    ).toBe("900");
+
+    fakeOpenBankingStore.sessions.get(sessionId)!.accounts[0]!.balances = [];
+    await processSyncJob((await createJob(connection.id)).id);
+
+    const refreshed = await prisma.account.findUnique({ where: { id: link!.accountId } });
+    expect(refreshed!.providerCurrentBalance).toBeNull();
+    expect(refreshed!.providerBalanceCurrency).toBeNull();
   });
 
   it("is idempotent: a second identical sync creates nothing", async () => {
@@ -463,12 +497,18 @@ describe("sync engine", () => {
       where: { id: stored.id },
       data: { status: "removed", classification: "ignored", excludedFromAnalytics: true },
     });
-    expect((await prisma.bankTransaction.findUnique({ where: { id: stored.id } }))!.status).toBe("removed");
+    expect((await prisma.bankTransaction.findUnique({ where: { id: stored.id } }))!.status).toBe(
+      "removed",
+    );
 
     const secondJob = await createJob(connection.id);
     await processSyncJob(secondJob.id);
     const after = await prisma.bankTransaction.findUnique({ where: { id: stored.id } });
-    expect(after).toMatchObject({ status: "removed", classification: "ignored", excludedFromAnalytics: true });
+    expect(after).toMatchObject({
+      status: "removed",
+      classification: "ignored",
+      excludedFromAnalytics: true,
+    });
     expect(await prisma.bankTransaction.count({ where: { userId } })).toBe(1);
   });
 

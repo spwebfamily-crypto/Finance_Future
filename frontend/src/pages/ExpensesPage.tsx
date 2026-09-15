@@ -49,7 +49,7 @@ function inputDate(value: Date) {
   return `${year}-${month}-${day}`;
 }
 
-function periodShortcuts(): PeriodShortcut[] {
+function periodShortcuts(t: (key: string) => string): PeriodShortcut[] {
   const today = new Date();
   const sevenDaysAgo = new Date(today);
   sevenDaysAgo.setDate(today.getDate() - 6);
@@ -57,9 +57,13 @@ function periodShortcuts(): PeriodShortcut[] {
   const previousMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
   const previousMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
   return [
-    { label: "Este mês", from: inputDate(thisMonth), to: inputDate(today) },
-    { label: "Últimos 7 dias", from: inputDate(sevenDaysAgo), to: inputDate(today) },
-    { label: "Mês passado", from: inputDate(previousMonthStart), to: inputDate(previousMonthEnd) },
+    { label: t("Este mês"), from: inputDate(thisMonth), to: inputDate(today) },
+    { label: t("Últimos 7 dias"), from: inputDate(sevenDaysAgo), to: inputDate(today) },
+    {
+      label: t("Mês passado"),
+      from: inputDate(previousMonthStart),
+      to: inputDate(previousMonthEnd),
+    },
   ];
 }
 
@@ -71,7 +75,7 @@ const EXPENSES_PAGE_SIZE = 500;
 
 export function ExpensesPage() {
   const { user } = useAuth();
-  const { locale } = useI18n();
+  const { locale, t } = useI18n();
   const formatCurrency = (value: string | number, currency?: string) =>
     formatCurrencyValue(value, currency, locale);
   const reduceMotion = useReducedMotion();
@@ -88,7 +92,7 @@ export function ExpensesPage() {
   const [notice, setNotice] = useState(
     () => (location.state as { notice?: string } | null)?.notice || "",
   );
-  const shortcuts = useMemo(periodShortcuts, []);
+  const shortcuts = useMemo(() => periodShortcuts(t), [t]);
 
   const categoryFilter = searchParams.get("category") || undefined;
   const fromFilter = searchParams.get("from") || undefined;
@@ -205,7 +209,7 @@ export function ExpensesPage() {
     const rows = [
       ["Data", "Descrição", "Local", "Categoria", "Valor", "Moeda", "Comprovativo"],
       ...visibleExpenses.map((expense) => [
-        formatDate(expense.date),
+        formatDate(expense.date, locale),
         expense.description,
         expense.location,
         expense.category?.name || "",
@@ -225,7 +229,12 @@ export function ExpensesPage() {
     link.remove();
     URL.revokeObjectURL(url);
     setNotice(
-      `${visibleExpenses.length} ${visibleExpenses.length === 1 ? "movimento exportado" : "movimentos exportados"} em CSV.`,
+      t(
+        visibleExpenses.length === 1
+          ? "{count} movimento exportado em CSV."
+          : "{count} movimentos exportados em CSV.",
+        { count: visibleExpenses.length },
+      ),
     );
   }
 
@@ -236,7 +245,7 @@ export function ExpensesPage() {
       await expenseApi.remove(deleteTarget.id);
       setExpenses((current) => current.filter((expense) => expense.id !== deleteTarget.id));
       setDeleteTarget(null);
-      setNotice("Despesa eliminada.");
+      setNotice(t("Despesa eliminada."));
     } catch (requestError) {
       setDeleteTarget(null);
       setError(errorMessage(requestError));
@@ -249,13 +258,13 @@ export function ExpensesPage() {
     <div className="page page--expenses">
       <NoticeToast message={notice} onClose={() => setNotice("")} />
       <PageHeader
-        eyebrow="Arquivo"
-        title="Despesas"
-        description="Registos manuais e gastos das contas ligadas ao banco, no mesmo arquivo."
+        eyebrow={t("Arquivo")}
+        title={t("Despesas")}
+        description={t("Registos manuais e gastos das contas ligadas ao banco, no mesmo arquivo.")}
         action={
           <div className="page-actions">
             <Link className="button button--secondary" to="/categories">
-              <FolderKanban aria-hidden="true" /> Categorias
+              <FolderKanban aria-hidden="true" /> {t("Categorias")}
             </Link>
             <Link
               className="button button--primary"
@@ -264,7 +273,7 @@ export function ExpensesPage() {
               onPointerDown={preloadExpenseFormPage}
               onFocus={preloadExpenseFormPage}
             >
-              <Plus aria-hidden="true" /> Registar despesa
+              <Plus aria-hidden="true" /> {t("Registar despesa")}
             </Link>
           </div>
         }
@@ -274,15 +283,15 @@ export function ExpensesPage() {
         <div className="filter-panel__heading">
           <SlidersHorizontal aria-hidden="true" />
           <div>
-            <h2 id="filters-title">Filtrar arquivo</h2>
-            <p>Afine por categoria ou período.</p>
+            <h2 id="filters-title">{t("Filtrar arquivo")}</h2>
+            <p>{t("Afine por categoria ou período.")}</p>
           </div>
           <button
             className="icon-button"
             type="button"
             aria-expanded={filtersOpen}
             aria-controls="expense-filters"
-            aria-label={filtersOpen ? "Recolher filtros" : "Mostrar filtros"}
+            aria-label={t(filtersOpen ? "Recolher filtros" : "Mostrar filtros")}
             onClick={() => setFiltersOpen((current) => !current)}
             style={{ marginLeft: "auto", flex: "0 0 auto" }}
           >
@@ -295,14 +304,14 @@ export function ExpensesPage() {
             </motion.span>
           </button>
         </div>
-        <div className="filter-shortcuts" aria-label="Períodos rápidos">
+        <div className="filter-shortcuts" aria-label={t("Períodos rápidos")}>
           <button
             className={`filter-chip ${!activeFilters.from && !activeFilters.to ? "filter-chip--active" : ""}`}
             type="button"
             aria-pressed={!activeFilters.from && !activeFilters.to}
             onClick={() => applyPeriod({ from: "", to: "" })}
           >
-            Todos os períodos
+            {t("Todos os períodos")}
           </button>
           {shortcuts.map((shortcut) => {
             const active = activeFilters.from === shortcut.from && activeFilters.to === shortcut.to;
@@ -324,7 +333,7 @@ export function ExpensesPage() {
             aria-pressed={receiptsOnly}
             onClick={() => updateClientFilter("hasReceipt", receiptsOnly ? "" : "true")}
           >
-            Com comprovativo
+            {t("Com comprovativo")}
           </button>
         </div>
         <AnimatePresence initial={false}>
@@ -341,14 +350,14 @@ export function ExpensesPage() {
             >
               <form id="expense-filters" className="filter-form" onSubmit={applyFilters}>
                 <label className="field field--compact">
-                  <span>Categoria</span>
+                  <span>{t("Categoria")}</span>
                   <select
                     value={filterDraft.category}
                     onChange={(event) =>
                       setFilterDraft((current) => ({ ...current, category: event.target.value }))
                     }
                   >
-                    <option value="">Todas as categorias</option>
+                    <option value="">{t("Todas as categorias")}</option>
                     {categories.map((category) => (
                       <option key={category.id} value={category.id}>
                         {category.name}
@@ -357,7 +366,7 @@ export function ExpensesPage() {
                   </select>
                 </label>
                 <label className="field field--compact">
-                  <span>De</span>
+                  <span>{t("De")}</span>
                   <input
                     type="date"
                     value={filterDraft.from}
@@ -368,7 +377,7 @@ export function ExpensesPage() {
                   />
                 </label>
                 <label className="field field--compact">
-                  <span>Até</span>
+                  <span>{t("Até")}</span>
                   <input
                     type="date"
                     value={filterDraft.to}
@@ -379,11 +388,11 @@ export function ExpensesPage() {
                   />
                 </label>
                 <button className="button button--secondary filter-form__submit" type="submit">
-                  <Search aria-hidden="true" /> Aplicar
+                  <Search aria-hidden="true" /> {t("Aplicar")}
                 </button>
                 {hasFilters && (
                   <button className="text-button" type="button" onClick={clearFilters}>
-                    Limpar
+                    {t("Limpar")}
                   </button>
                 )}
               </form>
@@ -392,27 +401,27 @@ export function ExpensesPage() {
         </AnimatePresence>
         <label className="archive-search">
           <Search aria-hidden="true" />
-          <span className="sr-only">Pesquisar movimentos</span>
+          <span className="sr-only">{t("Pesquisar movimentos")}</span>
           <input
             value={searchTerm}
             onChange={(event) => updateClientFilter("search", event.target.value)}
-            placeholder="Pesquisar por descrição, local ou categoria"
+            placeholder={t("Pesquisar por descrição, local ou categoria")}
             type="search"
           />
           {searchTerm && (
             <button
               type="button"
               onClick={() => updateClientFilter("search", "")}
-              aria-label="Limpar pesquisa"
+              aria-label={t("Limpar pesquisa")}
             >
-              Limpar
+              {t("Limpar")}
             </button>
           )}
         </label>
       </section>
 
       <div className="expense-import-row">
-        <span>Tem um extrato bancário?</span>
+        <span>{t("Tem um extrato bancário?")}</span>
         <CsvExpenseImport
           categories={categories}
           accounts={accounts}
@@ -428,11 +437,13 @@ export function ExpensesPage() {
       <section className="expense-section" aria-labelledby="expense-list-title">
         <div className="section-heading">
           <div>
-            <h2 id="expense-list-title">Movimentos</h2>
+            <h2 id="expense-list-title">{t("Movimentos")}</h2>
             {!isLoading && !error && (
               <p>
-                {visibleExpenses.length} {visibleExpenses.length === 1 ? "registo" : "registos"} ·{" "}
-                {formatCurrency(visibleTotal, user?.currency)}
+                {t(visibleExpenses.length === 1 ? "{count} registo" : "{count} registos", {
+                  count: visibleExpenses.length,
+                })}{" "}
+                · {formatCurrency(visibleTotal, user?.currency)}
               </p>
             )}
             {!isLoading &&
@@ -440,8 +451,10 @@ export function ExpensesPage() {
               totalMatching > visibleExpenses.length &&
               visibleExpenses.length > 0 && (
                 <p className="section-heading__note">
-                  A mostrar as {visibleExpenses.length} mais recentes de {totalMatching}. Refine o
-                  período ou os filtros para ver mais.
+                  {t(
+                    "A mostrar os {visible} mais recentes de {total}. Refine o período ou os filtros para ver mais.",
+                    { visible: visibleExpenses.length, total: totalMatching },
+                  )}
                 </p>
               )}
           </div>
@@ -451,27 +464,27 @@ export function ExpensesPage() {
               type="button"
               onClick={exportCsv}
             >
-              <Download aria-hidden="true" /> Exportar CSV
+              <Download aria-hidden="true" /> {t("Exportar CSV")}
             </button>
           )}
         </div>
 
         {isLoading ? (
-          <LoadingState label="A carregar despesas" />
+          <LoadingState label={t("A carregar despesas")} />
         ) : error ? (
           <ErrorState message={error} onRetry={() => void loadData()} />
         ) : visibleExpenses.length === 0 ? (
           <EmptyState
-            title={hasFilters ? "Sem resultados neste recorte" : "Ainda não há despesas"}
+            title={t(hasFilters ? "Sem resultados neste recorte" : "Ainda não há despesas")}
             description={
               hasFilters
-                ? "Experimente alargar o período, pesquisar outro termo ou remover um filtro."
-                : "Registe à mão ou ligue o banco: cada gasto contabilizado passa a despesa."
+                ? t("Experimente alargar o período, pesquisar outro termo ou remover um filtro.")
+                : t("Registe à mão ou ligue o banco: cada gasto contabilizado passa a despesa.")
             }
             action={
               hasFilters ? (
                 <button className="button button--secondary" type="button" onClick={clearFilters}>
-                  Limpar filtros
+                  {t("Limpar filtros")}
                 </button>
               ) : (
                 <div className="empty-actions">
@@ -482,10 +495,10 @@ export function ExpensesPage() {
                     onPointerDown={preloadExpenseFormPage}
                     onFocus={preloadExpenseFormPage}
                   >
-                    <Plus aria-hidden="true" /> Registar primeira despesa
+                    <Plus aria-hidden="true" /> {t("Registar primeira despesa")}
                   </Link>
                   <Link className="button button--secondary" to="/accounts/connect">
-                    Ligar banco
+                    {t("Ligar banco")}
                   </Link>
                 </div>
               )
@@ -514,7 +527,7 @@ export function ExpensesPage() {
                       <AuthenticatedReceiptImage
                         receiptUrl={expense.receiptImageUrl}
                         receiptMimeType={expense.receiptMimeType}
-                        alt={`Recibo de ${expense.description}`}
+                        alt={t("Recibo de {description}", { description: expense.description })}
                       />
                     ) : (
                       <Receipt aria-hidden="true" />
@@ -527,9 +540,11 @@ export function ExpensesPage() {
                           icon={expense.category?.icon}
                           categoryName={expense.category?.name}
                         />
-                        {expense.category?.name || "Sem categoria"}
+                        {expense.category?.name || t("Sem categoria")}
                       </span>
-                      {expense.source === "bank" && <span className="expense-origin">Banco</span>}
+                      {expense.source === "bank" && (
+                        <span className="expense-origin">{t("Banco")}</span>
+                      )}
                     </div>
                     <h3>{expense.description}</h3>
                     <div className="expense-row__meta">
@@ -537,7 +552,7 @@ export function ExpensesPage() {
                         <MapPin aria-hidden="true" /> {expense.location}
                       </span>
                       <span>
-                        <CalendarDays aria-hidden="true" /> {formatDate(expense.date)}
+                        <CalendarDays aria-hidden="true" /> {formatDate(expense.date, locale)}
                       </span>
                       {expense.account && (
                         <span>
@@ -553,8 +568,8 @@ export function ExpensesPage() {
                     <Link
                       className="icon-button"
                       to={`/expenses/${expense.id}/edit`}
-                      aria-label={`Editar ${expense.description}`}
-                      title="Editar"
+                      aria-label={t("Editar {description}", { description: expense.description })}
+                      title={t("Editar")}
                     >
                       <Edit3 aria-hidden="true" />
                     </Link>
@@ -562,8 +577,8 @@ export function ExpensesPage() {
                       className="icon-button icon-button--danger"
                       type="button"
                       onClick={() => setDeleteTarget(expense)}
-                      aria-label={`Eliminar ${expense.description}`}
-                      title="Eliminar"
+                      aria-label={t("Eliminar {description}", { description: expense.description })}
+                      title={t("Eliminar")}
                     >
                       <Trash2 aria-hidden="true" />
                     </button>
@@ -577,13 +592,15 @@ export function ExpensesPage() {
 
       <ConfirmDialog
         open={Boolean(deleteTarget)}
-        title="Eliminar esta despesa?"
+        title={t("Eliminar esta despesa?")}
         description={
           deleteTarget
-            ? `“${deleteTarget.description}” será removida definitivamente do seu arquivo.`
+            ? t("“{description}” será removida definitivamente do seu arquivo.", {
+                description: deleteTarget.description,
+              })
             : ""
         }
-        confirmLabel="Eliminar despesa"
+        confirmLabel={t("Eliminar despesa")}
         busy={isDeleting}
         onCancel={() => setDeleteTarget(null)}
         onConfirm={() => void confirmDelete()}

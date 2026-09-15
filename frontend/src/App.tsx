@@ -13,6 +13,7 @@ import { VerifyEmailPage } from "./pages/VerifyEmailPage";
 import { LoadingState } from "./components/States";
 import { RouteTransitionOutlet } from "./components/RouteTransitionOutlet";
 import { useI18n } from "./i18n/I18nContext";
+import { routes } from "./routes";
 import {
   loadAccountDetailPage,
   loadAccountsConnectPage,
@@ -87,22 +88,22 @@ const PrivacyPage = lazy(() =>
 );
 
 const routeTitles: Record<string, string> = {
-  "/login": "Entrar",
-  "/register": "Criar conta",
-  "/forgot-password": "Recuperar palavra-passe",
-  "/reset-password": "Nova palavra-passe",
-  "/verify-email": "Verificar email",
-  "/onboarding": "Começar",
-  "/dashboard": "Hoje",
-  "/expenses": "Movimentos",
-  "/expenses/new": "Nova despesa",
-  "/categories": "Categorias",
-  "/planning": "Plano",
-  "/accounts": "Contas",
-  "/accounts/connect": "Ligar banco",
-  "/accounts/connections": "Bancos",
-  "/privacy": "Privacidade",
-  "/investments": "Investir",
+  [routes.login]: "Entrar",
+  [routes.register]: "Criar conta",
+  [routes.forgotPassword]: "Recuperar palavra-passe",
+  [routes.resetPassword]: "Nova palavra-passe",
+  [routes.verifyEmail]: "Verificar email",
+  [routes.onboarding]: "Começar",
+  [routes.dashboard]: "Hoje",
+  [routes.expenses]: "Movimentos",
+  [routes.newExpense]: "Nova despesa",
+  [routes.categories]: "Categorias",
+  [routes.planning]: "Plano",
+  [routes.accounts]: "Contas",
+  [routes.connectAccount]: "Ligar banco",
+  [routes.bankConnections]: "Bancos",
+  [routes.privacy]: "Privacidade",
+  [routes.investments]: "Investir",
 };
 
 function titleForPath(pathname: string, t: (source: string) => string) {
@@ -135,15 +136,15 @@ export default function App() {
       <Routes>
         <Route element={<GuestRoute />}>
           <Route element={<RouteTransitionOutlet className="guest-route-stage" />}>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path={routes.login} element={<LoginPage />} />
+            <Route path={routes.register} element={<RegisterPage />} />
+            <Route path={routes.forgotPassword} element={<ForgotPasswordPage />} />
           </Route>
         </Route>
 
         <Route element={<ProtectedRoute />}>
           <Route
-            path="/onboarding"
+            path={routes.onboarding}
             element={
               <Suspense fallback={routeFallback}>
                 <FinancialOnboardingPage />
@@ -152,16 +153,16 @@ export default function App() {
           />
           <Route element={<AppShell />}>
             <Route
-              path="/dashboard"
+              path={routes.dashboard}
               element={
                 <Suspense fallback={routeFallback}>
                   <DashboardPage />
                 </Suspense>
               }
             />
-            <Route path="/expenses" element={<ExpensesPage />} />
+            <Route path={routes.expenses} element={<ExpensesPage />} />
             <Route
-              path="/expenses/new"
+              path={routes.newExpense}
               element={
                 <Suspense fallback={routeFallback}>
                   <ExpenseFormPage />
@@ -176,9 +177,9 @@ export default function App() {
                 </Suspense>
               }
             />
-            <Route path="/categories" element={<CategoriesPage />} />
+            <Route path={routes.categories} element={<CategoriesPage />} />
             <Route
-              path="/planning"
+              path={routes.planning}
               element={
                 <Suspense fallback={routeFallback}>
                   <PlanningPage />
@@ -186,7 +187,7 @@ export default function App() {
               }
             />
             <Route
-              path="/accounts"
+              path={routes.accounts}
               element={
                 <Suspense fallback={routeFallback}>
                   <AccountsPage />
@@ -194,7 +195,7 @@ export default function App() {
               }
             />
             <Route
-              path="/accounts/connect"
+              path={routes.connectAccount}
               element={
                 <Suspense fallback={routeFallback}>
                   <AccountsConnectPage />
@@ -202,7 +203,7 @@ export default function App() {
               }
             />
             <Route
-              path="/accounts/connections"
+              path={routes.bankConnections}
               element={
                 <Suspense fallback={routeFallback}>
                   <BankConnectionsPage />
@@ -218,7 +219,7 @@ export default function App() {
               }
             />
             <Route
-              path="/privacy"
+              path={routes.privacy}
               element={
                 <Suspense fallback={routeFallback}>
                   <PrivacyPage />
@@ -226,7 +227,7 @@ export default function App() {
               }
             />
             <Route
-              path="/investments"
+              path={routes.investments}
               element={
                 <Suspense fallback={routeFallback}>
                   <InvestmentsPage />
@@ -237,10 +238,10 @@ export default function App() {
         </Route>
 
         {/* Público: o link do email é aberto com ou sem sessão ativa no dispositivo. */}
-        <Route path="/verify-email" element={<VerifyEmailPage />} />
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path={routes.verifyEmail} element={<VerifyEmailPage />} />
+        <Route path={routes.resetPassword} element={<ResetPasswordPage />} />
 
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/" element={<Navigate to={routes.home} replace />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </>

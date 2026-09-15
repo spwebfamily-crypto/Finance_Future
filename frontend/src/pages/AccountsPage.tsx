@@ -29,6 +29,7 @@ import type {
 import { formatCurrency, formatDate, parseSignedMoney, todayInputValue } from "../utils/format";
 import { useI18n } from "../i18n/I18nContext";
 import { bankConnectionOutcomeMessage } from "../utils/bankConnectionOutcome";
+import { accountBalanceValue } from "../utils/accountBalance";
 
 const initialAccount = {
   name: "",
@@ -159,8 +160,7 @@ export function AccountsPage() {
           else if (job.status === "completed" || job.status === "partial") {
             completed = true;
             notifyBankSyncCompleted(pending.connectionId);
-          }
-          else if (!cancelled)
+          } else if (!cancelled)
             setError(t("A sincronização bancária não foi concluída. Tente novamente."));
         } catch {
           if (!cancelled) setError(t("Não foi possível confirmar a sincronização bancária."));
@@ -210,14 +210,19 @@ export function AccountsPage() {
   const hasLinkedBank = visibleAccounts.some((account) => account.source === "bank");
   const balancesByCurrency = useMemo(() => {
     const totals = new Map<string, number>();
+    const unavailableCurrencies = new Set<string>();
     for (const account of visibleAccounts) {
       const accountCurrency = account.currency || currency;
-      totals.set(
-        accountCurrency,
-        (totals.get(accountCurrency) ?? 0) + (account.currentBalance ?? account.openingBalance),
-      );
+      const balance = accountBalanceValue(account);
+      if (balance === null) {
+        unavailableCurrencies.add(accountCurrency);
+        continue;
+      }
+      totals.set(accountCurrency, (totals.get(accountCurrency) ?? 0) + balance);
     }
-    return [...totals.entries()];
+    return [...totals.entries()].filter(
+      ([accountCurrency]) => !unavailableCurrencies.has(accountCurrency),
+    );
   }, [currency, visibleAccounts]);
 
   async function createAccount(event: FormEvent) {
@@ -325,7 +330,7 @@ export function AccountsPage() {
   }
 
   function openBalanceCorrection(account: FinancialAccount) {
-    const balance = account.currentBalance ?? account.openingBalance;
+    const balance = accountBalanceValue(account) ?? account.openingBalance;
     setError("");
     setBalanceError("");
     setBalanceTarget(account);
@@ -439,6 +444,8 @@ export function AccountsPage() {
                 {formatCurrency(total, accountCurrency, locale)}
               </strong>
             ))
+          ) : visibleAccounts.length ? (
+            <strong>{t("Ainda sem sincronização")}</strong>
           ) : (
             <strong>{formatCurrency(0, currency, locale)}</strong>
           )}
@@ -707,9 +714,9 @@ export function AccountsPage() {
         <div className="account-cards">
           {visibleAccounts.length ? (
             visibleAccounts.map((account) => {
-              const balance = account.currentBalance ?? account.openingBalance;
+              const balance = accountBalanceValue(account);
               const cardUse =
-                account.type === "credit_card" && account.creditLimit
+                balance !== null && account.type === "credit_card" && account.creditLimit
                   ? Math.max(0, -balance) / account.creditLimit
                   : null;
               const isLinked = account.source === "bank";
@@ -739,37 +746,6 @@ export function AccountsPage() {
                     </span>
                     {(isLinked || cardUse !== null) && (
                       <div className="account-card-large__meta">
-                        {isLinked &&
-                          account.availableBalance !== null &&
-                          account.availableBalance !== undefined && (
-                            <span>
-                              {t("Disponível")}{" "}
-                              {formatCurrency(
-                                account.availableBalance,
-                                account.currency ?? currency,
-                                locale,
-                              )}
-                            </span>
-                          )}
-                        {isLinked &&
-                          typeof account.derivedBalance === "number" &&
-                          typeof account.balanceDelta === "number" &&
-                          Math.abs(account.balanceDelta) >= 0.01 && (
-                            <span className="account-card-large__delta">
-                              Na app{" "}
-                              {formatCurrency(
-                                account.derivedBalance,
-                                account.currency ?? currency,
-                                locale,
-                              )}{" "}
-                              · diferença{" "}
-                              {formatCurrency(
-                                account.balanceDelta,
-                                account.currency ?? currency,
-                                locale,
-                              )}
-                            </span>
-                          )}
                         {isLinked && (
                           <span>
                             {account.lastSyncedAt
@@ -788,7 +764,11 @@ export function AccountsPage() {
                       </div>
                     )}
                   </div>
-                  <strong>{formatCurrency(balance, account.currency ?? currency, locale)}</strong>
+                  <strong>
+                    {balance === null
+                      ? t("Ainda sem sincronização")
+                      : formatCurrency(balance, account.currency ?? currency, locale)}
+                  </strong>
                   <div className="account-card-large__actions">
                     {isLinked && connection && canSync && (
                       <button

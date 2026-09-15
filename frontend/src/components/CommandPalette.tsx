@@ -25,6 +25,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { applyTheme } from "./ThemeToggle";
+import { routes } from "../routes";
 
 interface CommandItem {
   id: string;
@@ -94,19 +95,19 @@ export function CommandPaletteProvider({ children }: { children?: ReactNode }) {
 
   const commands = useMemo<CommandItem[]>(() => {
     const base: CommandItem[] = [
-      { id: "dashboard", label: "Ir para Hoje", to: "/dashboard", Icon: LayoutDashboard },
-      { id: "expenses", label: "Ir para Movimentos", to: "/expenses", Icon: ReceiptText },
-      { id: "accounts", label: "Ir para Contas", to: "/accounts", Icon: Landmark },
-      { id: "planning", label: "Ir para Plano", to: "/planning", Icon: CalendarClock },
-      { id: "investments", label: "Ir para Investir", to: "/investments", Icon: TrendingUp },
-      { id: "banks", label: "Ir para Bancos", to: "/accounts/connections", Icon: Building2 },
-      { id: "privacy", label: "Ir para Privacidade", to: "/privacy", Icon: Shield },
-      { id: "categories", label: "Ir para Categorias", to: "/categories", Icon: FolderOpen },
+      { id: "dashboard", label: "Ir para Hoje", to: routes.dashboard, Icon: LayoutDashboard },
+      { id: "expenses", label: "Ir para Movimentos", to: routes.expenses, Icon: ReceiptText },
+      { id: "accounts", label: "Ir para Contas", to: routes.accounts, Icon: Landmark },
+      { id: "planning", label: "Ir para Plano", to: routes.planning, Icon: CalendarClock },
+      { id: "investments", label: "Ir para Investir", to: routes.investments, Icon: TrendingUp },
+      { id: "banks", label: "Ir para Bancos", to: routes.bankConnections, Icon: Building2 },
+      { id: "privacy", label: "Ir para Privacidade", to: routes.privacy, Icon: Shield },
+      { id: "categories", label: "Ir para Categorias", to: routes.categories, Icon: FolderOpen },
       {
         id: "new-expense",
         label: "Registar despesa",
         hint: "formulário completo",
-        to: "/expenses/new",
+        to: routes.newExpense,
         Icon: Plus,
       },
       {

@@ -1,5 +1,6 @@
 import { Moon, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useI18n } from "../i18n/I18nContext";
 
 const THEME_KEY = "expensesnap.theme";
 const THEME_COLORS = { light: "#ffffff", dark: "#0c0c09" } as const;
@@ -32,6 +33,7 @@ export function applyTheme(theme: Theme) {
 }
 
 export function ThemeToggle({ compact = false }: { compact?: boolean }) {
+  const { t } = useI18n();
   const [theme, setTheme] = useState<Theme>(storedTheme);
 
   useEffect(() => {
@@ -39,7 +41,7 @@ export function ThemeToggle({ compact = false }: { compact?: boolean }) {
   }, [theme]);
 
   const dark = theme === "dark";
-  const nextLabel = dark ? "Ativar tema claro" : "Ativar tema escuro";
+  const nextLabel = t(dark ? "Ativar tema claro" : "Ativar tema escuro");
 
   return (
     <button
@@ -50,7 +52,7 @@ export function ThemeToggle({ compact = false }: { compact?: boolean }) {
       onClick={() => setTheme(dark ? "light" : "dark")}
     >
       {dark ? <Sun aria-hidden="true" /> : <Moon aria-hidden="true" />}
-      {!compact && <span>{dark ? "Tema claro" : "Tema escuro"}</span>}
+      {!compact && <span>{t(dark ? "Tema claro" : "Tema escuro")}</span>}
     </button>
   );
 }

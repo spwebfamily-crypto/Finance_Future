@@ -236,10 +236,7 @@ function accountTypeFor(type: string): "current" | "savings" | "cash" | "credit_
 const CURRENT_BALANCE_PRIORITY = ["expected", "interim_booked", "closing_booked"] as const;
 const AVAILABLE_BALANCE_PRIORITY = ["interim_available", "closing_available"] as const;
 
-function newestBalance(
-  balances: ProviderBalance[],
-  kinds: readonly ProviderBalance["kind"][],
-) {
+function newestBalance(balances: ProviderBalance[], kinds: readonly ProviderBalance["kind"][]) {
   for (const kind of kinds) {
     const candidates = balances
       .filter((balance) => balance.kind === kind)
@@ -455,23 +452,23 @@ async function syncAccount(
 
   const balances = await provider.getBalances(context);
   const snapshot = selectBalances(balances, providerAccount.currency);
-  if (snapshot.current !== null || snapshot.available !== null) {
-    const fetchedAt = new Date();
-    await prisma.account.update({
-      where: { id: link.accountId },
-      data: {
-        ...(snapshot.current !== null ? { providerCurrentBalance: snapshot.current } : {}),
-        ...(snapshot.available !== null ? { providerAvailableBalance: snapshot.available } : {}),
-        providerBalanceType: snapshot.currentKind,
-        providerBalanceCurrency: snapshot.currency,
-        providerBalanceReferenceDate: snapshot.currentReferenceDate,
-        providerBalanceUpdatedAt: fetchedAt,
-        providerBalanceCorrelationId: hmacHex(
-          `balance:${connection.id}:${link.id}:${fetchedAt.toISOString()}`,
-        ),
-      },
-    });
-  }
+  const fetchedAt = new Date();
+  await prisma.account.update({
+    where: { id: link.accountId },
+    data: {
+      // Ausência também é informação: nunca conservar um snapshot antigo como
+      // se tivesse sido confirmado pela sincronização mais recente.
+      providerCurrentBalance: snapshot.current,
+      providerAvailableBalance: snapshot.available,
+      providerBalanceType: snapshot.currentKind,
+      providerBalanceCurrency: snapshot.currency,
+      providerBalanceReferenceDate: snapshot.currentReferenceDate,
+      providerBalanceUpdatedAt: fetchedAt,
+      providerBalanceCorrelationId: hmacHex(
+        `balance:${connection.id}:${link.id}:${fetchedAt.toISOString()}`,
+      ),
+    },
+  });
 
   let continuationKey: string | null = null;
   const seenContinuationKeys = new Set<string>();
@@ -596,10 +593,13 @@ export async function runSyncJob(job: BankSyncJob): Promise<SyncOutcome> {
         apply: false,
       });
       if (duplicateAudit.groupsFound > 0) {
-        console.warn("[open-banking] duplicados estáveis encontrados; limpeza automática bloqueada", {
-          groups: duplicateAudit.groupsFound,
-          candidates: duplicateAudit.transactionsRemoved,
-        });
+        console.warn(
+          "[open-banking] duplicados estáveis encontrados; limpeza automática bloqueada",
+          {
+            groups: duplicateAudit.groupsFound,
+            candidates: duplicateAudit.transactionsRemoved,
+          },
+        );
       }
       // Passamos o userId; o materialize filtra por status="booked" nas ligações
       // que foram processadas com sucesso. Como o materialize usa bankAccountLinkId

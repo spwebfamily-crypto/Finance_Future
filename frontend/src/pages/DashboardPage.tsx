@@ -46,8 +46,13 @@ import type {
   SpendingLevelItem,
   TodaySummary,
 } from "../types";
-import { formatCurrency as formatCurrencyValue, parseSignedMoney, todayInputValue } from "../utils/format";
+import {
+  formatCurrency as formatCurrencyValue,
+  parseSignedMoney,
+  todayInputValue,
+} from "../utils/format";
 import { useI18n } from "../i18n/I18nContext";
+import { accountBalanceValue } from "../utils/accountBalance";
 
 const formatCurrency = formatCurrencyValue;
 
@@ -88,7 +93,7 @@ const levelMeta = {
 } as const;
 
 export function DashboardPage() {
-  const { locale } = useI18n();
+  const { locale, t } = useI18n();
   const reduceMotion = useReducedMotion();
   const [month, setMonth] = useState(currentMonth);
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
@@ -180,14 +185,19 @@ export function DashboardPage() {
   );
   const accountTotals = useMemo(() => {
     const totals = new Map<string, number>();
+    const unavailableCurrencies = new Set<string>();
     for (const account of visibleAccounts) {
       const accountCurrency = account.currency || currency;
-      totals.set(
-        accountCurrency,
-        (totals.get(accountCurrency) ?? 0) + (account.currentBalance ?? account.openingBalance),
-      );
+      const balance = accountBalanceValue(account);
+      if (balance === null) {
+        unavailableCurrencies.add(accountCurrency);
+        continue;
+      }
+      totals.set(accountCurrency, (totals.get(accountCurrency) ?? 0) + balance);
     }
-    return [...totals.entries()];
+    return [...totals.entries()].filter(
+      ([accountCurrency]) => !unavailableCurrencies.has(accountCurrency),
+    );
   }, [currency, visibleAccounts]);
   const unbudgetedCategories = useMemo(
     () =>
@@ -218,8 +228,13 @@ export function DashboardPage() {
       return {
         tone: "critical",
         Icon: AlertTriangle,
-        title: "Requer aten\u00e7\u00e3o",
-        description: `${critical} ${critical === 1 ? "categoria ultrapassou" : "categorias ultrapassaram"} o limite ou o ritmo previsto.`,
+        title: t("Requer atenção"),
+        description: t(
+          critical === 1
+            ? "Uma categoria ultrapassou o limite ou o ritmo previsto."
+            : "{count} categorias ultrapassaram o limite ou o ritmo previsto.",
+          { count: critical },
+        ),
         limit,
         spent,
         usage,
@@ -228,8 +243,13 @@ export function DashboardPage() {
       return {
         tone: "high",
         Icon: AlertTriangle,
-        title: "A acompanhar",
-        description: `${high} ${high === 1 ? "categoria est\u00e1" : "categorias est\u00e3o"} acima do ritmo habitual.`,
+        title: t("A acompanhar"),
+        description: t(
+          high === 1
+            ? "Uma categoria está acima do ritmo habitual."
+            : "{count} categorias estão acima do ritmo habitual.",
+          { count: high },
+        ),
         limit,
         spent,
         usage,
@@ -238,8 +258,8 @@ export function DashboardPage() {
       return {
         tone: "normal",
         Icon: ShieldCheck,
-        title: "M\u00eas sob controlo",
-        description: "Os limites definidos est\u00e3o dentro do ritmo esperado.",
+        title: t("Mês sob controlo"),
+        description: t("Os limites definidos estão dentro do ritmo esperado."),
         limit,
         spent,
         usage,
@@ -247,13 +267,13 @@ export function DashboardPage() {
     return {
       tone: "neutral",
       Icon: CircleHelp,
-      title: "Defina um limite",
-      description: "Os or\u00e7amentos tornam os sinais deste m\u00eas mais \u00fateis.",
+      title: t("Defina um limite"),
+      description: t("Os orçamentos tornam os sinais deste mês mais úteis."),
       limit,
       spent,
       usage,
     };
-  }, [levels]);
+  }, [levels, t]);
   const MonthPulseIcon = monthPulse.Icon;
 
   // Gasto atual por categoria, para as barras de progresso dos orçamentos.
@@ -425,28 +445,28 @@ export function DashboardPage() {
               <div className="today-overview__summary">
                 <div className="section-heading today-overview__heading">
                   <div>
-                    <p className="eyebrow">Movimento do dia</p>
-                    <h2 id="today-title">Hoje</h2>
+                    <p className="eyebrow">{t("Movimento do dia")}</p>
+                    <h2 id="today-title">{t("Hoje")}</h2>
                   </div>
                   <Link className="text-button" to="/expenses">
-                    Ver todos
+                    {t("Ver todos")}
                   </Link>
                 </div>
                 <div className="today-metrics">
                   <article>
-                    <span>Entradas</span>
+                    <span>{t("Entradas")}</span>
                     <strong className="is-positive">
                       +{formatCurrency(today.incomeTotal, today.currency)}
                     </strong>
                   </article>
                   <article>
-                    <span>Saídas</span>
+                    <span>{t("Saídas")}</span>
                     <strong className="is-negative">
                       −{formatCurrency(today.expenseTotal, today.currency)}
                     </strong>
                   </article>
                   <article className="today-metrics__net">
-                    <span>Resultado do dia</span>
+                    <span>{t("Resultado do dia")}</span>
                     <strong className={today.netTotal >= 0 ? "is-positive" : "is-negative"}>
                       {today.netTotal > 0 ? "+" : ""}
                       {formatCurrency(today.netTotal, today.currency)}
@@ -458,7 +478,7 @@ export function DashboardPage() {
                     <WalletCards />
                   </span>
                   <div>
-                    <span>Saldo das contas</span>
+                    <span>{t("Saldo das contas")}</span>
                     {accountTotals.length ? (
                       <div className="today-balance__values">
                         {accountTotals.map(([accountCurrency, total]) => (
@@ -467,17 +487,21 @@ export function DashboardPage() {
                           </strong>
                         ))}
                       </div>
+                    ) : visibleAccounts.length ? (
+                      <span>{t("Ainda sem sincronização")}</span>
                     ) : (
-                      <Link to="/accounts/connect">Adicionar ou ligar uma conta</Link>
+                      <Link to="/accounts/connect">{t("Adicionar ou ligar uma conta")}</Link>
                     )}
                   </div>
                 </div>
               </div>
               <div className="today-overview__activity">
                 <div className="today-overview__activity-title">
-                  <span>Atividade</span>
+                  <span>{t("Atividade")}</span>
                   <small>
-                    {today.items.length} {today.items.length === 1 ? "movimento" : "movimentos"}
+                    {t(today.items.length === 1 ? "{count} movimento" : "{count} movimentos", {
+                      count: today.items.length,
+                    })}
                   </small>
                 </div>
                 {today.items.length ? (
@@ -499,7 +523,7 @@ export function DashboardPage() {
                             {[
                               item.categoryName,
                               item.accountName,
-                              item.source === "bank" ? "Banco" : null,
+                              item.source === "bank" ? t("Banco") : null,
                             ]
                               .filter(Boolean)
                               .join(" · ")}
@@ -514,8 +538,8 @@ export function DashboardPage() {
                   </ul>
                 ) : (
                   <div className="today-empty">
-                    <p>Ainda não há movimentos hoje.</p>
-                    <Link to="/expenses/new">Registar uma despesa</Link>
+                    <p>{t("Ainda não há movimentos hoje.")}</p>
+                    <Link to="/expenses/new">{t("Registar uma despesa")}</Link>
                   </div>
                 )}
               </div>
@@ -525,14 +549,16 @@ export function DashboardPage() {
             <>
               <section className="dashboard-total" aria-labelledby="total-title">
                 <div>
-                  <p className="eyebrow">Total em {monthLabel(selectedMonth, locale)}</p>
+                  <p className="eyebrow">
+                    {t("Total em {month}", { month: monthLabel(selectedMonth, locale) })}
+                  </p>
                   <h2 id="total-title">
                     <AnimatedCurrency value={summary.total} currency={currency} />
                   </h2>
                   <p className="dashboard-total__source">
                     {hasLinkedBank
-                      ? "Inclui os gastos das contas ligadas ao banco."
-                      : "Ligue um banco para os gastos contabilizados entrarem sozinhos."}
+                      ? t("Inclui os gastos das contas ligadas ao banco.")
+                      : t("Ligue um banco para os gastos contabilizados entrarem sozinhos.")}
                   </p>
                 </div>
                 <div
@@ -545,13 +571,15 @@ export function DashboardPage() {
                       <ArrowDownRight aria-hidden="true" />
                     )}
                     {summary.changePercent === null
-                      ? "Sem comparação"
+                      ? t("Sem comparação")
                       : `${Math.abs(summary.changePercent).toFixed(1)}%`}
                   </span>
                   <p>
                     {summary.changeAmount === 0
-                      ? "Igual ao mês anterior"
-                      : `${formatCurrency(Math.abs(summary.changeAmount), currency)} face ao mês anterior`}
+                      ? t("Igual ao mês anterior")
+                      : t("{amount} face ao mês anterior", {
+                          amount: formatCurrency(Math.abs(summary.changeAmount), currency),
+                        })}
                   </p>
                 </div>
               </section>
@@ -564,14 +592,14 @@ export function DashboardPage() {
                   <MonthPulseIcon />
                 </span>
                 <div className="month-pulse__copy">
-                  <p className="eyebrow">Estado do mês</p>
+                  <p className="eyebrow">{t("Estado do mês")}</p>
                   <h2 id="month-pulse-title">{monthPulse.title}</h2>
                   <p>{monthPulse.description}</p>
                 </div>
                 {monthPulse.usage !== null ? (
                   <div className="month-pulse__budget">
                     <div>
-                      <span>Orçamento acompanhado</span>
+                      <span>{t("Orçamento acompanhado")}</span>
                       <strong>
                         {formatCurrency(monthPulse.spent, currency)} /{" "}
                         {formatCurrency(monthPulse.limit, currency)}
@@ -580,18 +608,20 @@ export function DashboardPage() {
                     <div
                       className="month-pulse__bar"
                       role="progressbar"
-                      aria-label="Utilização do orçamento acompanhado"
+                      aria-label={t("Utilização do orçamento acompanhado")}
                       aria-valuemin={0}
                       aria-valuemax={100}
                       aria-valuenow={Math.min(100, Math.round(monthPulse.usage))}
                     >
                       <span style={{ width: `${Math.min(100, monthPulse.usage)}%` }} />
                     </div>
-                    <small>{monthPulse.usage.toFixed(0)}% utilizado</small>
+                    <small>
+                      {t("{percent}% utilizado", { percent: monthPulse.usage.toFixed(0) })}
+                    </small>
                   </div>
                 ) : (
                   <a className="text-button month-pulse__action" href="#budgets-title">
-                    Definir limites
+                    {t("Definir limites")}
                   </a>
                 )}
               </section>
@@ -603,8 +633,8 @@ export function DashboardPage() {
                 >
                   <div className="section-heading">
                     <div>
-                      <p className="eyebrow">Distribuição</p>
-                      <h2 id="categories-chart-title">Por categoria</h2>
+                      <p className="eyebrow">{t("Distribuição")}</p>
+                      <h2 id="categories-chart-title">{t("Por categoria")}</h2>
                     </div>
                   </div>
                   {categoryData.length ? (
@@ -655,8 +685,8 @@ export function DashboardPage() {
                     </>
                   ) : (
                     <EmptyState
-                      title="Sem despesas neste mês"
-                      description="As categorias aparecerão aqui quando existirem movimentos."
+                      title={t("Sem despesas neste mês")}
+                      description={t("As categorias aparecerão aqui quando existirem movimentos.")}
                     />
                   )}
                 </section>
@@ -666,8 +696,8 @@ export function DashboardPage() {
                 >
                   <div className="section-heading">
                     <div>
-                      <p className="eyebrow">Últimos 6 meses</p>
-                      <h2 id="trend-chart-title">Evolução mensal</h2>
+                      <p className="eyebrow">{t("Últimos 6 meses")}</p>
+                      <h2 id="trend-chart-title">{t("Evolução mensal")}</h2>
                     </div>
                   </div>
                   {hasTrendData ? (
@@ -725,8 +755,8 @@ export function DashboardPage() {
                     </>
                   ) : (
                     <EmptyState
-                      title="Tendência indisponível"
-                      description="São necessários movimentos para construir a série mensal."
+                      title={t("Tendência indisponível")}
+                      description={t("São necessários movimentos para construir a série mensal.")}
                     />
                   )}
                 </section>
@@ -743,8 +773,8 @@ export function DashboardPage() {
           <section className="dashboard-section" aria-labelledby="levels-title">
             <div className="section-heading">
               <div>
-                <p className="eyebrow">Sinais</p>
-                <h2 id="levels-title">Níveis de gasto</h2>
+                <p className="eyebrow">{t("Sinais")}</p>
+                <h2 id="levels-title">{t("Níveis de gasto")}</h2>
               </div>
               <p>{levels.length} categorias analisadas</p>
             </div>
@@ -789,8 +819,8 @@ export function DashboardPage() {
               </div>
             ) : (
               <EmptyState
-                title="Dados insuficientes"
-                description="Quando houver histórico, avaliamos o ritmo de cada categoria."
+                title={t("Dados insuficientes")}
+                description={t("Quando houver histórico, avaliamos o ritmo de cada categoria.")}
               />
             )}
           </section>
@@ -798,14 +828,14 @@ export function DashboardPage() {
           <section className="dashboard-section dashboard-budgets" aria-labelledby="budgets-title">
             <div className="section-heading">
               <div>
-                <p className="eyebrow">Limites mensais</p>
-                <h2 id="budgets-title">Orçamentos por categoria</h2>
+                <p className="eyebrow">{t("Limites mensais")}</p>
+                <h2 id="budgets-title">{t("Orçamentos por categoria")}</h2>
               </div>
             </div>
             <div className="budgets-layout">
               <form className="budget-create" onSubmit={saveBudget} noValidate>
                 <label className="field">
-                  <span>Categoria</span>
+                  <span>{t("Categoria")}</span>
                   <select
                     ref={newCategoryRef}
                     value={newCategoryId}
@@ -818,7 +848,7 @@ export function DashboardPage() {
                       budgetFieldErrors.categoryId ? "budget-category-error" : undefined
                     }
                   >
-                    <option value="">Escolher categoria</option>
+                    <option value="">{t("Escolher categoria")}</option>
                     {unbudgetedCategories.map((category) => (
                       <option key={category.id} value={category.id}>
                         {category.name}
@@ -832,7 +862,7 @@ export function DashboardPage() {
                   )}
                 </label>
                 <label className="field">
-                  <span>Limite por mês</span>
+                  <span>{t("Limite por mês")}</span>
                   <input
                     ref={newLimitRef}
                     inputMode="decimal"
@@ -857,10 +887,10 @@ export function DashboardPage() {
                   type="submit"
                 >
                   {saving ? (
-                    <Spinner label="A guardar" />
+                    <Spinner label={t("A guardar")} />
                   ) : (
                     <>
-                      <Plus aria-hidden="true" /> Definir limite
+                      <Plus aria-hidden="true" /> {t("Definir limite")}
                     </>
                   )}
                 </button>
@@ -944,8 +974,8 @@ export function DashboardPage() {
                   ))
                 ) : (
                   <EmptyState
-                    title="Sem limites definidos"
-                    description="Defina um orçamento para receber sinais mais precisos."
+                    title={t("Sem limites definidos")}
+                    description={t("Defina um orçamento para receber sinais mais precisos.")}
                   />
                 )}
               </div>
@@ -955,13 +985,13 @@ export function DashboardPage() {
       )}
       <ConfirmDialog
         open={Boolean(budgetDeleteTarget)}
-        title="Remover este orçamento?"
+        title={t("Remover este orçamento?")}
         description={
           budgetDeleteTarget
             ? `O limite mensal de “${budgetDeleteTarget.category.name}” será removido.`
             : ""
         }
-        confirmLabel="Remover orçamento"
+        confirmLabel={t("Remover orçamento")}
         busy={saving}
         onCancel={() => setBudgetDeleteTarget(null)}
         onConfirm={() => budgetDeleteTarget && void removeBudget(budgetDeleteTarget)}

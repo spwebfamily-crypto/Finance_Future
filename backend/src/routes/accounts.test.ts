@@ -349,6 +349,7 @@ describe("account contract with linked bank accounts", () => {
     providerCurrentBalance: null,
     providerAvailableBalance: null,
     providerBalanceUpdatedAt: null,
+    providerBalanceCurrency: null,
     bankAccountLink: null,
     createdAt: new Date("2026-08-01T10:00:00.000Z"),
     updatedAt: new Date("2026-08-01T10:00:00.000Z"),
@@ -366,6 +367,7 @@ describe("account contract with linked bank accounts", () => {
     providerCurrentBalance: new Prisma.Decimal("1250.30"),
     providerAvailableBalance: new Prisma.Decimal("1180.30"),
     providerBalanceUpdatedAt: new Date("2026-08-30T08:00:00.000Z"),
+    providerBalanceCurrency: "EUR",
     bankAccountLink: {
       connection: { status: "active", lastSyncedAt: new Date("2026-08-30T08:00:00.000Z") },
     },
@@ -388,11 +390,13 @@ describe("account contract with linked bank accounts", () => {
       availableBalance: null,
       connectionStatus: null,
     });
-    // O saldo do banco não soma os movimentos: 1250,30 e não 1330,30.
+    // O saldo do banco não soma os movimentos nem expõe um total alternativo.
     expect(linked).toMatchObject({
       source: "bank",
       currentBalance: 1250.3,
-      availableBalance: 1180.3,
+      availableBalance: null,
+      derivedBalance: null,
+      balanceDelta: null,
       balanceSource: "provider",
       balanceAsOf: "2026-08-30T08:00:00.000Z",
       connectionStatus: "active",
@@ -401,7 +405,7 @@ describe("account contract with linked bank accounts", () => {
     expect(JSON.stringify(body)).not.toContain("providerSessionCiphertext");
   });
 
-  it("falls back to the derived balance when the provider has no snapshot yet", async () => {
+  it("never derives the balance of a linked account when the provider has no snapshot", async () => {
     repositories.accountFindMany.mockResolvedValue([
       { ...linkedAccount, providerCurrentBalance: null, providerAvailableBalance: null },
     ]);
@@ -411,7 +415,26 @@ describe("account contract with linked bank accounts", () => {
     });
     const body = await response.json();
 
-    expect(body.data[0]).toMatchObject({ balanceSource: "derived", currentBalance: 180 });
+    expect(body.data[0]).toMatchObject({
+      balanceSource: "unavailable",
+      currentBalance: null,
+      derivedBalance: null,
+      providerBalance: null,
+    });
+    expect(repositories.accountUpdate).not.toHaveBeenCalled();
+  });
+
+  it("rejects a stored provider snapshot whose currency differs from the account", async () => {
+    repositories.accountFindMany.mockResolvedValue([
+      { ...linkedAccount, providerBalanceCurrency: "USD" },
+    ]);
+
+    const response = await fetch(`${baseUrl}/api/accounts`, {
+      headers: { Authorization: authorization() },
+    });
+    const body = await response.json();
+
+    expect(body.data[0]).toMatchObject({ balanceSource: "unavailable", currentBalance: null });
   });
 
   it("blocks manual balance correction on a linked account", async () => {

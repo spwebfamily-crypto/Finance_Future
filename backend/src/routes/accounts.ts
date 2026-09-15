@@ -25,6 +25,7 @@ const accountSelect = {
   providerCurrentBalance: true,
   providerAvailableBalance: true,
   providerBalanceUpdatedAt: true,
+  providerBalanceCurrency: true,
   bankAccountLink: {
     select: { connection: { select: { status: true, lastSyncedAt: true } } },
   },
@@ -37,7 +38,11 @@ type PublicAccount = Prisma.AccountGetPayload<{ select: typeof accountSelect }>;
 function presentAccount(account: PublicAccount) {
   // A ligação bancária nunca é exposta diretamente: só o estado e a última
   // sincronização, já calculados em `balanceView`.
-  const { bankAccountLink: _bankAccountLink, ...fields } = account;
+  const {
+    bankAccountLink: _bankAccountLink,
+    providerBalanceCurrency: _providerBalanceCurrency,
+    ...fields
+  } = account;
   return {
     ...fields,
     openingBalance: account.openingBalance.toDecimalPlaces(2).toNumber(),
@@ -49,69 +54,62 @@ function presentAccount(account: PublicAccount) {
 }
 
 interface AccountBalanceView {
-  currentBalance: number;
+  currentBalance: number | null;
   availableBalance: number | null;
-  /** Saldo calculado a partir de movimentos (openingBalance + incomes − expenses ± transfers) */
-  derivedBalance: number;
+  /** Só existe para contas manuais; contas bancárias nunca são derivadas de movimentos. */
+  derivedBalance: number | null;
   /** Saldo reportado pelo banco (provider), se disponível */
   providerBalance: number | null;
   /** Diferença provider − derived (positivo = banco mostra mais) */
   balanceDelta: number | null;
-  balanceSource: "derived" | "provider";
+  balanceSource: "derived" | "provider" | "unavailable";
   balanceAsOf: Date | null;
   connectionStatus: string | null;
   lastSyncedAt: Date | null;
 }
 
 /**
- * Para contas ligadas (source="bank"): mostra o saldo do banco como principal,
- * mas inclui também o saldo derivado e o delta para reconciliação visual.
- * Se o banco não devolve saldo, usa o derivado (com openingBalance semeado
- * do primeiro saldo do banco, se ainda for 0).
- * Para contas manuais: só o derivado.
+ * Contas ligadas mostram exclusivamente o snapshot contabilístico do banco.
+ * Movimentos importados nunca alteram, completam ou substituem esse saldo.
+ * Sem snapshot atual e na moeda da conta, o saldo fica indisponível.
+ * Contas manuais continuam a usar o saldo derivado.
  */
-async function balanceView(
-  account: PublicAccount,
-  derivedBalance: Prisma.Decimal,
-  activity: Prisma.Decimal,
-): Promise<AccountBalanceView> {
+function balanceView(account: PublicAccount, derivedBalance: Prisma.Decimal): AccountBalanceView {
   const connection = account.bankAccountLink?.connection ?? null;
   const isLinked = account.source === "bank";
-  const providerSnapshot = account.providerCurrentBalance;
-  const providerAvailable = account.providerAvailableBalance;
+  const hasCompatibleSnapshot =
+    account.providerCurrentBalance !== null && account.providerBalanceCurrency === account.currency;
 
-  // Se for conta de banco e o openingBalance ainda é 0 (padrão), semeia com o
-  // primeiro snapshot do banco disponível. Isto evita que o derivado fique
-  // estruturalmente errado (0 + movimentos apenas da janela de importação).
-  let effectiveOpening = account.openingBalance;
-  let effectiveDerived = derivedBalance;
-  if (isLinked && effectiveOpening.isZero() && providerSnapshot !== null) {
-    effectiveOpening = providerSnapshot.sub(activity);
-    effectiveDerived = effectiveOpening.add(activity);
-    // Persiste o openingBalance semeado para futuras leituras.
-    await prisma.account.update({
-      where: { id: account.id },
-      data: { openingBalance: effectiveOpening },
-    });
-  }
-
-  const derivedNum = effectiveDerived.toDecimalPlaces(2).toNumber();
-  const providerNum = providerSnapshot?.toDecimalPlaces(2).toNumber() ?? null;
-  const delta = providerNum !== null ? providerNum - derivedNum : null;
-
-  if (isLinked && providerSnapshot !== null) {
+  if (isLinked && hasCompatibleSnapshot) {
+    const providerNum = account.providerCurrentBalance!.toDecimalPlaces(2).toNumber();
     return {
-      currentBalance: providerNum!,
-      availableBalance: providerAvailable?.toDecimalPlaces(2).toNumber() ?? null,
-      derivedBalance: derivedNum,
+      currentBalance: providerNum,
+      availableBalance: null,
+      derivedBalance: null,
       providerBalance: providerNum,
-      balanceDelta: delta,
+      balanceDelta: null,
       balanceSource: "provider",
       balanceAsOf: account.providerBalanceUpdatedAt,
       connectionStatus: connection?.status ?? null,
       lastSyncedAt: connection?.lastSyncedAt ?? null,
     };
   }
+
+  if (isLinked) {
+    return {
+      currentBalance: null,
+      availableBalance: null,
+      derivedBalance: null,
+      providerBalance: null,
+      balanceDelta: null,
+      balanceSource: "unavailable",
+      balanceAsOf: null,
+      connectionStatus: connection?.status ?? null,
+      lastSyncedAt: connection?.lastSyncedAt ?? null,
+    };
+  }
+
+  const derivedNum = derivedBalance.toDecimalPlaces(2).toNumber();
 
   return {
     currentBalance: derivedNum,
@@ -155,17 +153,14 @@ router.get("/", async (request: AuthenticatedRequest, response, next) => {
       },
       orderBy: [{ type: "asc" }, { name: "asc" }],
     });
-    const accountsWithBalance = await Promise.all(
-      accounts.map(async (account) => {
-        const activity = activityBalance(account);
-        const derived = account.openingBalance.add(activity);
-        const balance = await balanceView(account, derived, activity);
-        return {
-          ...presentAccount(account),
-          ...balance,
-        };
-      }),
-    );
+    const accountsWithBalance = accounts.map((account) => {
+      const derived = account.openingBalance.add(activityBalance(account));
+      const balance = balanceView(account, derived);
+      return {
+        ...presentAccount(account),
+        ...balance,
+      };
+    });
     return response.json({ data: accountsWithBalance });
   } catch (error) {
     return next(error);

@@ -1,5 +1,6 @@
 import { motion, useReducedMotion, type Variants } from "framer-motion";
 import { Link } from "react-router-dom";
+import { routes } from "../routes";
 
 interface BrandProps {
   compact?: boolean;
@@ -64,7 +65,7 @@ export function Brand({ compact = false, linked = true, phase = "idle" }: BrandP
   );
 
   return linked ? (
-    <Link to="/dashboard" className="brand-link">
+    <Link to={routes.dashboard} className="brand-link">
       {content}
     </Link>
   ) : (

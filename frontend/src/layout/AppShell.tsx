@@ -34,33 +34,34 @@ import {
   preloadPlanningPage,
   preloadPrivacyPage,
 } from "../routePreloads";
+import { routes } from "../routes";
 
 const navItems = [
-  { to: "/dashboard", label: "Hoje", icon: LayoutDashboard, preload: preloadDashboardPage },
-  { to: "/expenses", label: "Movimentos", icon: ReceiptText },
-  { to: "/accounts", label: "Contas", icon: Landmark, preload: preloadAccountsPage },
-  { to: "/planning", label: "Plano", icon: CalendarClock, preload: preloadPlanningPage },
-  { to: "/investments", label: "Investir", icon: TrendingUp, preload: preloadInvestmentsPage },
+  { to: routes.dashboard, label: "Hoje", icon: LayoutDashboard, preload: preloadDashboardPage },
+  { to: routes.expenses, label: "Movimentos", icon: ReceiptText },
+  { to: routes.accounts, label: "Contas", icon: Landmark, preload: preloadAccountsPage },
+  { to: routes.planning, label: "Plano", icon: CalendarClock, preload: preloadPlanningPage },
+  { to: routes.investments, label: "Investir", icon: TrendingUp, preload: preloadInvestmentsPage },
 ];
 
 const moreItems = [
-  { to: "/planning", label: "Plano", icon: CalendarClock, preload: preloadPlanningPage },
-  { to: "/investments", label: "Investir", icon: TrendingUp, preload: preloadInvestmentsPage },
+  { to: routes.planning, label: "Plano", icon: CalendarClock, preload: preloadPlanningPage },
+  { to: routes.investments, label: "Investir", icon: TrendingUp, preload: preloadInvestmentsPage },
   {
-    to: "/accounts/connections",
+    to: routes.bankConnections,
     label: "Bancos",
     icon: Building2,
     preload: preloadBankConnectionsPage,
   },
-  { to: "/privacy", label: "Privacidade", icon: Shield, preload: preloadPrivacyPage },
-  { to: "/categories", label: "Categorias", icon: FolderOpen, preload: undefined },
+  { to: routes.privacy, label: "Privacidade", icon: Shield, preload: preloadPrivacyPage },
+  { to: routes.categories, label: "Categorias", icon: FolderOpen, preload: undefined },
 ];
 
 const morePaths = moreItems.map((item) => item.to);
 
 const secondaryLinks = [
-  { to: "/accounts/connections", label: "Bancos", preload: preloadBankConnectionsPage },
-  { to: "/privacy", label: "Privacidade", preload: preloadPrivacyPage },
+  { to: routes.bankConnections, label: "Bancos", preload: preloadBankConnectionsPage },
+  { to: routes.privacy, label: "Privacidade", preload: preloadPrivacyPage },
 ];
 
 async function waitForBankSync(jobId: string, connectionId: string) {
@@ -133,7 +134,7 @@ function MobileNavigation({
           return (
             <NavLink
               key="new-expense"
-              to="/expenses/new"
+              to={routes.newExpense}
               className={({ isActive }) =>
                 isActive ? "mobile-nav__add mobile-nav__add--active" : "mobile-nav__add"
               }
@@ -174,7 +175,7 @@ function MobileNavigation({
           <NavLink
             key={to}
             to={to}
-            end={to === "/expenses" || to === "/accounts"}
+            end={to === routes.expenses || to === routes.accounts}
             className={({ isActive }) => (isActive ? "nav-link nav-link--active" : "nav-link")}
             onPointerEnter={preload}
             onPointerDown={preload}
@@ -411,7 +412,7 @@ export function AppShell() {
           <DesktopNavigation />
           <NavLink
             className="button button--accent sidebar__add"
-            to="/expenses/new"
+            to={routes.newExpense}
             onPointerEnter={preloadExpenseFormPage}
             onPointerDown={preloadExpenseFormPage}
             onFocus={preloadExpenseFormPage}

@@ -16,6 +16,7 @@ import type {
   FinancialAccount,
 } from "../types";
 import { useI18n } from "../i18n/I18nContext";
+import { accountBalanceValue } from "../utils/accountBalance";
 
 const statusOptions: Array<
   { value: ""; label: string } | { value: BankTransactionStatus; label: string }
@@ -207,10 +208,7 @@ export function AccountDetailPage() {
 
       <section className="accounts-panel">
         <BankBalance
-          currentBalance={account.currentBalance ?? account.openingBalance}
-          availableBalance={account.source === "bank" ? account.availableBalance : null}
-          derivedBalance={account.derivedBalance}
-          balanceDelta={account.balanceDelta}
+          currentBalance={accountBalanceValue(account)}
           balanceSource={account.balanceSource ?? "derived"}
           balanceAsOf={account.balanceAsOf ?? null}
           currency={currency}
