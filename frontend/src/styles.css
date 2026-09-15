@@ -1103,6 +1103,57 @@ h3 {
   height: 1rem;
 }
 
+.bank-sync-banner {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  min-height: 2.875rem;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.625rem 1rem;
+  color: var(--danger);
+  background: var(--danger-soft);
+  border-bottom: 0.0625rem solid color-mix(in srgb, var(--danger) 28%, var(--line));
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.bank-sync-banner > svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.bank-sync-banner > span {
+  min-width: 0;
+}
+
+.bank-sync-banner > a {
+  color: var(--ink-strong);
+  font-weight: 650;
+  text-underline-offset: 0.2em;
+}
+
+.bank-sync-banner .icon-button {
+  width: 2rem;
+  min-width: 2rem;
+  height: 2rem;
+  color: var(--ink-soft);
+}
+
+@media (max-width: 35rem) {
+  .bank-sync-banner {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .bank-sync-banner > a {
+    grid-column: 2;
+  }
+
+  .bank-sync-banner .icon-button {
+    grid-row: 1 / span 2;
+    grid-column: 3;
+  }
+}
+
 .verify-banner {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
@@ -8453,6 +8504,10 @@ a.auth-forgot {
   padding-left: 0.875rem;
 }
 
+.auth-page--login .field__control > svg + input {
+  padding-left: 2.75rem;
+}
+
 .auth-page--login .field__control--password > input {
   padding-right: 3.5rem;
 }
@@ -9266,6 +9321,7 @@ a.auth-forgot {
 .sidebar {
   padding: 1.25rem 0.875rem;
   background: var(--sidebar);
+  box-shadow: none;
 }
 
 .sidebar > .brand-link {
@@ -9321,7 +9377,13 @@ a.auth-forgot {
 }
 
 .main-content {
+  isolation: auto;
   background: var(--canvas);
+}
+
+.main-content::before {
+  display: none;
+  content: none;
 }
 
 .page {
@@ -9329,9 +9391,27 @@ a.auth-forgot {
 }
 
 .page-header {
+  position: static;
   align-items: flex-start;
   gap: 1.5rem;
   margin-bottom: 1.5rem;
+  padding: 0;
+  overflow: visible;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.page-header::after {
+  display: none;
+  content: none;
+}
+
+.page-header__copy,
+.page-header__action {
+  position: static;
+  z-index: auto;
 }
 
 .page-header h1 {
@@ -9612,113 +9692,5 @@ a.auth-forgot {
 
   .dashboard-shortcuts {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-/* Editorial layer — final cascade */
-.main-content {
-  position: relative;
-  isolation: isolate;
-  background:
-    radial-gradient(
-      circle at 92% 3%,
-      color-mix(in oklch, var(--accent) 13%, transparent),
-      transparent 25rem
-    ),
-    radial-gradient(
-      circle at 12% 18%,
-      color-mix(in oklch, var(--brand) 8%, transparent),
-      transparent 30rem
-    ),
-    var(--canvas);
-}
-
-.page-header {
-  position: relative;
-  align-items: end;
-  margin-bottom: 0;
-  padding: clamp(1.25rem, 3vw, 2.25rem);
-  overflow: hidden;
-  background: linear-gradient(
-    125deg,
-    color-mix(in oklch, var(--surface) 96%, transparent),
-    color-mix(in oklch, var(--brand-soft) 70%, var(--surface))
-  );
-  border: 0.0625rem solid color-mix(in oklch, var(--brand) 16%, var(--line));
-  border-radius: calc(var(--radius-xl) + 0.375rem);
-  box-shadow: var(--shadow-md);
-}
-
-.page-header::after {
-  position: absolute;
-  right: -4rem;
-  bottom: -7rem;
-  width: 18rem;
-  height: 18rem;
-  pointer-events: none;
-  content: "";
-  background: radial-gradient(
-    circle,
-    color-mix(in oklch, var(--accent) 24%, transparent),
-    transparent 68%
-  );
-}
-
-.page-header__copy,
-.page-header__action {
-  position: relative;
-  z-index: 1;
-}
-
-.page-header h1 {
-  max-width: 16ch;
-  font-size: clamp(2rem, 4vw, 3.75rem);
-  line-height: 0.96;
-  letter-spacing: -0.065em;
-}
-
-.dashboard-panel,
-.dashboard-section,
-.accounts-panel,
-.filters-panel,
-.planning-panel,
-.expense-section,
-.category-library,
-.form-section,
-.invest-page > section {
-  background: color-mix(in oklch, var(--surface) 96%, var(--brand-soft));
-  border-color: color-mix(in oklch, var(--line) 82%, var(--brand));
-  box-shadow: var(--shadow-sm);
-}
-
-.dashboard-shortcut {
-  min-height: 7.5rem;
-  align-content: space-between;
-  background: color-mix(in oklch, var(--surface) 94%, var(--brand-soft));
-  border-color: color-mix(in oklch, var(--line) 78%, var(--brand));
-}
-
-.dashboard-shortcut:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-0.1875rem);
-}
-
-.sidebar {
-  background: linear-gradient(
-    180deg,
-    color-mix(in oklch, var(--sidebar) 94%, var(--brand-soft)),
-    var(--sidebar)
-  );
-  box-shadow: 0.75rem 0 3rem color-mix(in oklch, var(--foreground) 5%, transparent);
-}
-
-@media (max-width: 47.9375rem) {
-  .page-header {
-    align-items: start;
-    padding: 1.25rem;
-  }
-  .page-header h1 {
-    max-width: 13ch;
-    font-size: clamp(2rem, 10vw, 2.85rem);
   }
 }

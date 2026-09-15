@@ -454,7 +454,8 @@ export const openBankingApi = {
   sync: async (connectionId: string) =>
     unwrap(
       await apiRequest<
-        ApiEnvelope<{ jobId: string; status: string }> | { jobId: string; status: string }
+        | ApiEnvelope<{ jobId: string; status: string; reused?: boolean }>
+        | { jobId: string; status: string; reused?: boolean }
       >(`/open-banking/connections/${connectionId}/sync`, { method: "POST", cacheResponse: false }),
     ),
   reauthorize: async (connectionId: string, psuType: PsuType = "personal", country = "PT") =>

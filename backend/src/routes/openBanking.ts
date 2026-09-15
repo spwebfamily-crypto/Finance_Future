@@ -31,7 +31,7 @@ import { ProviderError } from "../open-banking/contracts.js";
 import { sha256Hex } from "../open-banking/crypto.js";
 import { FakeOpenBankingProvider } from "../open-banking/fakeOpenBankingProvider.js";
 import { createOpenBankingProvider } from "../open-banking/providerFactory.js";
-import { hasActiveJob, processSyncJob } from "../open-banking/syncService.js";
+import { findActiveSyncJob, processSyncJob } from "../open-banking/syncService.js";
 import { disconnectConnection, replaceSession } from "../open-banking/disconnectService.js";
 import { materializeBookedTransactions } from "../open-banking/materialize.js";
 
@@ -405,7 +405,14 @@ router.post(
         throw bankError(409, "BANK_CONNECTION_REAUTH_REQUIRED");
       }
 
-      if (await hasActiveJob(connection.id)) throw bankError(409, "BANK_SYNC_IN_PROGRESS");
+      // Idempotente: o shell e a página podem pedir a mesma sincronização ao
+      // mesmo tempo. Ambos passam a acompanhar o job já ativo.
+      const activeJob = await findActiveSyncJob(connection.id);
+      if (activeJob) {
+        return response.status(202).json({
+          data: { jobId: activeJob.id, status: activeJob.status, reused: true },
+        });
+      }
 
       const job = await prisma.bankSyncJob.create({
         data: {
@@ -419,7 +426,9 @@ router.post(
       // O job é processado de imediato quando não há outro em curso.
       void processSyncJob(job.id).catch(() => undefined);
 
-      return response.status(202).json({ data: { jobId: job.id, status: job.status } });
+      return response.status(202).json({
+        data: { jobId: job.id, status: job.status, reused: false },
+      });
     } catch (error) {
       return next(error);
     }

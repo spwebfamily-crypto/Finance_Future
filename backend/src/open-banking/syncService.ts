@@ -109,7 +109,7 @@ export async function processDueConnections(limit: number): Promise<DueBatchResu
     transactionsUpdated: 0,
   };
 
-  await reclaimStaleRunningJobs();
+  await reclaimStaleSyncJobs();
 
   const connectionIds = await findDueConnectionIds(limit);
   for (const connectionId of connectionIds) {
@@ -150,7 +150,7 @@ export async function cleanupOpenBankingData(retentionDays = 30): Promise<{
   attemptsDeleted: number;
   rawPayloadsCleared: number;
 }> {
-  await reclaimStaleRunningJobs();
+  await reclaimStaleSyncJobs();
   const threshold = new Date(Date.now() - retentionDays * 86_400_000);
   const attempts = await prisma.bankAuthorizationAttempt.deleteMany({
     where: { OR: [{ expiresAt: { lt: threshold } }, { usedAt: { lt: threshold } }] },
@@ -162,6 +162,9 @@ export async function cleanupOpenBankingData(retentionDays = 30): Promise<{
   return { attemptsDeleted: attempts.count, rawPayloadsCleared: payloads.count };
 }
 
+/** Jobs `queued` devem ser reclamados quase imediatamente pela própria rota. */
+const STALE_QUEUED_MS = 2 * 60_000;
+
 /** Jobs `running` há mais de 20 min consideram-se mortos (crash/OOM no Render). */
 const STALE_RUNNING_MS = 20 * 60_000;
 
@@ -169,16 +172,58 @@ function staleRunningCutoff() {
   return new Date(Date.now() - STALE_RUNNING_MS);
 }
 
-export async function hasActiveJob(connectionId: string): Promise<boolean> {
-  const cutoff = staleRunningCutoff();
-  const active = await prisma.bankSyncJob.findFirst({
+function staleQueuedCutoff() {
+  return new Date(Date.now() - STALE_QUEUED_MS);
+}
+
+/**
+ * Fecha jobs órfãos sem tocar em movimentos, contas ou ligações. Um job
+ * manual pode ficar `queued` se a instância reiniciar entre a criação e o
+ * claim; sem esta recuperação bloquearia todas as tentativas seguintes.
+ */
+export async function reclaimStaleSyncJobs(connectionId?: string): Promise<number> {
+  const result = await prisma.bankSyncJob.updateMany({
+    where: {
+      ...(connectionId ? { connectionId } : {}),
+      OR: [
+        { status: "queued", createdAt: { lte: staleQueuedCutoff() } },
+        {
+          status: "running",
+          OR: [{ startedAt: { lte: staleRunningCutoff() } }, { startedAt: null }],
+        },
+      ],
+    },
+    data: {
+      status: "failed",
+      finishedAt: new Date(),
+      errorCode: "SYNC_JOB_STALE",
+      errorDetailSanitized: "SYNC_JOB_STALE",
+    },
+  });
+  return result.count;
+}
+
+export async function findActiveSyncJob(
+  connectionId: string,
+): Promise<Pick<BankSyncJob, "id" | "status"> | null> {
+  await reclaimStaleSyncJobs(connectionId);
+  const [active] = await prisma.bankSyncJob.findMany({
     where: {
       connectionId,
-      OR: [{ status: "queued" }, { status: "running", startedAt: { gt: cutoff } }],
+      OR: [
+        { status: "queued", createdAt: { gt: staleQueuedCutoff() } },
+        { status: "running", startedAt: { gt: staleRunningCutoff() } },
+      ],
     },
-    select: { id: true },
+    orderBy: { createdAt: "desc" },
+    take: 1,
+    select: { id: true, status: true },
   });
-  return active !== null;
+  return active ?? null;
+}
+
+export async function hasActiveJob(connectionId: string): Promise<boolean> {
+  return (await findActiveSyncJob(connectionId)) !== null;
 }
 
 /**
@@ -186,11 +231,10 @@ export async function hasActiveJob(connectionId: string): Promise<boolean> {
  * um novo. Sem isto, um crash a meio do sync bloqueia a ligação indefinidamente.
  */
 export async function reclaimStaleRunningJobs(): Promise<number> {
-  const cutoff = staleRunningCutoff();
   const result = await prisma.bankSyncJob.updateMany({
     where: {
       status: "running",
-      OR: [{ startedAt: { lte: cutoff } }, { startedAt: null }],
+      OR: [{ startedAt: { lte: staleRunningCutoff() } }, { startedAt: null }],
     },
     data: {
       status: "failed",

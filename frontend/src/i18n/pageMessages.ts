@@ -2,6 +2,22 @@ import type { AppLocale } from "./I18nContext";
 
 export const pageMessages = {
   "pt-PT": {
+    "A sincronização já estava em curso. A acompanhar o progresso…":
+      "A sincronização já estava em curso. A acompanhar o progresso…",
+    "Sincronização parcial. As contas disponíveis foram atualizadas; tente novamente para concluir.":
+      "Sincronização parcial. As contas disponíveis foram atualizadas; tente novamente para concluir.",
+    "O acesso ao banco expirou. Renove o acesso para voltar a sincronizar.":
+      "O acesso ao banco expirou. Renove o acesso para voltar a sincronizar.",
+    "O banco está temporariamente indisponível. Tente sincronizar novamente.":
+      "O banco está temporariamente indisponível. Tente sincronizar novamente.",
+    "O banco limitou os pedidos. Aguarde alguns minutos e tente novamente.":
+      "O banco limitou os pedidos. Aguarde alguns minutos e tente novamente.",
+    "A sincronização anterior foi interrompida. Pode tentar novamente agora.":
+      "A sincronização anterior foi interrompida. Pode tentar novamente agora.",
+    "A sincronização bancária falhou. Tente novamente ou renove o acesso.":
+      "A sincronização bancária falhou. Tente novamente ou renove o acesso.",
+    "Ver bancos": "Ver bancos",
+    "Fechar aviso": "Fechar aviso",
     "Sessão protegida": "Sessão protegida",
     "Ativar tema claro": "Ativar tema claro",
     "Ativar tema escuro": "Ativar tema escuro",
@@ -58,6 +74,22 @@ export const pageMessages = {
     "Eliminar despesa": "Eliminar despesa",
   },
   "en-GB": {
+    "A sincronização já estava em curso. A acompanhar o progresso…":
+      "Sync was already in progress. Following its progress…",
+    "Sincronização parcial. As contas disponíveis foram atualizadas; tente novamente para concluir.":
+      "Partial sync. Available accounts were updated; try again to finish.",
+    "O acesso ao banco expirou. Renove o acesso para voltar a sincronizar.":
+      "Bank access has expired. Renew access to resume syncing.",
+    "O banco está temporariamente indisponível. Tente sincronizar novamente.":
+      "The bank is temporarily unavailable. Try syncing again.",
+    "O banco limitou os pedidos. Aguarde alguns minutos e tente novamente.":
+      "The bank limited requests. Wait a few minutes and try again.",
+    "A sincronização anterior foi interrompida. Pode tentar novamente agora.":
+      "The previous sync was interrupted. You can try again now.",
+    "A sincronização bancária falhou. Tente novamente ou renove o acesso.":
+      "Bank sync failed. Try again or renew access.",
+    "Ver bancos": "View banks",
+    "Fechar aviso": "Dismiss notice",
     "Sessão protegida": "Protected session",
     "Ativar tema claro": "Use light theme",
     "Ativar tema escuro": "Use dark theme",
@@ -114,6 +146,22 @@ export const pageMessages = {
     "Eliminar despesa": "Delete expense",
   },
   "es-ES": {
+    "A sincronização já estava em curso. A acompanhar o progresso…":
+      "La sincronización ya estaba en curso. Siguiendo el progreso…",
+    "Sincronização parcial. As contas disponíveis foram atualizadas; tente novamente para concluir.":
+      "Sincronización parcial. Las cuentas disponibles se actualizaron; inténtalo de nuevo para terminar.",
+    "O acesso ao banco expirou. Renove o acesso para voltar a sincronizar.":
+      "El acceso al banco ha caducado. Renueva el acceso para volver a sincronizar.",
+    "O banco está temporariamente indisponível. Tente sincronizar novamente.":
+      "El banco no está disponible temporalmente. Intenta sincronizar de nuevo.",
+    "O banco limitou os pedidos. Aguarde alguns minutos e tente novamente.":
+      "El banco limitó las solicitudes. Espera unos minutos e inténtalo de nuevo.",
+    "A sincronização anterior foi interrompida. Pode tentar novamente agora.":
+      "La sincronización anterior se interrumpió. Puedes intentarlo de nuevo ahora.",
+    "A sincronização bancária falhou. Tente novamente ou renove o acesso.":
+      "La sincronización bancaria falló. Inténtalo de nuevo o renueva el acceso.",
+    "Ver bancos": "Ver bancos",
+    "Fechar aviso": "Cerrar aviso",
     "Sessão protegida": "Sesión protegida",
     "Ativar tema claro": "Activar tema claro",
     "Ativar tema escuro": "Activar tema oscuro",

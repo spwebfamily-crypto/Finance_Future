@@ -9,6 +9,7 @@ import {
   processDueConnections,
   processSyncJob,
   reclaimStaleRunningJobs,
+  reclaimStaleSyncJobs,
 } from "./syncService.js";
 import { encryptString } from "./crypto.js";
 import { fakeOpenBankingStore, FakeOpenBankingProvider } from "./fakeOpenBankingProvider.js";
@@ -185,6 +186,33 @@ describe("scheduled synchronisation", () => {
 });
 
 describe("stale running jobs", () => {
+  it("reclaims queued jobs orphaned before a worker claim", async () => {
+    const connection = await seedConnection({ nextSyncAt: new Date(Date.now() - 60_000) });
+    const stale = await prisma.bankSyncJob.create({
+      data: {
+        userId,
+        connectionId: connection.id,
+        trigger: "manual",
+        createdAt: new Date(Date.now() - 3 * 60_000),
+      },
+    });
+
+    expect(await hasActiveJob(connection.id as string)).toBe(false);
+    expect((await prisma.bankSyncJob.findUnique({ where: { id: stale.id } }))!.status).toBe(
+      "failed",
+    );
+  });
+
+  it("keeps a recently queued job active", async () => {
+    const connection = await seedConnection({ nextSyncAt: new Date(Date.now() - 60_000) });
+    await prisma.bankSyncJob.create({
+      data: { userId, connectionId: connection.id, trigger: "manual" },
+    });
+
+    expect(await hasActiveJob(connection.id as string)).toBe(true);
+    expect(await reclaimStaleSyncJobs(connection.id as string)).toBe(0);
+  });
+
   it("treats running jobs older than 20 minutes as inactive", async () => {
     const connection = await seedConnection({ nextSyncAt: new Date(Date.now() - 60_000) });
     await prisma.bankSyncJob.create({

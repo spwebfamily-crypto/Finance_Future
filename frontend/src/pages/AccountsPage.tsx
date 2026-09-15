@@ -30,6 +30,7 @@ import { formatCurrency, formatDate, parseSignedMoney, todayInputValue } from ".
 import { useI18n } from "../i18n/I18nContext";
 import { bankConnectionOutcomeMessage } from "../utils/bankConnectionOutcome";
 import { accountBalanceValue } from "../utils/accountBalance";
+import { bankSyncResultMessage, isBankSyncPending, isBankSyncSuccessful } from "../utils/bankSync";
 
 const initialAccount = {
   name: "",
@@ -85,7 +86,7 @@ export function AccountsPage() {
   const [connections, setConnections] = useState<BankConnectionSummary[]>([]);
   const [syncingConnectionId, setSyncingConnectionId] = useState<string | null>(null);
   const [pendingSyncJobs, setPendingSyncJobs] = useState<
-    Array<{ connectionId: string; jobId: string }>
+    Array<{ connectionId: string; jobId: string; pollFailures?: number }>
   >([]);
   const [accountForm, setAccountForm] = useState(initialAccount);
   const [transferForm, setTransferForm] = useState(initialTransfer);
@@ -167,21 +168,22 @@ export function AccountsPage() {
       for (const pending of pendingSyncJobs) {
         try {
           const job = await openBankingApi.syncJob(pending.jobId);
-          if (job.status === "queued" || job.status === "running") remaining.push(pending);
-          else if (job.status === "completed" || job.status === "partial") {
+          if (isBankSyncPending(job)) remaining.push({ ...pending, pollFailures: 0 });
+          else if (isBankSyncSuccessful(job)) {
             completed = true;
             notifyBankSyncCompleted(pending.connectionId);
-          } else if (!cancelled)
-            setError(t("A sincronização bancária não foi concluída. Tente novamente."));
-        } catch {
-          if (!cancelled) setError(t("Não foi possível confirmar a sincronização bancária."));
+            if (!cancelled) setNotice(bankSyncResultMessage(job, t));
+          } else if (!cancelled) setError(bankSyncResultMessage(job, t));
+        } catch (requestError) {
+          const pollFailures = (pending.pollFailures ?? 0) + 1;
+          if (pollFailures < 4) remaining.push({ ...pending, pollFailures });
+          else if (!cancelled) setError(errorMessage(requestError));
         }
       }
       if (cancelled) return;
       setPendingSyncJobs(remaining);
       if (!remaining.length) setSyncingConnectionId(null);
       if (completed) {
-        setNotice(t("Sincronização concluída. Saldos e movimentos foram atualizados."));
         void load(false);
       }
     }, SYNC_POLL_INTERVAL_MS);
@@ -205,8 +207,17 @@ export function AccountsPage() {
     setError("");
     try {
       const job = await openBankingApi.sync(connectionId);
-      setPendingSyncJobs((jobs) => [...jobs, { connectionId, jobId: job.jobId }]);
-      setNotice(t("A sincronizar saldos e movimentos…"));
+      setPendingSyncJobs((jobs) => [
+        ...jobs.filter((pending) => pending.jobId !== job.jobId),
+        { connectionId, jobId: job.jobId, pollFailures: 0 },
+      ]);
+      setNotice(
+        t(
+          job.reused
+            ? "A sincronização já estava em curso. A acompanhar o progresso…"
+            : "A sincronizar saldos e movimentos…",
+        ),
+      );
     } catch (requestError) {
       setError(errorMessage(requestError));
       setSyncingConnectionId(null);

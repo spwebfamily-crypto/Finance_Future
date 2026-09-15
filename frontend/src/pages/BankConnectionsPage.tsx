@@ -12,6 +12,7 @@ import { errorMessage } from "../api/client";
 import type { BankConnectionSummary, BankInstitution, BankRetention, BankSyncJob } from "../types";
 import { useI18n } from "../i18n/I18nContext";
 import { bankConnectionOutcomeMessage } from "../utils/bankConnectionOutcome";
+import { bankSyncResultMessage, isBankSyncPending, isBankSyncSuccessful } from "../utils/bankSync";
 
 const POLL_INTERVAL_MS = 3_000;
 
@@ -32,9 +33,9 @@ export function BankConnectionsPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [disconnectTarget, setDisconnectTarget] = useState<BankConnectionSummary | null>(null);
   const [isDisconnecting, setIsDisconnecting] = useState(false);
-  const [pendingJobs, setPendingJobs] = useState<Array<{ connectionId: string; jobId: string }>>(
-    [],
-  );
+  const [pendingJobs, setPendingJobs] = useState<
+    Array<{ connectionId: string; jobId: string; pollFailures?: number }>
+  >([]);
 
   useEffect(() => {
     const outcome = searchParams.get("bankConnection");
@@ -63,9 +64,9 @@ export function BankConnectionsPage() {
   }, []);
 
   const load = useCallback(
-    async (showLoading = true) => {
+    async (showLoading = true, clearCurrentError = true) => {
       if (showLoading) setIsLoading(true);
-      setError("");
+      if (clearCurrentError) setError("");
       try {
         setConnections(await openBankingApi.connections());
         // A indisponibilidade momentânea do catálogo não impede a visualização
@@ -95,24 +96,26 @@ export function BankConnectionsPage() {
     if (!pendingJobs.length) return;
     let cancelled = false;
     const poll = async () => {
-      const remaining: Array<{ connectionId: string; jobId: string }> = [];
+      const remaining: typeof pendingJobs = [];
       let hasFinishedJob = false;
       for (const job of pendingJobs) {
         try {
           const status: BankSyncJob = await openBankingApi.syncJob(job.jobId);
-          if (status.status === "queued" || status.status === "running") {
-            remaining.push(job);
+          if (isBankSyncPending(status)) {
+            remaining.push({ ...job, pollFailures: 0 });
           } else if (!cancelled) {
             hasFinishedJob = true;
-            notifyBankSyncCompleted(job.connectionId);
-            setNotice(
-              status.status === "completed"
-                ? t("Sincronização concluída. Os gastos contabilizados já estão em Despesas.")
-                : t("Sincronização terminada com o estado {status}.", { status: status.status }),
-            );
+            if (isBankSyncSuccessful(status)) {
+              notifyBankSyncCompleted(job.connectionId);
+              setNotice(bankSyncResultMessage(status, t));
+            } else {
+              setError(bankSyncResultMessage(status, t));
+            }
           }
-        } catch {
-          // Um job já eliminado deixa de ser seguido.
+        } catch (requestError) {
+          const pollFailures = (job.pollFailures ?? 0) + 1;
+          if (pollFailures < 4) remaining.push({ ...job, pollFailures });
+          else if (!cancelled) setError(errorMessage(requestError));
         }
       }
       if (cancelled) return;
@@ -120,7 +123,7 @@ export function BankConnectionsPage() {
       if (remaining.length || hasFinishedJob) {
         // Atualiza os saldos e o estado da ligação sem substituir a página por
         // um skeleton a cada ciclo de polling.
-        void load(false);
+        void load(false, false);
       }
     };
     const timer = window.setTimeout(poll, POLL_INTERVAL_MS);
@@ -135,8 +138,17 @@ export function BankConnectionsPage() {
     setError("");
     try {
       const job = await openBankingApi.sync(connection.id);
-      setPendingJobs((jobs) => [...jobs, { connectionId: connection.id, jobId: job.jobId }]);
-      setNotice(t("Sincronização pedida. Os gastos entram em Despesas quando terminar."));
+      setPendingJobs((jobs) => [
+        ...jobs.filter((pending) => pending.jobId !== job.jobId),
+        { connectionId: connection.id, jobId: job.jobId, pollFailures: 0 },
+      ]);
+      setNotice(
+        t(
+          job.reused
+            ? "A sincronização já estava em curso. A acompanhar o progresso…"
+            : "Sincronização pedida. Os gastos entram em Despesas quando terminar.",
+        ),
+      );
     } catch (requestError) {
       setError(errorMessage(requestError));
     } finally {

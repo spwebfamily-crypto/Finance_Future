@@ -30,6 +30,8 @@ const repositories = vi.hoisted(() => ({
   connectionFindMany: vi.fn(),
   connectionFindFirst: vi.fn(),
   jobCreate: vi.fn(),
+  jobFindMany: vi.fn(),
+  jobUpdateMany: vi.fn(),
 }));
 
 vi.mock("../prisma.js", () => ({
@@ -124,6 +126,17 @@ vi.mock("../prisma.js", () => ({
           return row;
         },
       ),
+      findMany: repositories.jobFindMany.mockImplementation(
+        async ({ where, take }: { where: { connectionId?: string }; take?: number }) => {
+          const items = repositories.jobs.filter(
+            (job) =>
+              (!where.connectionId || job.connectionId === where.connectionId) &&
+              (job.status === "queued" || job.status === "running"),
+          );
+          return take === undefined ? items : items.slice(0, take);
+        },
+      ),
+      updateMany: repositories.jobUpdateMany.mockResolvedValue({ count: 0 }),
     },
   },
 }));
@@ -540,6 +553,41 @@ describe("open banking institutions, authorization and callback", () => {
     expect(response.status).toBe(409);
     expect(body.error.code).toBe("BANK_CONNECTION_REAUTH_REQUIRED");
     expect(repositories.jobs).toHaveLength(0);
+  });
+
+  it("reuses the active job when the shell and page request sync together", async () => {
+    repositories.connections.push({
+      id: "conn-active",
+      userId,
+      provider: "fake",
+      institutionName: "Banco Demonstração",
+      status: "active",
+      disconnectedAt: null,
+      accounts: [],
+    });
+    repositories.jobs.push({
+      id: "job-active",
+      userId,
+      connectionId: "conn-active",
+      trigger: "manual",
+      status: "running",
+      startedAt: new Date(),
+      createdAt: new Date(),
+    });
+
+    const response = await fetch(`${baseUrl}/api/open-banking/connections/conn-active/sync`, {
+      method: "POST",
+      headers: { Authorization: authorization() },
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(202);
+    expect(body.data).toMatchObject({
+      jobId: "job-active",
+      status: "running",
+      reused: true,
+    });
+    expect(repositories.jobs).toHaveLength(1);
   });
 
   it("never stores the raw state, only its hash", async () => {
