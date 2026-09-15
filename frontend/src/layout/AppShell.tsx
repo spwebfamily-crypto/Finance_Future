@@ -116,9 +116,11 @@ function DesktopNavigation() {
 function MobileNavigation({
   moreOpen,
   onToggleMore,
+  onNavigate,
 }: {
   moreOpen: boolean;
   onToggleMore: () => void;
+  onNavigate: () => void;
 }) {
   const { t } = useI18n();
   const location = useLocation();
@@ -139,6 +141,7 @@ function MobileNavigation({
                 isActive ? "mobile-nav__add mobile-nav__add--active" : "mobile-nav__add"
               }
               aria-label={t("Nova despesa")}
+              onClick={onNavigate}
               onPointerDown={preloadExpenseFormPage}
               onFocus={preloadExpenseFormPage}
             >
@@ -177,6 +180,7 @@ function MobileNavigation({
             to={to}
             end={to === routes.expenses || to === routes.accounts}
             className={({ isActive }) => (isActive ? "nav-link nav-link--active" : "nav-link")}
+            onClick={onNavigate}
             onPointerEnter={preload}
             onPointerDown={preload}
             onFocus={preload}
@@ -333,10 +337,6 @@ export function AppShell() {
     () => typeof navigator !== "undefined" && !navigator.onLine,
   );
   const autoSyncUserRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    setMoreOpen(false);
-  }, [location.pathname]);
 
   useEffect(() => {
     if (!user?.id || isOffline || autoSyncUserRef.current === user.id) return;
@@ -507,7 +507,11 @@ export function AppShell() {
             </motion.div>
           </AnimatePresence>
         </main>
-        <MobileNavigation moreOpen={moreOpen} onToggleMore={() => setMoreOpen((open) => !open)} />
+        <MobileNavigation
+          moreOpen={moreOpen}
+          onToggleMore={() => setMoreOpen((open) => !open)}
+          onNavigate={() => setMoreOpen(false)}
+        />
         <MoreSheet open={moreOpen} onClose={() => setMoreOpen(false)} onLogout={requestLogout} />
         <ConfirmDialog
           open={logoutConfirmOpen}

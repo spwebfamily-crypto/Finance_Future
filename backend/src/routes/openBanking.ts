@@ -624,10 +624,10 @@ router.patch(
           ? "ignored"
           : input.excludedFromAnalytics === false && !input.classification
             ? "unreviewed"
-            : input.classification ??
+            : (input.classification ??
               // Choosing a category in the review UI is the explicit
               // confirmation that an outgoing movement is a real expense.
-              (input.categoryId && transaction.direction === "debit" ? "expense" : undefined);
+              (input.categoryId && transaction.direction === "debit" ? "expense" : undefined));
 
       const updated = await prisma.$transaction(async (client) => {
         if (input.categoryId && transaction.expenseId) {

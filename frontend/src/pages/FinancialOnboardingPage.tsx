@@ -197,8 +197,6 @@ export function FinancialOnboardingPage() {
 
   useEffect(() => {
     let active = true;
-    setIsLoading(true);
-    setLoadError("");
     financialProfileApi
       .get()
       .then((profile) => {
@@ -221,6 +219,12 @@ export function FinancialOnboardingPage() {
       active = false;
     };
   }, [loadAttempt]);
+
+  function retryLoad() {
+    setIsLoading(true);
+    setLoadError("");
+    setLoadAttempt((current) => current + 1);
+  }
 
   useEffect(() => {
     if (!isLoading) headingRef.current?.focus();
@@ -344,10 +348,7 @@ export function FinancialOnboardingPage() {
           </Link>
         </header>
         <div className="onboarding-load-error">
-          <ErrorState
-            message={loadError}
-            onRetry={() => setLoadAttempt((current) => current + 1)}
-          />
+          <ErrorState message={loadError} onRetry={retryLoad} />
           <Link className="button button--secondary" to="/dashboard">
             Continuar sem perfil
           </Link>

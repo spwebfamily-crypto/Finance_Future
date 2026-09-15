@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { logger } from "../logger.js";
 import { prisma } from "../prisma.js";
 import { cleanupOpenBankingData, processDueConnections } from "../open-banking/syncService.js";
 
@@ -22,20 +23,15 @@ async function main() {
   const result = await processDueConnections(limit);
   const cleanup = await cleanupOpenBankingData(retentionDays);
 
-  console.log(
-    `[open-banking] sincronizações: ${result.claimed} ligações reclamadas, ${result.completed} concluídas, ${result.failed} falhadas, ${result.accountsProcessed} contas, ${result.transactionsCreated} movimentos novos, ${result.transactionsUpdated} atualizados`,
-  );
-  console.log(
-    `[open-banking] limpeza: ${cleanup.attemptsDeleted} tentativas antigas, ${cleanup.rawPayloadsCleared} payloads de diagnóstico removidos`,
-  );
+  logger.info("open_banking_sync_completed", { ...result });
+  logger.info("open_banking_cleanup_completed", { ...cleanup });
 }
 
 main()
   .catch((error) => {
-    console.error(
-      "[open-banking] falha no agendamento:",
-      error instanceof Error ? error.message : error,
-    );
+    logger.error("open_banking_scheduler_failed", {
+      message: error instanceof Error ? error.message : String(error),
+    });
     process.exitCode = 1;
   })
   .finally(async () => {

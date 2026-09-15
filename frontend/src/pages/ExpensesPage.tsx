@@ -157,7 +157,13 @@ export function ExpensesPage() {
   }, [activeFilters]);
 
   useEffect(() => {
-    void loadData();
+    let active = true;
+    queueMicrotask(() => {
+      if (active) void loadData();
+    });
+    return () => {
+      active = false;
+    };
   }, [loadData]);
 
   useEffect(() => {
@@ -167,7 +173,8 @@ export function ExpensesPage() {
   }, [notice]);
 
   useEffect(() => {
-    if (hasFilters) setFiltersOpen(true);
+    if (!hasFilters) return;
+    queueMicrotask(() => setFiltersOpen(true));
   }, [hasFilters]);
 
   function applyFilters(event: FormEvent) {

@@ -171,7 +171,13 @@ export function InvestmentsPage() {
   }, []);
 
   useEffect(() => {
-    void loadProfile();
+    let active = true;
+    queueMicrotask(() => {
+      if (active) void loadProfile();
+    });
+    return () => {
+      active = false;
+    };
   }, [loadProfile]);
 
   useEffect(() => {

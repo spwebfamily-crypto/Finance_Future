@@ -34,9 +34,11 @@ function transactionDate(transaction: BankTransaction) {
 function formatTransactionDate(transaction: BankTransaction, locale: string, fallback: string) {
   const value = transactionDate(transaction);
   if (!value) return fallback;
-  return new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short", year: "numeric" }).format(
-    new Date(value),
-  );
+  return new Intl.DateTimeFormat(locale, {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(value));
 }
 
 export function DailyBankReviewModal() {
@@ -282,9 +284,13 @@ export function DailyBankReviewModal() {
                   <ReceiptText />
                 </span>
                 <span className="daily-review-card__source">
-                  {current.bankAccountLink.connection?.institutionName ?? t("Banco ligado")} · {current.bankAccountLink.displayName}
+                  {current.bankAccountLink.connection?.institutionName ?? t("Banco ligado")} ·{" "}
+                  {current.bankAccountLink.displayName}
                 </span>
-                <span className="daily-review-card__verified" aria-label={t("Movimento importado do banco")}>
+                <span
+                  className="daily-review-card__verified"
+                  aria-label={t("Movimento importado do banco")}
+                >
                   <ShieldCheck aria-hidden="true" />
                 </span>
               </div>

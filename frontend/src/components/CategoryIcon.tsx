@@ -16,6 +16,7 @@ import {
   Utensils,
   type LucideIcon,
 } from "lucide-react";
+import { createElement } from "react";
 
 export interface CategoryIconOption {
   value: string;
@@ -73,6 +74,10 @@ export function CategoryIcon({
   strokeWidth?: number;
   className?: string;
 }) {
-  const Icon = iconByName.get(categoryIconName(icon, categoryName)) || Tag;
-  return <Icon size={size} strokeWidth={strokeWidth} className={className} aria-hidden="true" />;
+  return createElement(iconByName.get(categoryIconName(icon, categoryName)) || Tag, {
+    size,
+    strokeWidth,
+    className,
+    "aria-hidden": true,
+  });
 }

@@ -59,11 +59,12 @@ describe("buildPasswordResetEmail", () => {
 
 describe("sendEmail", () => {
   const fetchMock = vi.fn();
+  let stdoutWriteSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    vi.spyOn(console, "info").mockImplementation(() => undefined);
+    stdoutWriteSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
   });
 
   afterEach(() => {
@@ -79,7 +80,7 @@ describe("sendEmail", () => {
     await sendEmail(message);
 
     expect(fetchMock).not.toHaveBeenCalled();
-    expect(console.info).toHaveBeenCalled();
+    expect(stdoutWriteSpy).toHaveBeenCalled();
   });
 
   it("posts to Brevo with the api-key header when configured", async () => {
@@ -147,8 +148,8 @@ describe("sendEmail", () => {
     await sendEmail({ ...message, text: secretText });
 
     expect(fetchMock).not.toHaveBeenCalled();
-    const logged = String(vi.mocked(console.info).mock.calls.flat());
-    expect(logged).toContain("BREVO_API_KEY ausente");
+    const logged = String(stdoutWriteSpy.mock.calls.flat());
+    expect(logged).toContain("brevo_api_key_missing");
     expect(logged).not.toContain(secretText);
     expect(logged).not.toContain("SUPER_SECRET_RESET_TOKEN");
     expect(logged).not.toContain(message.text);
@@ -159,7 +160,7 @@ describe("sendEmail", () => {
 
     await sendEmail({ ...message, text: "link-com-token" });
 
-    const logged = String(vi.mocked(console.info).mock.calls.flat());
+    const logged = String(stdoutWriteSpy.mock.calls.flat());
     expect(logged).toContain("link-com-token");
   });
 });

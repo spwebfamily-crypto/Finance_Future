@@ -88,6 +88,7 @@ export function ExpenseFormPage() {
   const [ocrMessage, setOcrMessage] = useState("");
   const [ocrSource, setOcrSource] = useState<"image" | "pdf" | null>(null);
   const [ocrConfidence, setOcrConfidence] = useState<ReceiptOcrResult["confidence"] | null>(null);
+  const [lastAutofillValues, setLastAutofillValues] = useState<Partial<ExpenseInput>>({});
 
   const previewUrl = useMemo(() => {
     if (!form.receipt) return null;
@@ -116,8 +117,11 @@ export function ExpenseFormPage() {
   useEffect(() => {
     let active = true;
     hadStoredReceiptRef.current = false;
-    setIsLoading(true);
-    setPageError("");
+    queueMicrotask(() => {
+      if (!active) return;
+      setIsLoading(true);
+      setPageError("");
+    });
 
     const request =
       isEditing && expenseId
@@ -158,6 +162,11 @@ export function ExpenseFormPage() {
 
   function updateField<K extends keyof ExpenseInput>(field: K, value: ExpenseInput[K]) {
     delete lastAutofillRef.current[field];
+    setLastAutofillValues((current) => {
+      const next = { ...current };
+      delete next[field];
+      return next;
+    });
     setForm((current) => ({ ...current, [field]: value }));
     setErrors((current) => ({ ...current, [field]: undefined }));
   }
@@ -210,6 +219,14 @@ export function ExpenseFormPage() {
   }
 
   function applyReceiptResult(result: ReceiptOcrResult) {
+    setLastAutofillValues((current) => ({
+      ...current,
+      ...(result.description ? { description: result.description } : {}),
+      ...(result.location ? { location: result.location } : {}),
+      ...(result.amount ? { amount: result.amount } : {}),
+      ...(result.date ? { date: result.date } : {}),
+      ...(result.categoryId ? { categoryId: result.categoryId } : {}),
+    }));
     setForm((current) => {
       const next = { ...current };
       const previous = lastAutofillRef.current;
@@ -266,6 +283,7 @@ export function ExpenseFormPage() {
       lastAutofillRef.current = {};
       return next;
     });
+    setLastAutofillValues({});
     setErrors((current) => ({ ...current, receipt: undefined }));
     void readReceiptDetails(file);
   }
@@ -649,15 +667,14 @@ export function ExpenseFormPage() {
                   </p>
                   {ocrState === "done" && ocrConfidence && (
                     <div className="receipt-ocr__confidence" aria-label="Confiança das sugestões">
-                      {form.amount === lastAutofillRef.current.amount &&
-                        ocrConfidence.amount > 0 && (
-                          <span>Valor {Math.round(ocrConfidence.amount * 100)}%</span>
-                        )}
-                      {form.categoryId === lastAutofillRef.current.categoryId &&
+                      {form.amount === lastAutofillValues.amount && ocrConfidence.amount > 0 && (
+                        <span>Valor {Math.round(ocrConfidence.amount * 100)}%</span>
+                      )}
+                      {form.categoryId === lastAutofillValues.categoryId &&
                         ocrConfidence.category > 0 && (
                           <span>Categoria {Math.round(ocrConfidence.category * 100)}%</span>
                         )}
-                      {form.date === lastAutofillRef.current.date && ocrConfidence.date > 0 && (
+                      {form.date === lastAutofillValues.date && ocrConfidence.date > 0 && (
                         <span>Data {Math.round(ocrConfidence.date * 100)}%</span>
                       )}
                     </div>

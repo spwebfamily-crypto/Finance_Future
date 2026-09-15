@@ -56,7 +56,13 @@ export function AccountsConnectPage() {
   }, [psuType]);
 
   useEffect(() => {
-    void load();
+    let active = true;
+    queueMicrotask(() => {
+      if (active) void load();
+    });
+    return () => {
+      active = false;
+    };
   }, [load]);
 
   const selected = useMemo(

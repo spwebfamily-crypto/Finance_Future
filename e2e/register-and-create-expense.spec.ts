@@ -86,7 +86,7 @@ test("permite registar uma conta e criar uma despesa com fotografia", async ({ p
   await expect(page.locator(".receipt-preview__image-link img")).toBeVisible();
 
   await page.goto("/dashboard");
-  await expect(page.getByRole("heading", { name: "O seu mês, num relance" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Hoje, sem complicações" })).toBeVisible();
   await expect(page.locator("#total-title")).toContainText("12,34");
 
   await page.locator(".budget-create select").selectOption({ index: 1 });

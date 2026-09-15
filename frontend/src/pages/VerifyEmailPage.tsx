@@ -175,16 +175,14 @@ export function VerifyEmailPage() {
                   <Link className="button button--primary button--wide" to="/login">
                     {t("verify.signInToResend")} <ArrowRight aria-hidden="true" />
                   </Link>
-                  <p className="auth-status__hint">
-                    {t("verify.afterSignInHint")}
-                  </p>
+                  <p className="auth-status__hint">{t("verify.afterSignInHint")}</p>
                 </>
               ))}
           </div>
 
           {status !== "success" && (
             <p className="auth-switch">
-              {t("verify.noAccount")} {" "}
+              {t("verify.noAccount")}{" "}
               <Link to="/register">
                 {t("notFound.register")} <ArrowRight size={14} aria-hidden="true" />
               </Link>

@@ -81,7 +81,13 @@ export function BankConnectionsPage() {
   );
 
   useEffect(() => {
-    void load();
+    let active = true;
+    queueMicrotask(() => {
+      if (active) void load();
+    });
+    return () => {
+      active = false;
+    };
   }, [load]);
 
   // Acompanha os jobs em curso sem bloquear a interface.

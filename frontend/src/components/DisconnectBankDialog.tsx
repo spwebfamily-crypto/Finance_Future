@@ -30,8 +30,6 @@ export function DisconnectBankDialog({
 
   useEffect(() => {
     if (!open) return;
-    setRetention("keep_imported");
-    setConfirmation("");
     const previouslyFocused =
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const frame = window.requestAnimationFrame(() => cancelRef.current?.focus());
@@ -79,7 +77,12 @@ export function DisconnectBankDialog({
     !busy && (!requiresConfirmation || confirmation.trim().toUpperCase() === "ELIMINAR");
 
   return (
-    <AnimatePresence>
+    <AnimatePresence
+      onExitComplete={() => {
+        setRetention("keep_imported");
+        setConfirmation("");
+      }}
+    >
       {open && (
         <motion.div
           className="dialog-backdrop"

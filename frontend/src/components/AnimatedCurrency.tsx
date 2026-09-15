@@ -38,5 +38,7 @@ export function AnimatedCurrency({ value, currency, duration = 700 }: AnimatedCu
     };
   }, [value, duration, reduceMotion]);
 
-  return <span aria-live="off">{formatCurrency(reduceMotion ? value : display, currency, locale)}</span>;
+  return (
+    <span aria-live="off">{formatCurrency(reduceMotion ? value : display, currency, locale)}</span>
+  );
 }

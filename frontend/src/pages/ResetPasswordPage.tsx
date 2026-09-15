@@ -68,9 +68,7 @@ export function ResetPasswordPage() {
               </span>
               <p className="eyebrow">{t("reset.missingEyebrow")}</p>
               <h1>{t("reset.missingTitle")}</h1>
-              <p className="form-intro">
-                {t("reset.missingDescription")}
-              </p>
+              <p className="form-intro">{t("reset.missingDescription")}</p>
               <div className="auth-status__actions">
                 <Link className="button button--primary button--wide" to="/forgot-password">
                   {t("reset.requestLink")} <ArrowRight aria-hidden="true" />
@@ -81,9 +79,7 @@ export function ResetPasswordPage() {
             <div className="auth-status auth-status--success">
               <p className="eyebrow">{t("reset.successEyebrow")}</p>
               <h1>{t("reset.successTitleShort")}</h1>
-              <p className="form-intro">
-                {t("reset.successDescriptionShort")}
-              </p>
+              <p className="form-intro">{t("reset.successDescriptionShort")}</p>
               <div className="auth-status__actions">
                 <Link className="button button--primary button--wide" to="/login">
                   {t("reset.signIn")} <ArrowRight aria-hidden="true" />

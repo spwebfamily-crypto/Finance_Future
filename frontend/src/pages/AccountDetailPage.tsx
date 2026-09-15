@@ -102,7 +102,13 @@ export function AccountDetailPage() {
   }, [accountId, page, status, classification, t]);
 
   useEffect(() => {
-    void load();
+    let active = true;
+    queueMicrotask(() => {
+      if (active) void load();
+    });
+    return () => {
+      active = false;
+    };
   }, [load]);
 
   const currency = useMemo(() => account?.currency ?? "EUR", [account]);

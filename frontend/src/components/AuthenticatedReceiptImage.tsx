@@ -10,7 +10,18 @@ type Props = Omit<ImgHTMLAttributes<HTMLImageElement>, "src"> & {
   detailed?: boolean;
 };
 
-export function AuthenticatedReceiptImage({
+export function AuthenticatedReceiptImage({ receiptUrl, detailed = false, ...props }: Props) {
+  return (
+    <AuthenticatedReceiptImageContent
+      key={`${receiptUrl}:${detailed ? "detailed" : "summary"}`}
+      receiptUrl={receiptUrl}
+      detailed={detailed}
+      {...props}
+    />
+  );
+}
+
+function AuthenticatedReceiptImageContent({
   receiptUrl,
   receiptMimeType,
   alt,
@@ -26,9 +37,6 @@ export function AuthenticatedReceiptImage({
     if (deferDownload) return undefined;
     let active = true;
     let url: string | null = null;
-    setObjectUrl(null);
-    setReceiptBlob(null);
-    setStatus("loading");
     void apiBlobRequest(receiptUrl)
       .then((blob) => {
         url = URL.createObjectURL(blob);
@@ -85,7 +93,12 @@ export function AuthenticatedReceiptImage({
   if (!objectUrl || !receiptBlob) return null;
   if (receiptBlob.type === "application/pdf") {
     return (
-      <PdfReceiptPreview file={receiptBlob} href={objectUrl} title={alt || "Comprovativo PDF"} />
+      <PdfReceiptPreview
+        key={objectUrl}
+        file={receiptBlob}
+        href={objectUrl}
+        title={alt || "Comprovativo PDF"}
+      />
     );
   }
   return (

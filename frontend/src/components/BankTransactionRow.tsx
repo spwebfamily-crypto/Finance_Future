@@ -41,7 +41,8 @@ export function BankTransactionRow({
   const { t, locale } = useI18n();
   const isPending = transaction.status === "pending";
   const isCredit = transaction.direction === "credit";
-  const needsReview = transaction.direction === "debit" && transaction.classification === "unreviewed";
+  const needsReview =
+    transaction.direction === "debit" && transaction.classification === "unreviewed";
   const selectedCategoryId = transaction.expense?.categoryId ?? categories[0]?.id ?? "";
 
   return (

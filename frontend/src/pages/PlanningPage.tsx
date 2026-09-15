@@ -241,7 +241,13 @@ export function PlanningPage() {
   }, []);
 
   useEffect(() => {
-    void load();
+    let active = true;
+    queueMicrotask(() => {
+      if (active) void load();
+    });
+    return () => {
+      active = false;
+    };
   }, [load]);
 
   const currency = user?.currency || summary?.currency || "EUR";

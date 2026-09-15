@@ -6,20 +6,19 @@ local e não use `prisma db push` ou `prisma migrate reset`.
 
 1. No painel do fornecedor PostgreSQL, crie um backup e confirme que o restauro pode ser
    iniciado antes de alterar o histórico.
-2. Num shell seguro do serviço que já recebe `DATABASE_URL`, consulte o estado e o erro:
+2. Num shell seguro do serviço que já recebe `DATABASE_URL`, consulte o estado e faça a
+   inspeção apenas de leitura:
 
    ```sh
    npm exec --workspace @expensesnap/backend prisma migrate status
-   npm exec --workspace @expensesnap/backend prisma db execute --stdin <<'SQL'
-   SELECT migration_name, started_at, finished_at, rolled_back_at, logs
-   FROM "_prisma_migrations"
-   WHERE migration_name = '20260911161000_add_movement_currency';
-   SQL
+   npm run db:inspect-movement-migration -w backend
    ```
 
 3. Confirme que `Expense`, `Income` e `Transfer` não receberam parcialmente a coluna
-   `currency`. PostgreSQL executa esta migration numa transação; ainda assim, a verificação
-   é obrigatória antes de resolver o histórico.
+   `currency`: o inspetor deve indicar `failed_transaction_rolled_back` e devolver `columns: []`.
+   PostgreSQL executa esta migration numa transação; ainda assim, a verificação é obrigatória
+   antes de resolver o histórico. Se indicar `partial_schema_detected`, o comando termina com
+   código 2 e deve parar o procedimento.
 4. Só depois da confirmação, marque a tentativa como revertida e deixe o próximo deploy
    aplicar o SQL corrigido:
 

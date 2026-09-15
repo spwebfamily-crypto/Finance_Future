@@ -1,4 +1,5 @@
 import { env } from "../config.js";
+import { logger } from "../logger.js";
 
 interface OutboundEmail {
   to: string;
@@ -99,15 +100,15 @@ export async function sendEmail(email: OutboundEmail): Promise<void> {
   // token — os logs do Render não devem vazar links de verificação/reposição.
   if (!env.BREVO_API_KEY) {
     if (env.NODE_ENV === "production") {
-      console.info("[email] BREVO_API_KEY ausente — email não enviado.");
+      logger.warn("email_not_sent", { reason: "brevo_api_key_missing" });
       return;
     }
-    console.info(
-      `[email] BREVO_API_KEY ausente — email não enviado.\n` +
-        `  Para: ${email.to}\n` +
-        `  Assunto: ${email.subject}\n` +
-        `  Corpo (texto):\n${email.text}`,
-    );
+    logger.info("email_not_sent", {
+      reason: "brevo_api_key_missing",
+      to: email.to,
+      subject: email.subject,
+      text: email.text,
+    });
     return;
   }
 

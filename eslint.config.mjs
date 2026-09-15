@@ -63,7 +63,20 @@ export default tseslint.config(
       "react-hooks/refs": "warn",
       "react-hooks/static-components": "warn",
       "react-hooks/use-memo": "warn",
-      "react-refresh/only-export-components": "warn",
+      "react-refresh/only-export-components": [
+        "warn",
+        {
+          allowConstantExport: true,
+          allowExportNames: [
+            "CATEGORY_ICON_OPTIONS",
+            "applyTheme",
+            "categoryIconName",
+            "parseMoney",
+            "shortcutLabel",
+            "useAuth",
+          ],
+        },
+      ],
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/no-unused-vars": [
         "error",

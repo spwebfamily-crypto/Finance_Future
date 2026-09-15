@@ -25,7 +25,10 @@ export function ReauthorizeBanner({
     <div className="reauthorize-banner" role="status">
       <AlertTriangle aria-hidden="true" />
       <p>
-        {message} {t("Os movimentos deixam de ser atualizados até renovar o acesso. Os dados já importados continuam disponíveis.")}
+        {message}{" "}
+        {t(
+          "Os movimentos deixam de ser atualizados até renovar o acesso. Os dados já importados continuam disponíveis.",
+        )}
       </p>
       <button type="button" className="button button--accent" onClick={onRenew} disabled={busy}>
         {t("Renovar acesso")}

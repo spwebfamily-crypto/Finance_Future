@@ -38,7 +38,13 @@ export function PrivacyPage() {
   }, []);
 
   useEffect(() => {
-    void load();
+    let active = true;
+    queueMicrotask(() => {
+      if (active) void load();
+    });
+    return () => {
+      active = false;
+    };
   }, [load]);
 
   const liveConnections = connections.filter((connection) => connection.status !== "disconnected");
@@ -78,7 +84,8 @@ export function PrivacyPage() {
         </div>
         <ul className="privacy-list">
           <li>
-            <strong>{t("privacy.storedInstitution")}</strong> — {t("privacy.storedInstitutionDescription")}
+            <strong>{t("privacy.storedInstitution")}</strong> —{" "}
+            {t("privacy.storedInstitutionDescription")}
           </li>
           <li>
             <strong>{t("privacy.storedSession")}</strong> — {t("privacy.storedSessionDescription")}
@@ -87,15 +94,14 @@ export function PrivacyPage() {
             <strong>{t("privacy.storedIban")}</strong> — {t("privacy.storedIbanDescription")}
           </li>
           <li>
-            <strong>{t("privacy.storedTransactions")}</strong> — {t("privacy.storedTransactionsDescription")}
+            <strong>{t("privacy.storedTransactions")}</strong> —{" "}
+            {t("privacy.storedTransactionsDescription")}
           </li>
           <li>
             <strong>{t("privacy.storedRecords")}</strong> — {t("privacy.storedRecordsDescription")}
           </li>
         </ul>
-        <p className="planning-disclosure__hint">
-          {t("privacy.noPassword")}
-        </p>
+        <p className="planning-disclosure__hint">{t("privacy.noPassword")}</p>
       </section>
 
       <section className="accounts-panel" aria-labelledby="privacy-connections">
@@ -141,9 +147,7 @@ export function PrivacyPage() {
             <h2 id="privacy-rights">{t("privacy.controlTitle")}</h2>
           </div>
         </div>
-        <p>
-          {t("privacy.rightsDescription")}
-        </p>
+        <p>{t("privacy.rightsDescription")}</p>
         <Link className="button button--primary" to="/accounts/connections">
           {t("privacy.manageConnections")}
         </Link>

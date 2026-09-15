@@ -170,7 +170,13 @@ export function DashboardPage() {
   }, [month]);
 
   useEffect(() => {
-    void load();
+    let active = true;
+    queueMicrotask(() => {
+      if (active) void load();
+    });
+    return () => {
+      active = false;
+    };
   }, [load]);
 
   const currency = summary?.currency || "EUR";

@@ -79,7 +79,12 @@ describe("DailyBankReviewModal", () => {
       meta: { page: 1, pageSize: 200, total: 1, pageCount: 1 },
     });
     api.reviewTransaction.mockResolvedValue({ id: "transaction-1", reviewedAt: today });
-    api.deleteTransaction.mockResolvedValue({ id: "transaction-1", status: "removed", classification: "ignored", reviewedAt: today });
+    api.deleteTransaction.mockResolvedValue({
+      id: "transaction-1",
+      status: "removed",
+      classification: "ignored",
+      reviewedAt: today,
+    });
   });
 
   it("opens after login for a linked bank and saves the selected category", async () => {
@@ -106,9 +111,7 @@ describe("DailyBankReviewModal", () => {
     api.reviewTransaction.mockRejectedValueOnce(new Error("A ligação ao banco falhou."));
     render(<DailyBankReviewModal />);
 
-    await user.click(
-      await screen.findByRole("button", { name: /Concluir|Guardar e continuar/i }),
-    );
+    await user.click(await screen.findByRole("button", { name: /Concluir|Guardar e continuar/i }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("A ligação ao banco falhou.");
     expect(screen.getByRole("heading", { name: "Café Central" })).toBeInTheDocument();

@@ -37,9 +37,10 @@ async function runAutomaticSync() {
   }
 }
 
-const automaticSyncTimer = openBanking.enabled && openBanking.automaticSyncEnabled
-  ? setInterval(() => void runAutomaticSync(), AUTO_SYNC_TICK_MS)
-  : null;
+const automaticSyncTimer =
+  openBanking.enabled && openBanking.automaticSyncEnabled
+    ? setInterval(() => void runAutomaticSync(), AUTO_SYNC_TICK_MS)
+    : null;
 automaticSyncTimer?.unref();
 if (openBanking.enabled && openBanking.automaticSyncEnabled) void runAutomaticSync();
 

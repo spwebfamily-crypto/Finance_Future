@@ -11,7 +11,11 @@ interface PdfReceiptPreviewProps {
   title?: string;
 }
 
-export function PdfReceiptPreview({
+export function PdfReceiptPreview(props: PdfReceiptPreviewProps) {
+  return <PdfReceiptPreviewContent key={props.href} {...props} />;
+}
+
+function PdfReceiptPreviewContent({
   file,
   href,
   title = "Comprovativo PDF",
@@ -46,9 +50,6 @@ export function PdfReceiptPreview({
       ).catch(() => undefined);
       return destroyPromise;
     };
-    setStatus("loading");
-    setPageNumber(1);
-    setPageCount(0);
     documentRef.current = null;
 
     void (async () => {
@@ -96,6 +97,7 @@ export function PdfReceiptPreview({
       const width = Math.round(entries[0]?.contentRect.width ?? 0);
       if (!width || Math.abs(width - observedWidthRef.current) < 1) return;
       observedWidthRef.current = width;
+      setStatus("loading");
       setRenderVersion((current) => current + 1);
     });
     resizeObserver.observe(canvas.parentElement || canvas);
@@ -109,7 +111,6 @@ export function PdfReceiptPreview({
     const generation = renderGenerationRef.current + 1;
     renderGenerationRef.current = generation;
     let active = true;
-    setStatus("loading");
     let page: Awaited<ReturnType<PDFDocumentProxy["getPage"]>> | null = null;
     let localRenderTask: RenderTask | null = null;
 
@@ -200,7 +201,10 @@ export function PdfReceiptPreview({
           <button
             type="button"
             className="icon-button"
-            onClick={() => setPageNumber((current) => Math.max(1, current - 1))}
+            onClick={() => {
+              setStatus("loading");
+              setPageNumber((current) => Math.max(1, current - 1));
+            }}
             disabled={pageNumber <= 1}
             aria-label="Página anterior"
           >
@@ -212,7 +216,10 @@ export function PdfReceiptPreview({
           <button
             type="button"
             className="icon-button"
-            onClick={() => setPageNumber((current) => Math.min(pageCount, current + 1))}
+            onClick={() => {
+              setStatus("loading");
+              setPageNumber((current) => Math.min(pageCount, current + 1));
+            }}
             disabled={!pageCount || pageNumber >= pageCount}
             aria-label="Página seguinte"
           >

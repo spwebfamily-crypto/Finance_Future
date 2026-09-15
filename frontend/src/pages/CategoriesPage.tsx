@@ -70,7 +70,13 @@ export function CategoriesPage() {
   }, []);
 
   useEffect(() => {
-    void loadCategories();
+    let active = true;
+    queueMicrotask(() => {
+      if (active) void loadCategories();
+    });
+    return () => {
+      active = false;
+    };
   }, [loadCategories]);
 
   async function createCategory(event: FormEvent) {

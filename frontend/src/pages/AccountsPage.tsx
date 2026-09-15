@@ -93,7 +93,12 @@ export function AccountsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
   const [connectionError, setConnectionError] = useState("");
-  const [notice, setNotice] = useState("");
+  const [notice, setNotice] = useState(() => {
+    const outcome = searchParams.get("bankConnection");
+    return outcome
+      ? t(bankConnectionOutcomeMessage(outcome, searchParams.get("reason") ?? ""))
+      : "";
+  });
   const [deleteTarget, setDeleteTarget] = useState<FinancialAccount | null>(null);
   const [balanceTarget, setBalanceTarget] = useState<FinancialAccount | null>(null);
   const [correctedBalance, setCorrectedBalance] = useState("");
@@ -144,7 +149,13 @@ export function AccountsPage() {
   }, []);
 
   useEffect(() => {
-    void load();
+    let active = true;
+    queueMicrotask(() => {
+      if (active) void load();
+    });
+    return () => {
+      active = false;
+    };
   }, [load]);
 
   useEffect(() => {
@@ -181,16 +192,13 @@ export function AccountsPage() {
   }, [pendingSyncJobs, load, t]);
 
   // Resultado do callback do banco: `?bankConnection=success|error&reason=...`.
-  const bankConnectionOutcome = searchParams.get("bankConnection");
   useEffect(() => {
-    if (!bankConnectionOutcome) return;
-    const reason = searchParams.get("reason") ?? "";
-    setNotice(t(bankConnectionOutcomeMessage(bankConnectionOutcome, reason)));
+    if (!searchParams.get("bankConnection")) return;
     const nextParams = new URLSearchParams(searchParams);
     nextParams.delete("bankConnection");
     nextParams.delete("reason");
     setSearchParams(nextParams, { replace: true });
-  }, [bankConnectionOutcome, searchParams, setSearchParams, t]);
+  }, [searchParams, setSearchParams]);
 
   async function syncConnection(connectionId: string) {
     setSyncingConnectionId(connectionId);
