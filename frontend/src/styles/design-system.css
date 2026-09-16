@@ -289,6 +289,61 @@ h3,
   box-shadow: none;
 }
 
+.sidebar .language-switcher {
+  grid-template-columns: 1fr;
+  gap: var(--space-2);
+  padding: var(--space-3);
+}
+
+.sidebar .language-switcher__label {
+  color: var(--sidebar-muted);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sidebar .language-switcher select {
+  width: 100%;
+  min-height: 2.25rem;
+  color: var(--sidebar-foreground);
+  background: var(--sidebar-accent);
+  border-color: var(--sidebar-border);
+}
+
+.dashboard-total {
+  color: var(--ink);
+}
+
+.dashboard-total__source,
+.dashboard-total__compare p {
+  color: var(--muted);
+}
+
+.dashboard-total__compare {
+  background: var(--surface-soft);
+  border-color: var(--line);
+  backdrop-filter: none;
+}
+
+.today-metrics article {
+  color: var(--ink);
+  background: var(--surface-soft);
+  border-color: var(--line);
+}
+
+.today-metrics span,
+.today-balance > div > span,
+.today-overview__activity-title,
+.today-activity-list li > div small {
+  color: var(--muted);
+}
+
+.today-metrics strong,
+.today-activity-list li > div strong,
+.today-balance strong {
+  color: var(--ink-strong);
+}
+
 /* Authentication has its own grid. Recovery must never inherit login sizing. */
 .auth-page--login,
 .auth-page--register,

@@ -2,9 +2,9 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DailyBankReviewModal } from "./DailyBankReviewModal";
+import { BANK_SYNC_COMPLETED_EVENT } from "../api/bank-sync-events";
 
 const api = vi.hoisted(() => ({
-  connections: vi.fn(),
   transactions: vi.fn(),
   reviewTransaction: vi.fn(),
   deleteTransaction: vi.fn(),
@@ -13,7 +13,6 @@ const api = vi.hoisted(() => ({
 
 vi.mock("../api/resources", () => ({
   openBankingApi: {
-    connections: api.connections,
     transactions: api.transactions,
     reviewTransaction: api.reviewTransaction,
     deleteTransaction: api.deleteTransaction,
@@ -41,7 +40,6 @@ describe("DailyBankReviewModal", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     const today = new Date().toISOString();
-    api.connections.mockResolvedValue([{ id: "connection-1", status: "active", accountCount: 1 }]);
     api.categories.mockResolvedValue([
       { id: "category-other", name: "Outros", icon: null },
       { id: "category-food", name: "Alimentação", icon: "utensils" },
@@ -87,13 +85,33 @@ describe("DailyBankReviewModal", () => {
     });
   });
 
-  it("opens after login for a linked bank and saves the selected category", async () => {
+  function completeSync() {
+    window.dispatchEvent(
+      new CustomEvent(BANK_SYNC_COMPLETED_EVENT, {
+        detail: { connectionId: "connection-1" },
+      }),
+    );
+  }
+
+  it("stays closed until a sync completes", async () => {
+    render(<DailyBankReviewModal />);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(api.transactions).not.toHaveBeenCalled();
+  });
+
+  it("opens after sync for the connection and saves the selected category", async () => {
     const user = userEvent.setup();
     render(<DailyBankReviewModal />);
+    completeSync();
 
     expect(
-      await screen.findByRole("dialog", { name: "Classifique os gastos de hoje" }),
+      await screen.findByRole("dialog", { name: "Confirme os gastos sincronizados" }),
     ).toBeInTheDocument();
+    expect(api.transactions).toHaveBeenCalledWith({
+      connectionId: "connection-1",
+      page: 1,
+      pageSize: 200,
+    });
     await user.selectOptions(screen.getByLabelText("Categoria"), "category-food");
     await user.click(screen.getByRole("button", { name: /Concluir/i }));
 
@@ -110,6 +128,7 @@ describe("DailyBankReviewModal", () => {
     const user = userEvent.setup();
     api.reviewTransaction.mockRejectedValueOnce(new Error("A ligação ao banco falhou."));
     render(<DailyBankReviewModal />);
+    completeSync();
 
     await user.click(await screen.findByRole("button", { name: /Concluir|Guardar e continuar/i }));
 
@@ -120,6 +139,7 @@ describe("DailyBankReviewModal", () => {
   it("marks a payment as excluded without creating an expense", async () => {
     const user = userEvent.setup();
     render(<DailyBankReviewModal />);
+    completeSync();
 
     await user.click(await screen.findByRole("button", { name: "Não é um gasto" }));
 

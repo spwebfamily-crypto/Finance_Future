@@ -26,7 +26,6 @@ export function BankTransactionRow({
   categories,
   busy = false,
   onCategoryChange,
-  onConfirmExpense,
   onDeleteTransaction,
   onToggleAnalytics,
 }: {
@@ -34,7 +33,6 @@ export function BankTransactionRow({
   categories: Array<{ id: string; name: string }>;
   busy?: boolean;
   onCategoryChange: (transaction: BankTransaction, categoryId: string) => void;
-  onConfirmExpense: (transaction: BankTransaction, categoryId: string) => void;
   onDeleteTransaction: (transaction: BankTransaction) => void;
   onToggleAnalytics: (transaction: BankTransaction, excluded: boolean) => void;
 }) {
@@ -65,16 +63,13 @@ export function BankTransactionRow({
       </strong>
 
       <div className="bank-transaction-row__actions">
-        {(transaction.expense || needsReview) && (
+        {transaction.expense && !needsReview && (
           <label className="field field--inline">
             <span>{t("Categoria")}</span>
             <select
               value={selectedCategoryId}
               disabled={busy}
-              onChange={(event) => {
-                if (needsReview) onConfirmExpense(transaction, event.target.value);
-                else onCategoryChange(transaction, event.target.value);
-              }}
+              onChange={(event) => onCategoryChange(transaction, event.target.value)}
             >
               {categories.map((category) => (
                 <option key={category.id} value={category.id}>
@@ -83,16 +78,6 @@ export function BankTransactionRow({
               ))}
             </select>
           </label>
-        )}
-        {needsReview && (
-          <button
-            className="button button--primary button--small"
-            type="button"
-            disabled={busy || !selectedCategoryId}
-            onClick={() => onConfirmExpense(transaction, selectedCategoryId)}
-          >
-            {t("Confirmar gasto")}
-          </button>
         )}
         {transaction.classification !== "internal_transfer" && (
           <button

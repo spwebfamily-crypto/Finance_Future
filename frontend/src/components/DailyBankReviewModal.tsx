@@ -10,23 +10,6 @@ import type { BankTransaction, Category } from "../types";
 import { TiltCard } from "./TiltCard";
 import { ConfirmDialog } from "./ConfirmDialog";
 
-function localDateKey(date: Date, timeZone: string) {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(date);
-  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
-  return `${values.year}-${values.month}-${values.day}`;
-}
-
-function shiftDateKey(dateKey: string, days: number) {
-  const [year, month, day] = dateKey.split("-").map(Number);
-  const shifted = new Date(Date.UTC(year, month - 1, day + days));
-  return shifted.toISOString().slice(0, 10);
-}
-
 function transactionDate(transaction: BankTransaction) {
   return transaction.bookingDate ?? transaction.valueDate ?? transaction.transactionDate;
 }
@@ -59,60 +42,52 @@ export function DailyBankReviewModal() {
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
   const current = transactions[0] ?? null;
   const userId = user?.id;
-  const userTimeZone = user?.timeZone ?? "Europe/Lisbon";
 
   useEffect(() => {
     if (!userId) return;
     let active = true;
-    const today = localDateKey(new Date(), userTimeZone);
 
-    async function loadReviewQueue() {
+    async function loadReviewQueue(event: Event) {
       try {
-        const connections = await openBankingApi.connections();
-        if (
-          !active ||
-          !connections.some((item) => item.status === "active" && item.accountCount > 0)
-        )
-          return;
-        const [transactionResult, nextCategories] = await Promise.all([
-          openBankingApi.transactions({
-            from: shiftDateKey(today, -7),
-            to: shiftDateKey(today, 1),
-            pageSize: 200,
-          }),
-          categoryApi.list(),
-        ]);
+        const connectionId =
+          event instanceof CustomEvent && typeof event.detail?.connectionId === "string"
+            ? event.detail.connectionId
+            : undefined;
+        if (!connectionId) return;
+
+        const nextCategories = await categoryApi.list();
+        const imported: BankTransaction[] = [];
+        for (let page = 1; page <= 10; page += 1) {
+          const result = await openBankingApi.transactions({ connectionId, page, pageSize: 200 });
+          imported.push(...result.data);
+          if (page >= result.meta.pageCount) break;
+        }
         if (!active) return;
-        const queue = transactionResult.data.filter((transaction) => {
-          const date = transactionDate(transaction);
-          return (
+        const queue = imported.filter(
+          (transaction) =>
             transaction.direction === "debit" &&
             transaction.classification === "unreviewed" &&
             !transaction.excludedFromAnalytics &&
             !transaction.reviewedAt &&
             transaction.status !== "rejected" &&
-            transaction.status !== "removed" &&
-            Boolean(date) &&
-            localDateKey(new Date(date!), userTimeZone) === today
-          );
-        });
+            transaction.status !== "removed",
+        );
         if (!queue.length) return;
         setCategories(nextCategories);
         setTransactions(queue);
         setSelectedCategoryId(queue[0].expense?.categoryId ?? nextCategories[0]?.id ?? "");
         setOpen(true);
       } catch {
-        // O modal é um complemento ao login: uma falha aqui nunca bloqueia a aplicação.
+        // A confirmação complementa a sincronização e nunca deve bloquear a aplicação.
       }
     }
 
-    void loadReviewQueue();
     window.addEventListener(BANK_SYNC_COMPLETED_EVENT, loadReviewQueue);
     return () => {
       active = false;
       window.removeEventListener(BANK_SYNC_COMPLETED_EVENT, loadReviewQueue);
     };
-  }, [userId, userTimeZone]);
+  }, [userId]);
 
   const close = useCallback(() => {
     if (!busy) setOpen(false);
@@ -230,6 +205,7 @@ export function DailyBankReviewModal() {
     <AnimatePresence>
       {open && (
         <motion.div
+          key="bank-review-dialog"
           className="dialog-backdrop daily-review-backdrop"
           role="presentation"
           initial={reduceMotion ? false : { opacity: 0 }}
@@ -256,7 +232,7 @@ export function DailyBankReviewModal() {
                 <span className="daily-review-modal__eyebrow">
                   <Landmark aria-hidden="true" /> {t("Sincronizado pelo banco")}
                 </span>
-                <h2 id={titleId}>{t("Classifique os gastos de hoje")}</h2>
+                <h2 id={titleId}>{t("Confirme os gastos sincronizados")}</h2>
                 <p id={descriptionId}>
                   {t("Confirme uma categoria para manter os seus resumos organizados.")}
                 </p>
@@ -380,6 +356,7 @@ export function DailyBankReviewModal() {
         </motion.div>
       )}
       <ConfirmDialog
+        key="bank-review-delete-confirmation"
         open={deleteConfirmOpen}
         title={t("Apagar movimento importado?")}
         description={t(

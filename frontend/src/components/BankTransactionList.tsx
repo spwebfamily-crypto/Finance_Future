@@ -8,7 +8,6 @@ export function BankTransactionList({
   categories,
   busyTransactionId = null,
   onCategoryChange,
-  onConfirmExpense,
   onDeleteTransaction,
   onToggleAnalytics,
 }: {
@@ -16,7 +15,6 @@ export function BankTransactionList({
   categories: Array<{ id: string; name: string }>;
   busyTransactionId?: string | null;
   onCategoryChange: (transaction: BankTransaction, categoryId: string) => void;
-  onConfirmExpense: (transaction: BankTransaction, categoryId: string) => void;
   onDeleteTransaction: (transaction: BankTransaction) => void;
   onToggleAnalytics: (transaction: BankTransaction, excluded: boolean) => void;
 }) {
@@ -38,7 +36,6 @@ export function BankTransactionList({
           categories={categories}
           busy={busyTransactionId === transaction.id}
           onCategoryChange={onCategoryChange}
-          onConfirmExpense={onConfirmExpense}
           onDeleteTransaction={onDeleteTransaction}
           onToggleAnalytics={onToggleAnalytics}
         />

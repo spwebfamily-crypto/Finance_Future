@@ -769,30 +769,260 @@ const es = {
  */
 const legacyAdditions: Record<"en-GB" | "es-ES", Messages> = {
   "en-GB": {
-    "Editar despesa": "Edit expense", "Classificar mais tarde": "Classify later", "Movimento bancário": "Bank transaction", "A guardar…": "Saving…",
-    "O consentimento do {bank} expirou.": "Consent for {bank} has expired.", "O consentimento do {bank} foi revogado no banco.": "Consent for {bank} was revoked at the bank.", "O {bank} pede uma renovação do consentimento.": "{bank} requires consent renewal.",
-    "Os movimentos deixam de ser atualizados até renovar o acesso. Os dados já importados continuam disponíveis.": "Transactions will not update until access is renewed. Previously imported data remains available.",
-    "Ver bancos": "View banks", "Fechar aviso": "Close notice", "Movimento apagado.": "Transaction deleted.",
-    "Autorize a leitura no próprio banco. Os movimentos entram primeiro em revisão, antes de afectar as despesas.": "Authorise read access at your bank. Transactions are reviewed before they affect expenses.", "Escolha o país": "Choose country", "A lista de bancos depende do país seleccionado.": "The list of banks depends on the selected country.", "Confirme primeiro os movimentos em revisão.": "Review pending transactions first.", "País": "Country", "Escolha primeiro o país para ver os bancos disponíveis.": "Choose a country first to see available banks.",
-    "Saldos, cartões e transferências. A gestão de ligações e sincronização está na aba Bancos.": "Balances, cards and transfers. Connections and sync are managed in Banks.", "Gerir bancos": "Manage banks",
-    "Movimento do dia": "Today's activity", "Ver todos": "View all", "Entradas": "Income", "Saídas": "Outgoings", "Resultado do dia": "Today's result", "Saldo das contas": "Account balances", "Adicionar ou ligar uma conta": "Add or connect an account", "Atividade": "Activity", "Ainda não há movimentos hoje.": "There are no transactions today yet.",
-    "Registar uma despesa": "Add an expense", "Total em {month}": "Total in {month}", "Inclui os gastos das contas ligadas ao banco.": "Includes spending from bank-connected accounts.", "Ligue um banco para os gastos contabilizados entrarem sozinhos.": "Connect a bank to add booked spending automatically.", "Sem comparação": "No comparison", "Igual ao mês anterior": "Same as last month", "{amount} face ao mês anterior": "{amount} compared with last month", "Estado do mês": "Month status", "Orçamento acompanhado": "Budget monitored", "Utilização do orçamento acompanhado": "Budget usage monitored", "{percent}% utilizado": "{percent}% used", "Definir limites": "Set limits", "Distribuição": "Breakdown", "Por categoria": "By category",
-    "Sem despesas neste mês": "No expenses this month", "As categorias aparecerão aqui quando existirem movimentos.": "Categories will appear here when there are transactions.", "Últimos 6 meses": "Last 6 months", "Evolução mensal": "Monthly trend", "Tendência indisponível": "Trend unavailable", "São necessários movimentos para construir a série mensal.": "Transactions are needed to build the monthly series.", "Sinais": "Signals", "Níveis de gasto": "Spending levels", "Dados insuficientes": "Not enough data", "Quando houver histórico, avaliamos o ritmo de cada categoria.": "When there is history, we assess the pace of each category.", "Limites mensais": "Monthly limits", "Orçamentos por categoria": "Budgets by category", "Escolher categoria": "Choose category", "Limite por mês": "Monthly limit", "Definir limite": "Set limit", "Sem limites definidos": "No limits set", "Defina um orçamento para receber sinais mais precisos.": "Set a budget to receive more accurate signals.", "Remover este orçamento?": "Remove this budget?", "Remover orçamento": "Remove budget",
-    "Este mês": "This month", "Últimos 7 dias": "Last 7 days", "Mês passado": "Last month", "Despesa eliminada.": "Expense deleted.", "Arquivo": "Archive", "Despesas": "Expenses", "Registos manuais e gastos das contas ligadas ao banco, no mesmo arquivo.": "Manual records and spending from connected bank accounts in one archive.", "Filtrar arquivo": "Filter archive", "Afine por categoria ou período.": "Narrow it down by category or period.", "Períodos rápidos": "Quick periods", "Todos os períodos": "All periods", "Com comprovativo": "With receipt", "Todas as categorias": "All categories", "Até": "Until", "Aplicar": "Apply", "Limpar": "Clear", "Pesquisar movimentos": "Search transactions", "Pesquisar por descrição, local ou categoria": "Search by description, place or category", "Limpar pesquisa": "Clear search", "Tem um extrato bancário?": "Have a bank statement?", "A mostrar os {visible} mais recentes de {total}. Refine o período ou os filtros para ver mais.": "Showing the latest {visible} of {total}. Refine the period or filters to see more.", "Exportar CSV": "Export CSV", "A carregar despesas": "Loading expenses", "Experimente alargar o período, pesquisar outro termo ou remover um filtro.": "Try a wider period, a different search term or remove a filter.", "Registe à mão ou ligue o banco: cada gasto contabilizado passa a despesa.": "Add one manually or connect a bank: each booked payment becomes an expense.", "Limpar filtros": "Clear filters", "Registar primeira despesa": "Add first expense", "Recibo de {description}": "Receipt for {description}", "Sem categoria": "No category", "Editar {description}": "Edit {description}", "Editar": "Edit", "Eliminar {description}": "Delete {description}", "Eliminar": "Delete", "Eliminar esta despesa?": "Delete this expense?", "“{description}” será removida definitivamente do seu arquivo.": "“{description}” will be permanently removed from your archive.", "Eliminar despesa": "Delete expense",
-    "Sincronização parcial. As contas disponíveis foram atualizadas; tente novamente para concluir.": "Partial sync. Available accounts were updated; try again to finish.", "O acesso ao banco expirou. Renove o acesso para voltar a sincronizar.": "Bank access has expired. Renew access to sync again.", "O banco está temporariamente indisponível. Tente sincronizar novamente.": "The bank is temporarily unavailable. Try syncing again.", "O banco limitou os pedidos. Aguarde alguns minutos e tente novamente.": "The bank has rate-limited requests. Wait a few minutes and try again.", "A sincronização anterior foi interrompida. Pode tentar novamente agora.": "The previous sync was interrupted. You can try again now.", "A sincronização bancária falhou. Tente novamente ou renove o acesso.": "Bank sync failed. Try again or renew access.",
+    "Editar despesa": "Edit expense",
+    "Classificar mais tarde": "Classify later",
+    "Movimento bancário": "Bank transaction",
+    "A guardar…": "Saving…",
+    "O consentimento do {bank} expirou.": "Consent for {bank} has expired.",
+    "O consentimento do {bank} foi revogado no banco.":
+      "Consent for {bank} was revoked at the bank.",
+    "O {bank} pede uma renovação do consentimento.": "{bank} requires consent renewal.",
+    "Os movimentos deixam de ser atualizados até renovar o acesso. Os dados já importados continuam disponíveis.":
+      "Transactions will not update until access is renewed. Previously imported data remains available.",
+    "Ver bancos": "View banks",
+    "Fechar aviso": "Close notice",
+    "Movimento apagado.": "Transaction deleted.",
+    "Autorize a leitura no próprio banco. Os movimentos entram primeiro em revisão, antes de afectar as despesas.":
+      "Authorise read access at your bank. Transactions are reviewed before they affect expenses.",
+    "Escolha o país": "Choose country",
+    "A lista de bancos depende do país seleccionado.":
+      "The list of banks depends on the selected country.",
+    "Confirme primeiro os movimentos em revisão.": "Review pending transactions first.",
+    País: "Country",
+    "Escolha primeiro o país para ver os bancos disponíveis.":
+      "Choose a country first to see available banks.",
+    "Saldos, cartões e transferências. A gestão de ligações e sincronização está na aba Bancos.":
+      "Balances, cards and transfers. Connections and sync are managed in Banks.",
+    "Gerir bancos": "Manage banks",
+    "Movimento do dia": "Today's activity",
+    "Ver todos": "View all",
+    Entradas: "Income",
+    Saídas: "Outgoings",
+    "Resultado do dia": "Today's result",
+    "Saldo das contas": "Account balances",
+    "Adicionar ou ligar uma conta": "Add or connect an account",
+    Atividade: "Activity",
+    "Ainda não há movimentos hoje.": "There are no transactions today yet.",
+    "Registar uma despesa": "Add an expense",
+    "Total em {month}": "Total in {month}",
+    "Inclui os gastos das contas ligadas ao banco.":
+      "Includes spending from bank-connected accounts.",
+    "Ligue um banco para os gastos contabilizados entrarem sozinhos.":
+      "Connect a bank to add booked spending automatically.",
+    "Sem comparação": "No comparison",
+    "Igual ao mês anterior": "Same as last month",
+    "{amount} face ao mês anterior": "{amount} compared with last month",
+    "Estado do mês": "Month status",
+    "Orçamento acompanhado": "Budget monitored",
+    "Utilização do orçamento acompanhado": "Budget usage monitored",
+    "{percent}% utilizado": "{percent}% used",
+    "Definir limites": "Set limits",
+    Distribuição: "Breakdown",
+    "Por categoria": "By category",
+    "Sem despesas neste mês": "No expenses this month",
+    "As categorias aparecerão aqui quando existirem movimentos.":
+      "Categories will appear here when there are transactions.",
+    "Últimos 6 meses": "Last 6 months",
+    "Evolução mensal": "Monthly trend",
+    "Tendência indisponível": "Trend unavailable",
+    "São necessários movimentos para construir a série mensal.":
+      "Transactions are needed to build the monthly series.",
+    Sinais: "Signals",
+    "Níveis de gasto": "Spending levels",
+    "Dados insuficientes": "Not enough data",
+    "Quando houver histórico, avaliamos o ritmo de cada categoria.":
+      "When there is history, we assess the pace of each category.",
+    "Limites mensais": "Monthly limits",
+    "Orçamentos por categoria": "Budgets by category",
+    "Escolher categoria": "Choose category",
+    "Limite por mês": "Monthly limit",
+    "Definir limite": "Set limit",
+    "Sem limites definidos": "No limits set",
+    "Defina um orçamento para receber sinais mais precisos.":
+      "Set a budget to receive more accurate signals.",
+    "Remover este orçamento?": "Remove this budget?",
+    "Remover orçamento": "Remove budget",
+    "Este mês": "This month",
+    "Últimos 7 dias": "Last 7 days",
+    "Mês passado": "Last month",
+    "Despesa eliminada.": "Expense deleted.",
+    Arquivo: "Archive",
+    Despesas: "Expenses",
+    "Registos manuais e gastos das contas ligadas ao banco, no mesmo arquivo.":
+      "Manual records and spending from connected bank accounts in one archive.",
+    "Filtrar arquivo": "Filter archive",
+    "Afine por categoria ou período.": "Narrow it down by category or period.",
+    "Períodos rápidos": "Quick periods",
+    "Todos os períodos": "All periods",
+    "Com comprovativo": "With receipt",
+    "Todas as categorias": "All categories",
+    Até: "Until",
+    Aplicar: "Apply",
+    Limpar: "Clear",
+    "Pesquisar movimentos": "Search transactions",
+    "Pesquisar por descrição, local ou categoria": "Search by description, place or category",
+    "Limpar pesquisa": "Clear search",
+    "Tem um extrato bancário?": "Have a bank statement?",
+    "A mostrar os {visible} mais recentes de {total}. Refine o período ou os filtros para ver mais.":
+      "Showing the latest {visible} of {total}. Refine the period or filters to see more.",
+    "Exportar CSV": "Export CSV",
+    "A carregar despesas": "Loading expenses",
+    "Experimente alargar o período, pesquisar outro termo ou remover um filtro.":
+      "Try a wider period, a different search term or remove a filter.",
+    "Registe à mão ou ligue o banco: cada gasto contabilizado passa a despesa.":
+      "Add one manually or connect a bank: each booked payment becomes an expense.",
+    "Limpar filtros": "Clear filters",
+    "Registar primeira despesa": "Add first expense",
+    "Recibo de {description}": "Receipt for {description}",
+    "Sem categoria": "No category",
+    "Editar {description}": "Edit {description}",
+    Editar: "Edit",
+    "Eliminar {description}": "Delete {description}",
+    Eliminar: "Delete",
+    "Eliminar esta despesa?": "Delete this expense?",
+    "“{description}” será removida definitivamente do seu arquivo.":
+      "“{description}” will be permanently removed from your archive.",
+    "Eliminar despesa": "Delete expense",
+    "Sincronização parcial. As contas disponíveis foram atualizadas; tente novamente para concluir.":
+      "Partial sync. Available accounts were updated; try again to finish.",
+    "O acesso ao banco expirou. Renove o acesso para voltar a sincronizar.":
+      "Bank access has expired. Renew access to sync again.",
+    "O banco está temporariamente indisponível. Tente sincronizar novamente.":
+      "The bank is temporarily unavailable. Try syncing again.",
+    "O banco limitou os pedidos. Aguarde alguns minutos e tente novamente.":
+      "The bank has rate-limited requests. Wait a few minutes and try again.",
+    "A sincronização anterior foi interrompida. Pode tentar novamente agora.":
+      "The previous sync was interrupted. You can try again now.",
+    "A sincronização bancária falhou. Tente novamente ou renove o acesso.":
+      "Bank sync failed. Try again or renew access.",
   },
   "es-ES": {
-    "Editar despesa": "Editar gasto", "Classificar mais tarde": "Clasificar más tarde", "Movimento bancário": "Movimiento bancario", "A guardar…": "Guardando…",
-    "O consentimento do {bank} expirou.": "El consentimiento de {bank} ha caducado.", "O consentimento do {bank} foi revogado no banco.": "El consentimiento de {bank} fue revocado en el banco.", "O {bank} pede uma renovação do consentimento.": "{bank} requiere renovar el consentimiento.",
-    "Os movimentos deixam de ser atualizados até renovar o acesso. Os dados já importados continuam disponíveis.": "Los movimientos no se actualizarán hasta renovar el acceso. Los datos importados seguirán disponibles.",
-    "Ver bancos": "Ver bancos", "Fechar aviso": "Cerrar aviso", "Movimento apagado.": "Movimiento eliminado.",
-    "Autorize a leitura no próprio banco. Os movimentos entram primeiro em revisão, antes de afectar as despesas.": "Autoriza la lectura en tu banco. Los movimientos se revisan antes de afectar a los gastos.", "Escolha o país": "Elige el país", "A lista de bancos depende do país seleccionado.": "La lista de bancos depende del país seleccionado.", "Confirme primeiro os movimentos em revisão.": "Revisa primero los movimientos pendientes.", "País": "País", "Escolha primeiro o país para ver os bancos disponíveis.": "Elige primero el país para ver los bancos disponibles.",
-    "Saldos, cartões e transferências. A gestão de ligações e sincronização está na aba Bancos.": "Saldos, tarjetas y transferencias. Las conexiones y la sincronización se gestionan en Bancos.", "Gerir bancos": "Gestionar bancos",
-    "Movimento do dia": "Actividad de hoy", "Ver todos": "Ver todos", "Entradas": "Ingresos", "Saídas": "Salidas", "Resultado do dia": "Resultado de hoy", "Saldo das contas": "Saldos de las cuentas", "Adicionar ou ligar uma conta": "Añadir o conectar una cuenta", "Atividade": "Actividad", "Ainda não há movimentos hoje.": "Aún no hay movimientos hoy.",
-    "Registar uma despesa": "Registrar un gasto", "Total em {month}": "Total en {month}", "Inclui os gastos das contas ligadas ao banco.": "Incluye los gastos de las cuentas conectadas al banco.", "Ligue um banco para os gastos contabilizados entrarem sozinhos.": "Conecta un banco para añadir automáticamente los gastos contabilizados.", "Sem comparação": "Sin comparación", "Igual ao mês anterior": "Igual que el mes anterior", "{amount} face ao mês anterior": "{amount} respecto al mes anterior", "Estado do mês": "Estado del mes", "Orçamento acompanhado": "Presupuesto supervisado", "Utilização do orçamento acompanhado": "Uso del presupuesto supervisado", "{percent}% utilizado": "{percent}% utilizado", "Definir limites": "Definir límites", "Distribuição": "Distribución", "Por categoria": "Por categoría",
-    "Sem despesas neste mês": "Sin gastos este mes", "As categorias aparecerão aqui quando existirem movimentos.": "Las categorías aparecerán aquí cuando existan movimientos.", "Últimos 6 meses": "Últimos 6 meses", "Evolução mensal": "Evolución mensual", "Tendência indisponível": "Tendencia no disponible", "São necessários movimentos para construir a série mensal.": "Se necesitan movimientos para crear la serie mensual.", "Sinais": "Señales", "Níveis de gasto": "Niveles de gasto", "Dados insuficientes": "Datos insuficientes", "Quando houver histórico, avaliamos o ritmo de cada categoria.": "Cuando haya historial, evaluamos el ritmo de cada categoría.", "Limites mensais": "Límites mensuales", "Orçamentos por categoria": "Presupuestos por categoría", "Escolher categoria": "Elegir categoría", "Limite por mês": "Límite mensual", "Definir limite": "Definir límite", "Sem limites definidos": "Sin límites definidos", "Defina um orçamento para receber sinais mais precisos.": "Define un presupuesto para recibir señales más precisas.", "Remover este orçamento?": "¿Eliminar este presupuesto?", "Remover orçamento": "Eliminar presupuesto",
-    "Este mês": "Este mes", "Últimos 7 dias": "Últimos 7 días", "Mês passado": "Mes pasado", "Despesa eliminada.": "Gasto eliminado.", "Arquivo": "Archivo", "Despesas": "Gastos", "Registos manuais e gastos das contas ligadas ao banco, no mesmo arquivo.": "Registros manuales y gastos de cuentas bancarias conectadas en un mismo archivo.", "Filtrar arquivo": "Filtrar archivo", "Afine por categoria ou período.": "Ajusta por categoría o período.", "Períodos rápidos": "Períodos rápidos", "Todos os períodos": "Todos los períodos", "Com comprovativo": "Con comprobante", "Todas as categorias": "Todas las categorías", "Até": "Hasta", "Aplicar": "Aplicar", "Limpar": "Limpiar", "Pesquisar movimentos": "Buscar movimientos", "Pesquisar por descrição, local ou categoria": "Buscar por descripción, lugar o categoría", "Limpar pesquisa": "Limpiar búsqueda", "Tem um extrato bancário?": "¿Tienes un extracto bancario?", "A mostrar os {visible} mais recentes de {total}. Refine o período ou os filtros para ver mais.": "Mostrando los últimos {visible} de {total}. Ajusta el período o los filtros para ver más.", "Exportar CSV": "Exportar CSV", "A carregar despesas": "Cargando gastos", "Experimente alargar o período, pesquisar outro termo ou remover um filtro.": "Prueba un período más amplio, otro término de búsqueda o elimina un filtro.", "Registe à mão ou ligue o banco: cada gasto contabilizado passa a despesa.": "Registra manualmente o conecta un banco: cada gasto contabilizado pasa a ser un gasto.", "Limpar filtros": "Limpiar filtros", "Registar primeira despesa": "Registrar primer gasto", "Recibo de {description}": "Recibo de {description}", "Sem categoria": "Sin categoría", "Editar {description}": "Editar {description}", "Editar": "Editar", "Eliminar {description}": "Eliminar {description}", "Eliminar": "Eliminar", "Eliminar esta despesa?": "¿Eliminar este gasto?", "“{description}” será removida definitivamente do seu arquivo.": "“{description}” se eliminará permanentemente de tu archivo.", "Eliminar despesa": "Eliminar gasto",
-    "Sincronização parcial. As contas disponíveis foram atualizadas; tente novamente para concluir.": "Sincronización parcial. Las cuentas disponibles se actualizaron; inténtalo de nuevo para terminar.", "O acesso ao banco expirou. Renove o acesso para voltar a sincronizar.": "El acceso al banco ha caducado. Renuévalo para sincronizar de nuevo.", "O banco está temporariamente indisponível. Tente sincronizar novamente.": "El banco no está disponible temporalmente. Intenta sincronizar de nuevo.", "O banco limitou os pedidos. Aguarde alguns minutos e tente novamente.": "El banco ha limitado las solicitudes. Espera unos minutos e inténtalo de nuevo.", "A sincronização anterior foi interrompida. Pode tentar novamente agora.": "La sincronización anterior se interrumpió. Puedes intentarlo de nuevo ahora.", "A sincronização bancária falhou. Tente novamente ou renove o acesso.": "La sincronización bancaria falló. Inténtalo de nuevo o renueva el acceso.",
+    "Editar despesa": "Editar gasto",
+    "Classificar mais tarde": "Clasificar más tarde",
+    "Movimento bancário": "Movimiento bancario",
+    "A guardar…": "Guardando…",
+    "O consentimento do {bank} expirou.": "El consentimiento de {bank} ha caducado.",
+    "O consentimento do {bank} foi revogado no banco.":
+      "El consentimiento de {bank} fue revocado en el banco.",
+    "O {bank} pede uma renovação do consentimento.": "{bank} requiere renovar el consentimiento.",
+    "Os movimentos deixam de ser atualizados até renovar o acesso. Os dados já importados continuam disponíveis.":
+      "Los movimientos no se actualizarán hasta renovar el acceso. Los datos importados seguirán disponibles.",
+    "Ver bancos": "Ver bancos",
+    "Fechar aviso": "Cerrar aviso",
+    "Movimento apagado.": "Movimiento eliminado.",
+    "Autorize a leitura no próprio banco. Os movimentos entram primeiro em revisão, antes de afectar as despesas.":
+      "Autoriza la lectura en tu banco. Los movimientos se revisan antes de afectar a los gastos.",
+    "Escolha o país": "Elige el país",
+    "A lista de bancos depende do país seleccionado.":
+      "La lista de bancos depende del país seleccionado.",
+    "Confirme primeiro os movimentos em revisão.": "Revisa primero los movimientos pendientes.",
+    País: "País",
+    "Escolha primeiro o país para ver os bancos disponíveis.":
+      "Elige primero el país para ver los bancos disponibles.",
+    "Saldos, cartões e transferências. A gestão de ligações e sincronização está na aba Bancos.":
+      "Saldos, tarjetas y transferencias. Las conexiones y la sincronización se gestionan en Bancos.",
+    "Gerir bancos": "Gestionar bancos",
+    "Movimento do dia": "Actividad de hoy",
+    "Ver todos": "Ver todos",
+    Entradas: "Ingresos",
+    Saídas: "Salidas",
+    "Resultado do dia": "Resultado de hoy",
+    "Saldo das contas": "Saldos de las cuentas",
+    "Adicionar ou ligar uma conta": "Añadir o conectar una cuenta",
+    Atividade: "Actividad",
+    "Ainda não há movimentos hoje.": "Aún no hay movimientos hoy.",
+    "Registar uma despesa": "Registrar un gasto",
+    "Total em {month}": "Total en {month}",
+    "Inclui os gastos das contas ligadas ao banco.":
+      "Incluye los gastos de las cuentas conectadas al banco.",
+    "Ligue um banco para os gastos contabilizados entrarem sozinhos.":
+      "Conecta un banco para añadir automáticamente los gastos contabilizados.",
+    "Sem comparação": "Sin comparación",
+    "Igual ao mês anterior": "Igual que el mes anterior",
+    "{amount} face ao mês anterior": "{amount} respecto al mes anterior",
+    "Estado do mês": "Estado del mes",
+    "Orçamento acompanhado": "Presupuesto supervisado",
+    "Utilização do orçamento acompanhado": "Uso del presupuesto supervisado",
+    "{percent}% utilizado": "{percent}% utilizado",
+    "Definir limites": "Definir límites",
+    Distribuição: "Distribución",
+    "Por categoria": "Por categoría",
+    "Sem despesas neste mês": "Sin gastos este mes",
+    "As categorias aparecerão aqui quando existirem movimentos.":
+      "Las categorías aparecerán aquí cuando existan movimientos.",
+    "Últimos 6 meses": "Últimos 6 meses",
+    "Evolução mensal": "Evolución mensual",
+    "Tendência indisponível": "Tendencia no disponible",
+    "São necessários movimentos para construir a série mensal.":
+      "Se necesitan movimientos para crear la serie mensual.",
+    Sinais: "Señales",
+    "Níveis de gasto": "Niveles de gasto",
+    "Dados insuficientes": "Datos insuficientes",
+    "Quando houver histórico, avaliamos o ritmo de cada categoria.":
+      "Cuando haya historial, evaluamos el ritmo de cada categoría.",
+    "Limites mensais": "Límites mensuales",
+    "Orçamentos por categoria": "Presupuestos por categoría",
+    "Escolher categoria": "Elegir categoría",
+    "Limite por mês": "Límite mensual",
+    "Definir limite": "Definir límite",
+    "Sem limites definidos": "Sin límites definidos",
+    "Defina um orçamento para receber sinais mais precisos.":
+      "Define un presupuesto para recibir señales más precisas.",
+    "Remover este orçamento?": "¿Eliminar este presupuesto?",
+    "Remover orçamento": "Eliminar presupuesto",
+    "Este mês": "Este mes",
+    "Últimos 7 dias": "Últimos 7 días",
+    "Mês passado": "Mes pasado",
+    "Despesa eliminada.": "Gasto eliminado.",
+    Arquivo: "Archivo",
+    Despesas: "Gastos",
+    "Registos manuais e gastos das contas ligadas ao banco, no mesmo arquivo.":
+      "Registros manuales y gastos de cuentas bancarias conectadas en un mismo archivo.",
+    "Filtrar arquivo": "Filtrar archivo",
+    "Afine por categoria ou período.": "Ajusta por categoría o período.",
+    "Períodos rápidos": "Períodos rápidos",
+    "Todos os períodos": "Todos los períodos",
+    "Com comprovativo": "Con comprobante",
+    "Todas as categorias": "Todas las categorías",
+    Até: "Hasta",
+    Aplicar: "Aplicar",
+    Limpar: "Limpiar",
+    "Pesquisar movimentos": "Buscar movimientos",
+    "Pesquisar por descrição, local ou categoria": "Buscar por descripción, lugar o categoría",
+    "Limpar pesquisa": "Limpiar búsqueda",
+    "Tem um extrato bancário?": "¿Tienes un extracto bancario?",
+    "A mostrar os {visible} mais recentes de {total}. Refine o período ou os filtros para ver mais.":
+      "Mostrando los últimos {visible} de {total}. Ajusta el período o los filtros para ver más.",
+    "Exportar CSV": "Exportar CSV",
+    "A carregar despesas": "Cargando gastos",
+    "Experimente alargar o período, pesquisar outro termo ou remover um filtro.":
+      "Prueba un período más amplio, otro término de búsqueda o elimina un filtro.",
+    "Registe à mão ou ligue o banco: cada gasto contabilizado passa a despesa.":
+      "Registra manualmente o conecta un banco: cada gasto contabilizado pasa a ser un gasto.",
+    "Limpar filtros": "Limpiar filtros",
+    "Registar primeira despesa": "Registrar primer gasto",
+    "Recibo de {description}": "Recibo de {description}",
+    "Sem categoria": "Sin categoría",
+    "Editar {description}": "Editar {description}",
+    Editar: "Editar",
+    "Eliminar {description}": "Eliminar {description}",
+    Eliminar: "Eliminar",
+    "Eliminar esta despesa?": "¿Eliminar este gasto?",
+    "“{description}” será removida definitivamente do seu arquivo.":
+      "“{description}” se eliminará permanentemente de tu archivo.",
+    "Eliminar despesa": "Eliminar gasto",
+    "Sincronização parcial. As contas disponíveis foram atualizadas; tente novamente para concluir.":
+      "Sincronización parcial. Las cuentas disponibles se actualizaron; inténtalo de nuevo para terminar.",
+    "O acesso ao banco expirou. Renove o acesso para voltar a sincronizar.":
+      "El acceso al banco ha caducado. Renuévalo para sincronizar de nuevo.",
+    "O banco está temporariamente indisponível. Tente sincronizar novamente.":
+      "El banco no está disponible temporalmente. Intenta sincronizar de nuevo.",
+    "O banco limitou os pedidos. Aguarde alguns minutos e tente novamente.":
+      "El banco ha limitado las solicitudes. Espera unos minutos e inténtalo de nuevo.",
+    "A sincronização anterior foi interrompida. Pode tentar novamente agora.":
+      "La sincronización anterior se interrumpió. Puedes intentarlo de nuevo ahora.",
+    "A sincronização bancária falhou. Tente novamente ou renove o acesso.":
+      "La sincronización bancaria falló. Inténtalo de nuevo o renueva el acceso.",
   },
 };
 
@@ -1385,14 +1615,115 @@ export type LegacyTranslationKey = keyof typeof en | keyof typeof es;
 export type CatalogTranslationKey = TranslationKey | LegacyTranslationKey;
 const semanticCatalogs: Record<AppLocale, Messages> = semanticMessages;
 
+const interfaceFixes: Record<AppLocale, Messages> = {
+  "pt-PT": {
+    "Confirme os gastos sincronizados": "Confirme os gastos sincronizados",
+    "Os movimentos importados ficam disponíveis no histórico. Os novos gastos são confirmados logo após cada sincronização.":
+      "Os movimentos importados ficam disponíveis no histórico. Os novos gastos são confirmados logo após cada sincronização.",
+    "Consulte os movimentos importados. A confirmação de novos gastos aparece automaticamente depois da sincronização.":
+      "Consulte os movimentos importados. A confirmação de novos gastos aparece automaticamente depois da sincronização.",
+    "Visão geral": "Visão geral",
+    "Hoje, sem complicações": "Hoje, sem complicações",
+    "Veja o movimento do dia, os saldos e o mês no mesmo lugar.":
+      "Veja o movimento do dia, os saldos e o mês no mesmo lugar.",
+    "Mês em análise": "Mês em análise",
+    "Ainda sem resumo": "Ainda sem resumo",
+    "Adicione despesas para começar a ver a análise mensal.":
+      "Adicione despesas para começar a ver a análise mensal.",
+    "Ações principais": "Ações principais",
+    "Adicionar um movimento em poucos passos.": "Adicionar um movimento em poucos passos.",
+    "Rever movimentos": "Rever movimentos",
+    "Pesquisar, editar, importar ou exportar.": "Pesquisar, editar, importar ou exportar.",
+    "Preparar o mês": "Preparar o mês",
+    "Ver vencimentos, metas e alertas.": "Ver vencimentos, metas e alertas.",
+    "Ver resumo acessível por categoria": "Ver resumo acessível por categoria",
+    Percentagem: "Percentagem",
+    "Ver resumo acessível da tendência": "Ver resumo acessível da tendência",
+    Mês: "Mês",
+    Total: "Total",
+  },
+  "en-GB": {
+    "Confirme os gastos sincronizados": "Confirm synced expenses",
+    "Os movimentos importados ficam disponíveis no histórico. Os novos gastos são confirmados logo após cada sincronização.":
+      "Imported transactions remain available in history. New expenses are confirmed after each sync.",
+    "Consulte os movimentos importados. A confirmação de novos gastos aparece automaticamente depois da sincronização.":
+      "Browse imported transactions. Confirmation of new expenses opens automatically after syncing.",
+    "Visão geral": "Overview",
+    "Hoje, sem complicações": "Today, made simple",
+    "Veja o movimento do dia, os saldos e o mês no mesmo lugar.":
+      "See today's activity, balances and the month in one place.",
+    "Mês em análise": "Month in view",
+    "Ainda sem resumo": "No summary yet",
+    "Adicione despesas para começar a ver a análise mensal.":
+      "Add expenses to start seeing your monthly analysis.",
+    "Ações principais": "Main actions",
+    "Adicionar um movimento em poucos passos.": "Add a transaction in a few steps.",
+    "Rever movimentos": "Review activity",
+    "Pesquisar, editar, importar ou exportar.": "Search, edit, import or export.",
+    "Preparar o mês": "Plan the month",
+    "Ver vencimentos, metas e alertas.": "See due dates, goals and alerts.",
+    "Ver resumo acessível por categoria": "View accessible category summary",
+    Percentagem: "Percentage",
+    "Ver resumo acessível da tendência": "View accessible trend summary",
+    Mês: "Month",
+    Total: "Total",
+  },
+  "es-ES": {
+    "Confirme os gastos sincronizados": "Confirma los gastos sincronizados",
+    "Os movimentos importados ficam disponíveis no histórico. Os novos gastos são confirmados logo após cada sincronização.":
+      "Los movimientos importados quedan disponibles en el historial. Los nuevos gastos se confirman después de cada sincronización.",
+    "Consulte os movimentos importados. A confirmação de novos gastos aparece automaticamente depois da sincronização.":
+      "Consulta los movimientos importados. La confirmación de nuevos gastos aparece automáticamente después de sincronizar.",
+    "Visão geral": "Resumen",
+    "Hoje, sem complicações": "Hoy, sin complicaciones",
+    "Veja o movimento do dia, os saldos e o mês no mesmo lugar.":
+      "Consulta la actividad del día, los saldos y el mes en un solo lugar.",
+    "Mês em análise": "Mes en análisis",
+    "Ainda sem resumo": "Aún no hay resumen",
+    "Adicione despesas para começar a ver a análise mensal.":
+      "Añade gastos para empezar a ver el análisis mensual.",
+    "Ações principais": "Acciones principales",
+    "Adicionar um movimento em poucos passos.": "Añade un movimiento en pocos pasos.",
+    "Rever movimentos": "Revisar movimientos",
+    "Pesquisar, editar, importar ou exportar.": "Busca, edita, importa o exporta.",
+    "Preparar o mês": "Preparar el mes",
+    "Ver vencimentos, metas e alertas.": "Consulta vencimientos, metas y alertas.",
+    "Ver resumo acessível por categoria": "Ver resumen accesible por categoría",
+    Percentagem: "Porcentaje",
+    "Ver resumo acessível da tendência": "Ver resumen accesible de la tendencia",
+    Mês: "Mes",
+    Total: "Total",
+  },
+};
+
 export const catalogs: Record<AppLocale, Messages> = {
   "pt-PT": {
-    ...Object.fromEntries([...Object.keys(en), ...Object.keys(es), ...Object.keys(legacyAdditions["en-GB"]), ...Object.keys(legacyAdditions["es-ES"])].map((key) => [key, key])),
+    ...Object.fromEntries(
+      [
+        ...Object.keys(en),
+        ...Object.keys(es),
+        ...Object.keys(legacyAdditions["en-GB"]),
+        ...Object.keys(legacyAdditions["es-ES"]),
+      ].map((key) => [key, key]),
+    ),
     ...semanticMessages["pt-PT"],
     ...pageMessages["pt-PT"],
+    ...interfaceFixes["pt-PT"],
   },
-  "en-GB": { ...en, ...legacyAdditions["en-GB"], ...semanticMessages["en-GB"], ...pageMessages["en-GB"] },
-  "es-ES": { ...es, ...legacyAdditions["es-ES"], ...semanticMessages["es-ES"], ...pageMessages["es-ES"] },
+  "en-GB": {
+    ...en,
+    ...legacyAdditions["en-GB"],
+    ...semanticMessages["en-GB"],
+    ...pageMessages["en-GB"],
+    ...interfaceFixes["en-GB"],
+  },
+  "es-ES": {
+    ...es,
+    ...legacyAdditions["es-ES"],
+    ...semanticMessages["es-ES"],
+    ...pageMessages["es-ES"],
+    ...interfaceFixes["es-ES"],
+  },
 };
 
 function interpolate(message: string, values?: Record<string, string | number>) {
@@ -1484,10 +1815,13 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       formatCurrency: (value, currency = "EUR") =>
         new Intl.NumberFormat(locale, { style: "currency", currency }).format(value),
       plural: (count, forms, values) =>
-        interpolate(new Intl.PluralRules(locale).select(count) === "one" ? forms.one : forms.other, {
-          count,
-          ...values,
-        }),
+        interpolate(
+          new Intl.PluralRules(locale).select(count) === "one" ? forms.one : forms.other,
+          {
+            count,
+            ...values,
+          },
+        ),
     }),
     [locale],
   );

@@ -358,14 +358,14 @@ export function DashboardPage() {
     <div className="page page--dashboard">
       <NoticeToast message={notice} onClose={() => setNotice("")} />
       <PageHeader
-        eyebrow="Visão geral"
-        title="Hoje, sem complicações"
-        description="Veja o movimento do dia, os saldos e o mês no mesmo lugar."
+        eyebrow={t("Visão geral")}
+        title={t("Hoje, sem complicações")}
+        description={t("Veja o movimento do dia, os saldos e o mês no mesmo lugar.")}
         action={
           <label className="month-picker">
-            <span>Mês em análise</span>
+            <span>{t("Mês em análise")}</span>
             <input
-              aria-label="Mês em análise"
+              aria-label={t("Mês em análise")}
               type="month"
               value={month}
               onChange={(event) => setMonth(event.target.value)}
@@ -391,8 +391,8 @@ export function DashboardPage() {
         <ErrorState message={error} onRetry={() => void load()} />
       ) : !summary && !today ? (
         <EmptyState
-          title="Ainda sem resumo"
-          description="Adicione despesas para começar a ver a análise mensal."
+          title={t("Ainda sem resumo")}
+          description={t("Adicione despesas para começar a ver a análise mensal.")}
         />
       ) : (
         <>
@@ -401,14 +401,14 @@ export function DashboardPage() {
               {error}
             </div>
           )}
-          <section className="dashboard-shortcuts" aria-label="Ações principais">
+          <section className="dashboard-shortcuts" aria-label={t("Ações principais")}>
             <Link className="dashboard-shortcut dashboard-shortcut--primary" to="/expenses/new">
               <span>
                 <Plus aria-hidden="true" />
               </span>
               <div>
-                <strong>Registar despesa</strong>
-                <small>Adicionar um movimento em poucos passos.</small>
+                <strong>{t("Registar despesa")}</strong>
+                <small>{t("Adicionar um movimento em poucos passos.")}</small>
               </div>
             </Link>
             <Link className="dashboard-shortcut" to="/expenses">
@@ -416,8 +416,8 @@ export function DashboardPage() {
                 <ReceiptText aria-hidden="true" />
               </span>
               <div>
-                <strong>Rever movimentos</strong>
-                <small>Pesquisar, editar, importar ou exportar.</small>
+                <strong>{t("Rever movimentos")}</strong>
+                <small>{t("Pesquisar, editar, importar ou exportar.")}</small>
               </div>
             </Link>
             <Link className="dashboard-shortcut" to="/planning">
@@ -425,8 +425,8 @@ export function DashboardPage() {
                 <CalendarClock aria-hidden="true" />
               </span>
               <div>
-                <strong>Preparar o mês</strong>
-                <small>Ver vencimentos, metas e alertas.</small>
+                <strong>{t("Preparar o mês")}</strong>
+                <small>{t("Ver vencimentos, metas e alertas.")}</small>
               </div>
             </Link>
             <Link
@@ -437,11 +437,13 @@ export function DashboardPage() {
                 <Landmark aria-hidden="true" />
               </span>
               <div>
-                <strong>{hasLinkedBank ? "Ver contas" : "Ligar banco"}</strong>
+                <strong>{t(hasLinkedBank ? "Ver contas" : "Ligar banco")}</strong>
                 <small>
-                  {hasLinkedBank
-                    ? "Gastos do banco já estão neste total."
-                    : "Os gastos entram sozinhos nas despesas."}
+                  {t(
+                    hasLinkedBank
+                      ? "Gastos do banco já estão neste total."
+                      : "Os gastos entram sozinhos nas despesas.",
+                  )}
                 </small>
               </div>
             </Link>
@@ -599,8 +601,8 @@ export function DashboardPage() {
                 </span>
                 <div className="month-pulse__copy">
                   <p className="eyebrow">{t("Estado do mês")}</p>
-                  <h2 id="month-pulse-title">{monthPulse.title}</h2>
-                  <p>{monthPulse.description}</p>
+                  <h2 id="month-pulse-title">{t(monthPulse.title)}</h2>
+                  <p>{t(monthPulse.description)}</p>
                 </div>
                 {monthPulse.usage !== null ? (
                   <div className="month-pulse__budget">
@@ -1013,15 +1015,16 @@ function CategoryTable({
   data: Array<{ category: Category; amount: number; sharePercent: number }>;
   currency: string;
 }) {
+  const { t } = useI18n();
   return (
     <details className="chart-summary">
-      <summary>Ver resumo acessível por categoria</summary>
+      <summary>{t("Ver resumo acessível por categoria")}</summary>
       <table>
         <thead>
           <tr>
-            <th>Categoria</th>
-            <th>Valor</th>
-            <th>Percentagem</th>
+            <th>{t("Categoria")}</th>
+            <th>{t("Valor")}</th>
+            <th>{t("Percentagem")}</th>
           </tr>
         </thead>
         <tbody>
@@ -1047,14 +1050,15 @@ function TrendTable({
   currency: string;
   locale: string;
 }) {
+  const { t } = useI18n();
   return (
     <details className="chart-summary">
-      <summary>Ver resumo acessível da tendência</summary>
+      <summary>{t("Ver resumo acessível da tendência")}</summary>
       <table>
         <thead>
           <tr>
-            <th>Mês</th>
-            <th>Total</th>
+            <th>{t("Mês")}</th>
+            <th>{t("Total")}</th>
           </tr>
         </thead>
         <tbody>

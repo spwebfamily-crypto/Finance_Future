@@ -126,22 +126,6 @@ export function AccountDetailPage() {
     }
   }
 
-  async function confirmExpense(transaction: BankTransaction, categoryId: string) {
-    setBusyTransactionId(transaction.id);
-    try {
-      await openBankingApi.reviewTransaction(transaction.id, {
-        categoryId,
-        classification: "expense",
-      });
-      setNotice(t("Gasto confirmado."));
-      await load();
-    } catch (requestError) {
-      setError(errorMessage(requestError));
-    } finally {
-      setBusyTransactionId(null);
-    }
-  }
-
   async function toggleAnalytics(transaction: BankTransaction, excluded: boolean) {
     setBusyTransactionId(transaction.id);
     try {
@@ -201,7 +185,7 @@ export function AccountDetailPage() {
         description={
           account.source === "bank"
             ? t(
-                "Os movimentos ficam por rever até confirmar se são gastos. Pendentes também podem entrar nas despesas.",
+                "Os movimentos importados ficam disponíveis no histórico. Os novos gastos são confirmados logo após cada sincronização.",
               )
             : t("Saldo e movimentos desta conta.")
         }
@@ -236,7 +220,7 @@ export function AccountDetailPage() {
             {account.source === "bank" && (
               <p className="section-heading__note">
                 {t(
-                  "Confirme os débitos que são gastos. Pendentes e contabilizados ficam visíveis até decidir.",
+                  "Consulte os movimentos importados. A confirmação de novos gastos aparece automaticamente depois da sincronização.",
                 )}
               </p>
             )}
@@ -294,9 +278,6 @@ export function AccountDetailPage() {
             busyTransactionId={busyTransactionId}
             onCategoryChange={(transaction, categoryId) =>
               void changeCategory(transaction, categoryId)
-            }
-            onConfirmExpense={(transaction, categoryId) =>
-              void confirmExpense(transaction, categoryId)
             }
             onDeleteTransaction={(transaction) => setDeleteTarget(transaction)}
             onToggleAnalytics={(transaction, excluded) =>
