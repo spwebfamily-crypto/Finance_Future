@@ -85,4 +85,22 @@ describe("I18nProvider", () => {
     expect(screen.getByLabelText("currency")).toHaveTextContent("€");
     expect(screen.getByLabelText("date")).toHaveTextContent("ago");
   });
+
+  it("keeps date-only values on the selected calendar day and uses locale plural rules", async () => {
+    function Formats() {
+      const { formatDate, plural } = useI18n();
+      return (
+        <>
+          <output aria-label="calendar-day">
+            {formatDate("2026-08-07", { day: "2-digit", month: "2-digit" })}
+          </output>
+          <output aria-label="plural">{plural(2, { one: "one item", other: "{count} items" })}</output>
+        </>
+      );
+    }
+
+    render(<I18nProvider><Formats /></I18nProvider>);
+    expect(screen.getByLabelText("calendar-day")).toHaveTextContent("07");
+    expect(screen.getByLabelText("plural")).toHaveTextContent("2 items");
+  });
 });

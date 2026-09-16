@@ -44,7 +44,7 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <main className="auth-page auth-page--login">
+    <main className="auth-page auth-page--recovery">
       <AuthStory variant="forgot" />
 
       <section className="auth-form-wrap">

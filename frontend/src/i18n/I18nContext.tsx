@@ -9,7 +9,7 @@ const STORAGE_KEY = "expensesnap:locale";
 
 type Messages = Record<string, string>;
 
-const en: Messages = {
+const en = {
   Hoje: "Today",
   Movimentos: "Activity",
   Contas: "Accounts",
@@ -385,7 +385,7 @@ const en: Messages = {
     "{account} will be removed. Existing expenses and income will be unlinked, and this account's transfers removed without changing other account balances.",
 };
 
-const es: Messages = {
+const es = {
   Hoje: "Hoy",
   Movimentos: "Movimientos",
   Contas: "Cuentas",
@@ -767,10 +767,68 @@ const es: Messages = {
  * supported so existing screens can migrate incrementally without changing
  * API/provider/status identifiers.
  */
+const legacyAdditions: Record<"en-GB" | "es-ES", Messages> = {
+  "en-GB": {
+    "Editar despesa": "Edit expense", "Classificar mais tarde": "Classify later", "Movimento bancário": "Bank transaction", "A guardar…": "Saving…",
+    "O consentimento do {bank} expirou.": "Consent for {bank} has expired.", "O consentimento do {bank} foi revogado no banco.": "Consent for {bank} was revoked at the bank.", "O {bank} pede uma renovação do consentimento.": "{bank} requires consent renewal.",
+    "Os movimentos deixam de ser atualizados até renovar o acesso. Os dados já importados continuam disponíveis.": "Transactions will not update until access is renewed. Previously imported data remains available.",
+    "Ver bancos": "View banks", "Fechar aviso": "Close notice", "Movimento apagado.": "Transaction deleted.",
+    "Autorize a leitura no próprio banco. Os movimentos entram primeiro em revisão, antes de afectar as despesas.": "Authorise read access at your bank. Transactions are reviewed before they affect expenses.", "Escolha o país": "Choose country", "A lista de bancos depende do país seleccionado.": "The list of banks depends on the selected country.", "Confirme primeiro os movimentos em revisão.": "Review pending transactions first.", "País": "Country", "Escolha primeiro o país para ver os bancos disponíveis.": "Choose a country first to see available banks.",
+    "Saldos, cartões e transferências. A gestão de ligações e sincronização está na aba Bancos.": "Balances, cards and transfers. Connections and sync are managed in Banks.", "Gerir bancos": "Manage banks",
+    "Movimento do dia": "Today's activity", "Ver todos": "View all", "Entradas": "Income", "Saídas": "Outgoings", "Resultado do dia": "Today's result", "Saldo das contas": "Account balances", "Adicionar ou ligar uma conta": "Add or connect an account", "Atividade": "Activity", "Ainda não há movimentos hoje.": "There are no transactions today yet.",
+    "Registar uma despesa": "Add an expense", "Total em {month}": "Total in {month}", "Inclui os gastos das contas ligadas ao banco.": "Includes spending from bank-connected accounts.", "Ligue um banco para os gastos contabilizados entrarem sozinhos.": "Connect a bank to add booked spending automatically.", "Sem comparação": "No comparison", "Igual ao mês anterior": "Same as last month", "{amount} face ao mês anterior": "{amount} compared with last month", "Estado do mês": "Month status", "Orçamento acompanhado": "Budget monitored", "Utilização do orçamento acompanhado": "Budget usage monitored", "{percent}% utilizado": "{percent}% used", "Definir limites": "Set limits", "Distribuição": "Breakdown", "Por categoria": "By category",
+    "Sem despesas neste mês": "No expenses this month", "As categorias aparecerão aqui quando existirem movimentos.": "Categories will appear here when there are transactions.", "Últimos 6 meses": "Last 6 months", "Evolução mensal": "Monthly trend", "Tendência indisponível": "Trend unavailable", "São necessários movimentos para construir a série mensal.": "Transactions are needed to build the monthly series.", "Sinais": "Signals", "Níveis de gasto": "Spending levels", "Dados insuficientes": "Not enough data", "Quando houver histórico, avaliamos o ritmo de cada categoria.": "When there is history, we assess the pace of each category.", "Limites mensais": "Monthly limits", "Orçamentos por categoria": "Budgets by category", "Escolher categoria": "Choose category", "Limite por mês": "Monthly limit", "Definir limite": "Set limit", "Sem limites definidos": "No limits set", "Defina um orçamento para receber sinais mais precisos.": "Set a budget to receive more accurate signals.", "Remover este orçamento?": "Remove this budget?", "Remover orçamento": "Remove budget",
+    "Este mês": "This month", "Últimos 7 dias": "Last 7 days", "Mês passado": "Last month", "Despesa eliminada.": "Expense deleted.", "Arquivo": "Archive", "Despesas": "Expenses", "Registos manuais e gastos das contas ligadas ao banco, no mesmo arquivo.": "Manual records and spending from connected bank accounts in one archive.", "Filtrar arquivo": "Filter archive", "Afine por categoria ou período.": "Narrow it down by category or period.", "Períodos rápidos": "Quick periods", "Todos os períodos": "All periods", "Com comprovativo": "With receipt", "Todas as categorias": "All categories", "Até": "Until", "Aplicar": "Apply", "Limpar": "Clear", "Pesquisar movimentos": "Search transactions", "Pesquisar por descrição, local ou categoria": "Search by description, place or category", "Limpar pesquisa": "Clear search", "Tem um extrato bancário?": "Have a bank statement?", "A mostrar os {visible} mais recentes de {total}. Refine o período ou os filtros para ver mais.": "Showing the latest {visible} of {total}. Refine the period or filters to see more.", "Exportar CSV": "Export CSV", "A carregar despesas": "Loading expenses", "Experimente alargar o período, pesquisar outro termo ou remover um filtro.": "Try a wider period, a different search term or remove a filter.", "Registe à mão ou ligue o banco: cada gasto contabilizado passa a despesa.": "Add one manually or connect a bank: each booked payment becomes an expense.", "Limpar filtros": "Clear filters", "Registar primeira despesa": "Add first expense", "Recibo de {description}": "Receipt for {description}", "Sem categoria": "No category", "Editar {description}": "Edit {description}", "Editar": "Edit", "Eliminar {description}": "Delete {description}", "Eliminar": "Delete", "Eliminar esta despesa?": "Delete this expense?", "“{description}” será removida definitivamente do seu arquivo.": "“{description}” will be permanently removed from your archive.", "Eliminar despesa": "Delete expense",
+    "Sincronização parcial. As contas disponíveis foram atualizadas; tente novamente para concluir.": "Partial sync. Available accounts were updated; try again to finish.", "O acesso ao banco expirou. Renove o acesso para voltar a sincronizar.": "Bank access has expired. Renew access to sync again.", "O banco está temporariamente indisponível. Tente sincronizar novamente.": "The bank is temporarily unavailable. Try syncing again.", "O banco limitou os pedidos. Aguarde alguns minutos e tente novamente.": "The bank has rate-limited requests. Wait a few minutes and try again.", "A sincronização anterior foi interrompida. Pode tentar novamente agora.": "The previous sync was interrupted. You can try again now.", "A sincronização bancária falhou. Tente novamente ou renove o acesso.": "Bank sync failed. Try again or renew access.",
+  },
+  "es-ES": {
+    "Editar despesa": "Editar gasto", "Classificar mais tarde": "Clasificar más tarde", "Movimento bancário": "Movimiento bancario", "A guardar…": "Guardando…",
+    "O consentimento do {bank} expirou.": "El consentimiento de {bank} ha caducado.", "O consentimento do {bank} foi revogado no banco.": "El consentimiento de {bank} fue revocado en el banco.", "O {bank} pede uma renovação do consentimento.": "{bank} requiere renovar el consentimiento.",
+    "Os movimentos deixam de ser atualizados até renovar o acesso. Os dados já importados continuam disponíveis.": "Los movimientos no se actualizarán hasta renovar el acceso. Los datos importados seguirán disponibles.",
+    "Ver bancos": "Ver bancos", "Fechar aviso": "Cerrar aviso", "Movimento apagado.": "Movimiento eliminado.",
+    "Autorize a leitura no próprio banco. Os movimentos entram primeiro em revisão, antes de afectar as despesas.": "Autoriza la lectura en tu banco. Los movimientos se revisan antes de afectar a los gastos.", "Escolha o país": "Elige el país", "A lista de bancos depende do país seleccionado.": "La lista de bancos depende del país seleccionado.", "Confirme primeiro os movimentos em revisão.": "Revisa primero los movimientos pendientes.", "País": "País", "Escolha primeiro o país para ver os bancos disponíveis.": "Elige primero el país para ver los bancos disponibles.",
+    "Saldos, cartões e transferências. A gestão de ligações e sincronização está na aba Bancos.": "Saldos, tarjetas y transferencias. Las conexiones y la sincronización se gestionan en Bancos.", "Gerir bancos": "Gestionar bancos",
+    "Movimento do dia": "Actividad de hoy", "Ver todos": "Ver todos", "Entradas": "Ingresos", "Saídas": "Salidas", "Resultado do dia": "Resultado de hoy", "Saldo das contas": "Saldos de las cuentas", "Adicionar ou ligar uma conta": "Añadir o conectar una cuenta", "Atividade": "Actividad", "Ainda não há movimentos hoje.": "Aún no hay movimientos hoy.",
+    "Registar uma despesa": "Registrar un gasto", "Total em {month}": "Total en {month}", "Inclui os gastos das contas ligadas ao banco.": "Incluye los gastos de las cuentas conectadas al banco.", "Ligue um banco para os gastos contabilizados entrarem sozinhos.": "Conecta un banco para añadir automáticamente los gastos contabilizados.", "Sem comparação": "Sin comparación", "Igual ao mês anterior": "Igual que el mes anterior", "{amount} face ao mês anterior": "{amount} respecto al mes anterior", "Estado do mês": "Estado del mes", "Orçamento acompanhado": "Presupuesto supervisado", "Utilização do orçamento acompanhado": "Uso del presupuesto supervisado", "{percent}% utilizado": "{percent}% utilizado", "Definir limites": "Definir límites", "Distribuição": "Distribución", "Por categoria": "Por categoría",
+    "Sem despesas neste mês": "Sin gastos este mes", "As categorias aparecerão aqui quando existirem movimentos.": "Las categorías aparecerán aquí cuando existan movimientos.", "Últimos 6 meses": "Últimos 6 meses", "Evolução mensal": "Evolución mensual", "Tendência indisponível": "Tendencia no disponible", "São necessários movimentos para construir a série mensal.": "Se necesitan movimientos para crear la serie mensual.", "Sinais": "Señales", "Níveis de gasto": "Niveles de gasto", "Dados insuficientes": "Datos insuficientes", "Quando houver histórico, avaliamos o ritmo de cada categoria.": "Cuando haya historial, evaluamos el ritmo de cada categoría.", "Limites mensais": "Límites mensuales", "Orçamentos por categoria": "Presupuestos por categoría", "Escolher categoria": "Elegir categoría", "Limite por mês": "Límite mensual", "Definir limite": "Definir límite", "Sem limites definidos": "Sin límites definidos", "Defina um orçamento para receber sinais mais precisos.": "Define un presupuesto para recibir señales más precisas.", "Remover este orçamento?": "¿Eliminar este presupuesto?", "Remover orçamento": "Eliminar presupuesto",
+    "Este mês": "Este mes", "Últimos 7 dias": "Últimos 7 días", "Mês passado": "Mes pasado", "Despesa eliminada.": "Gasto eliminado.", "Arquivo": "Archivo", "Despesas": "Gastos", "Registos manuais e gastos das contas ligadas ao banco, no mesmo arquivo.": "Registros manuales y gastos de cuentas bancarias conectadas en un mismo archivo.", "Filtrar arquivo": "Filtrar archivo", "Afine por categoria ou período.": "Ajusta por categoría o período.", "Períodos rápidos": "Períodos rápidos", "Todos os períodos": "Todos los períodos", "Com comprovativo": "Con comprobante", "Todas as categorias": "Todas las categorías", "Até": "Hasta", "Aplicar": "Aplicar", "Limpar": "Limpiar", "Pesquisar movimentos": "Buscar movimientos", "Pesquisar por descrição, local ou categoria": "Buscar por descripción, lugar o categoría", "Limpar pesquisa": "Limpiar búsqueda", "Tem um extrato bancário?": "¿Tienes un extracto bancario?", "A mostrar os {visible} mais recentes de {total}. Refine o período ou os filtros para ver mais.": "Mostrando los últimos {visible} de {total}. Ajusta el período o los filtros para ver más.", "Exportar CSV": "Exportar CSV", "A carregar despesas": "Cargando gastos", "Experimente alargar o período, pesquisar outro termo ou remover um filtro.": "Prueba un período más amplio, otro término de búsqueda o elimina un filtro.", "Registe à mão ou ligue o banco: cada gasto contabilizado passa a despesa.": "Registra manualmente o conecta un banco: cada gasto contabilizado pasa a ser un gasto.", "Limpar filtros": "Limpiar filtros", "Registar primeira despesa": "Registrar primer gasto", "Recibo de {description}": "Recibo de {description}", "Sem categoria": "Sin categoría", "Editar {description}": "Editar {description}", "Editar": "Editar", "Eliminar {description}": "Eliminar {description}", "Eliminar": "Eliminar", "Eliminar esta despesa?": "¿Eliminar este gasto?", "“{description}” será removida definitivamente do seu arquivo.": "“{description}” se eliminará permanentemente de tu archivo.", "Eliminar despesa": "Eliminar gasto",
+    "Sincronização parcial. As contas disponíveis foram atualizadas; tente novamente para concluir.": "Sincronización parcial. Las cuentas disponibles se actualizaron; inténtalo de nuevo para terminar.", "O acesso ao banco expirou. Renove o acesso para voltar a sincronizar.": "El acceso al banco ha caducado. Renuévalo para sincronizar de nuevo.", "O banco está temporariamente indisponível. Tente sincronizar novamente.": "El banco no está disponible temporalmente. Intenta sincronizar de nuevo.", "O banco limitou os pedidos. Aguarde alguns minutos e tente novamente.": "El banco ha limitado las solicitudes. Espera unos minutos e inténtalo de nuevo.", "A sincronização anterior foi interrompida. Pode tentar novamente agora.": "La sincronización anterior se interrumpió. Puedes intentarlo de nuevo ahora.", "A sincronização bancária falhou. Tente novamente ou renove o acesso.": "La sincronización bancaria falló. Inténtalo de nuevo o renueva el acceso.",
+  },
+};
+
 export const semanticMessages = {
   "pt-PT": {
     "language.label": "Idioma",
     "language.aria": "Idioma / Language / Idioma",
+    "language.portuguese": "Português",
+    "language.english": "Inglês",
+    "language.spanish": "Espanhol",
+    "theme.label": "Tema",
+    "theme.system": "Sistema",
+    "theme.light": "Tema claro",
+    "theme.dark": "Tema escuro",
+    "auth.login.eyebrow": "A sua conta",
+    "command.dialog": "Pesquisa rápida",
+    "command.input": "Para onde ir? O que fazer?",
+    "command.search": "Pesquisar comandos",
+    "command.list": "Comandos",
+    "command.open": "Abrir pesquisa rápida de comandos ({shortcut})",
+    "command.title": "Pesquisa rápida ({shortcut})",
+    "command.empty": "Nada encontrado para “{query}”.",
+    "command.dashboard": "Ir para Hoje",
+    "command.expenses": "Ir para Movimentos",
+    "command.accounts": "Ir para Contas",
+    "command.planning": "Ir para Plano",
+    "command.investments": "Ir para Investir",
+    "command.banks": "Ir para Bancos",
+    "command.privacy": "Ir para Privacidade",
+    "command.categories": "Ir para Categorias",
+    "command.newExpense": "Registar despesa",
+    "command.fullForm": "formulário completo",
+    "command.enableLight": "Ativar tema claro",
+    "command.enableDark": "Ativar tema escuro",
+    "command.systemCurrent": "Tema: sistema",
+    "command.useSystem": "Usar tema do sistema",
     "status.connection.pending": "Aguarda confirmação no banco",
     "status.connection.active": "Ligação ativa",
     "status.connection.reauth_required": "É necessário renovar o consentimento",
@@ -935,6 +993,35 @@ export const semanticMessages = {
   "en-GB": {
     "language.label": "Language",
     "language.aria": "Language",
+    "language.portuguese": "Portuguese",
+    "language.english": "English",
+    "language.spanish": "Spanish",
+    "theme.label": "Theme",
+    "theme.system": "System",
+    "theme.light": "Light theme",
+    "theme.dark": "Dark theme",
+    "auth.login.eyebrow": "Your account",
+    "command.dialog": "Quick search",
+    "command.input": "Where do you want to go? What do you want to do?",
+    "command.search": "Search commands",
+    "command.list": "Commands",
+    "command.open": "Open quick command search ({shortcut})",
+    "command.title": "Quick search ({shortcut})",
+    "command.empty": "Nothing found for “{query}”.",
+    "command.dashboard": "Go to Today",
+    "command.expenses": "Go to transactions",
+    "command.accounts": "Go to accounts",
+    "command.planning": "Go to plan",
+    "command.investments": "Go to invest",
+    "command.banks": "Go to banks",
+    "command.privacy": "Go to privacy",
+    "command.categories": "Go to categories",
+    "command.newExpense": "Add expense",
+    "command.fullForm": "full form",
+    "command.enableLight": "Enable light theme",
+    "command.enableDark": "Enable dark theme",
+    "command.systemCurrent": "Theme: system",
+    "command.useSystem": "Use system theme",
     "status.connection.pending": "Waiting for bank confirmation",
     "status.connection.active": "Connection active",
     "status.connection.reauth_required": "Consent renewal required",
@@ -1098,6 +1185,35 @@ export const semanticMessages = {
   "es-ES": {
     "language.label": "Idioma",
     "language.aria": "Idioma",
+    "language.portuguese": "Portugués",
+    "language.english": "Inglés",
+    "language.spanish": "Español",
+    "theme.label": "Tema",
+    "theme.system": "Sistema",
+    "theme.light": "Tema claro",
+    "theme.dark": "Tema oscuro",
+    "auth.login.eyebrow": "Tu cuenta",
+    "command.dialog": "Búsqueda rápida",
+    "command.input": "¿A dónde quieres ir? ¿Qué quieres hacer?",
+    "command.search": "Buscar comandos",
+    "command.list": "Comandos",
+    "command.open": "Abrir búsqueda rápida de comandos ({shortcut})",
+    "command.title": "Búsqueda rápida ({shortcut})",
+    "command.empty": "No se encontró nada para “{query}”.",
+    "command.dashboard": "Ir a Hoy",
+    "command.expenses": "Ir a movimientos",
+    "command.accounts": "Ir a cuentas",
+    "command.planning": "Ir al plan",
+    "command.investments": "Ir a inversiones",
+    "command.banks": "Ir a bancos",
+    "command.privacy": "Ir a privacidad",
+    "command.categories": "Ir a categorías",
+    "command.newExpense": "Registrar gasto",
+    "command.fullForm": "formulario completo",
+    "command.enableLight": "Activar tema claro",
+    "command.enableDark": "Activar tema oscuro",
+    "command.systemCurrent": "Tema: sistema",
+    "command.useSystem": "Usar tema del sistema",
     "status.connection.pending": "Esperando la confirmación del banco",
     "status.connection.active": "Conexión activa",
     "status.connection.reauth_required": "Es necesario renovar el consentimiento",
@@ -1264,20 +1380,32 @@ export const semanticMessages = {
 /** Stable keys for newly migrated UI. Phrase keys remain accepted while the
  * legacy screens are moved domain by domain. */
 export type TranslationKey = keyof (typeof semanticMessages)["pt-PT"] | PageTranslationKey;
+/** Legacy phrase keys are a closed union. New UI must use TranslationKey. */
+export type LegacyTranslationKey = keyof typeof en | keyof typeof es;
+export type CatalogTranslationKey = TranslationKey | LegacyTranslationKey;
 const semanticCatalogs: Record<AppLocale, Messages> = semanticMessages;
 
-const catalogs: Record<AppLocale, Messages> = {
+export const catalogs: Record<AppLocale, Messages> = {
   "pt-PT": {
-    ...Object.fromEntries([...Object.keys(en), ...Object.keys(es)].map((key) => [key, key])),
+    ...Object.fromEntries([...Object.keys(en), ...Object.keys(es), ...Object.keys(legacyAdditions["en-GB"]), ...Object.keys(legacyAdditions["es-ES"])].map((key) => [key, key])),
+    ...semanticMessages["pt-PT"],
     ...pageMessages["pt-PT"],
   },
-  "en-GB": { ...en, ...semanticMessages["en-GB"], ...pageMessages["en-GB"] },
-  "es-ES": { ...es, ...semanticMessages["es-ES"], ...pageMessages["es-ES"] },
+  "en-GB": { ...en, ...legacyAdditions["en-GB"], ...semanticMessages["en-GB"], ...pageMessages["en-GB"] },
+  "es-ES": { ...es, ...legacyAdditions["es-ES"], ...semanticMessages["es-ES"], ...pageMessages["es-ES"] },
 };
 
 function interpolate(message: string, values?: Record<string, string | number>) {
   if (!values) return message;
   return message.replace(/\{(\w+)\}/g, (_, key: string) => String(values[key] ?? `{${key}}`));
+}
+
+/** Date-only values are calendar days, not UTC instants. Noon avoids an
+ * accidental previous/next day when the browser formats a local date. */
+function toDisplayDate(value: string | Date) {
+  if (value instanceof Date) return value;
+  const datePart = value.slice(0, 10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(datePart) ? new Date(`${datePart}T12:00:00`) : new Date(value);
 }
 
 function initialLocale(): AppLocale {
@@ -1289,7 +1417,10 @@ function initialLocale(): AppLocale {
 interface I18nValue {
   locale: AppLocale;
   setLocale: (locale: AppLocale) => void;
-  t: (source: TranslationKey | string, values?: Record<string, string | number>) => string;
+  /** Compatibility adapter for phrase-key routes. New UI must use translate. */
+  t: (source: string, values?: Record<string, string | number>) => string;
+  translate: (source: TranslationKey, values?: Record<string, string | number>) => string;
+  legacyT: (source: LegacyTranslationKey, values?: Record<string, string | number>) => string;
   formatDate: (value: string | Date, options?: Intl.DateTimeFormatOptions) => string;
   formatNumber: (value: number, options?: Intl.NumberFormatOptions) => string;
   formatCurrency: (value: number, currency?: string) => string;
@@ -1304,15 +1435,19 @@ const fallbackValue: I18nValue = {
   locale: "pt-PT",
   setLocale: () => undefined,
   t: (source, values) => interpolate(semanticCatalogs["pt-PT"][source] ?? source, values),
+  translate: (source, values) =>
+    interpolate(semanticCatalogs["pt-PT"][source] ?? catalogs["pt-PT"][source], values),
+  legacyT: (source, values) => interpolate(catalogs["pt-PT"][source] ?? source, values),
   formatDate: (input, options) =>
-    new Intl.DateTimeFormat("pt-PT", options).format(
-      typeof input === "string" ? new Date(input) : input,
-    ),
+    new Intl.DateTimeFormat("pt-PT", options).format(toDisplayDate(input)),
   formatNumber: (value, options) => new Intl.NumberFormat("pt-PT", options).format(value),
   formatCurrency: (value, currency = "EUR") =>
     new Intl.NumberFormat("pt-PT", { style: "currency", currency }).format(value),
   plural: (count, forms, values) =>
-    interpolate(count === 1 ? forms.one : forms.other, { count, ...values }),
+    interpolate(new Intl.PluralRules("pt-PT").select(count) === "one" ? forms.one : forms.other, {
+      count,
+      ...values,
+    }),
 };
 
 const I18nContext = createContext<I18nValue>(fallbackValue);
@@ -1329,23 +1464,30 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     () => ({
       locale,
       setLocale,
-      t: (source, values) =>
-        interpolate(
-          catalogs[locale][source] ??
-            semanticCatalogs[locale][source] ??
-            semanticCatalogs["pt-PT"][source] ??
-            source,
-          values,
-        ),
+      t: (source, values) => {
+        const message = catalogs[locale][source] ?? semanticCatalogs[locale][source];
+        if (message) return interpolate(message, values);
+        if (import.meta.env.DEV) console.warn(`Missing ${locale} translation: ${source}`);
+        return interpolate(`[${source}]`, values);
+      },
+      translate: (source, values) =>
+        interpolate(semanticCatalogs[locale][source] ?? catalogs[locale][source], values),
+      legacyT: (source, values) => {
+        const message = catalogs[locale][source];
+        if (message) return interpolate(message, values);
+        if (import.meta.env.DEV) console.warn(`Missing ${locale} legacy translation: ${source}`);
+        return interpolate(`[${source}]`, values);
+      },
       formatDate: (input, options) =>
-        new Intl.DateTimeFormat(locale, options).format(
-          typeof input === "string" ? new Date(input) : input,
-        ),
+        new Intl.DateTimeFormat(locale, options).format(toDisplayDate(input)),
       formatNumber: (value, options) => new Intl.NumberFormat(locale, options).format(value),
       formatCurrency: (value, currency = "EUR") =>
         new Intl.NumberFormat(locale, { style: "currency", currency }).format(value),
       plural: (count, forms, values) =>
-        interpolate(count === 1 ? forms.one : forms.other, { count, ...values }),
+        interpolate(new Intl.PluralRules(locale).select(count) === "one" ? forms.one : forms.other, {
+          count,
+          ...values,
+        }),
     }),
     [locale],
   );
@@ -1358,20 +1500,20 @@ export function useI18n() {
 }
 
 export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
-  const { locale, setLocale, t } = useI18n();
+  const { locale, setLocale, translate } = useI18n();
   return (
     <label className={`language-switcher${compact ? " language-switcher--compact" : ""}`}>
       <span className={compact ? "sr-only" : "language-switcher__label"}>
-        {t("language.label")}
+        {translate("language.label")}
       </span>
       <select
         value={locale}
         onChange={(event) => setLocale(event.target.value as AppLocale)}
-        aria-label={t("language.aria")}
+        aria-label={translate("language.aria")}
       >
-        <option value="pt-PT">PT</option>
-        <option value="en-GB">EN</option>
-        <option value="es-ES">ES</option>
+        <option value="pt-PT">PT — {translate("language.portuguese")}</option>
+        <option value="en-GB">EN — {translate("language.english")}</option>
+        <option value="es-ES">ES — {translate("language.spanish")}</option>
       </select>
     </label>
   );

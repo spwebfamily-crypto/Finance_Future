@@ -9,7 +9,7 @@ import { ThemeProvider } from "./components/ThemeProvider";
 import { I18nProvider } from "./i18n/I18nContext";
 import "./styles.css";
 import "./styles/tokens.css";
-import "./styles/expensesnap.css";
+import "./styles/design-system.css";
 
 if ("serviceWorker" in navigator)
   window.addEventListener("load", () => {

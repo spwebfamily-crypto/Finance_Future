@@ -51,7 +51,7 @@ export function ResetPasswordPage() {
   }
 
   return (
-    <main className="auth-page auth-page--login">
+    <main className="auth-page auth-page--recovery">
       <AuthStory variant="reset" />
 
       <section className="auth-form-wrap">

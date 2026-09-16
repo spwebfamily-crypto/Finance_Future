@@ -26,6 +26,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
+import { useI18n } from "../i18n/I18nContext";
 import { routes } from "../routes";
 
 interface CommandItem {
@@ -65,6 +66,7 @@ export function CommandPaletteProvider({ children }: { children?: ReactNode }) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const { preference, theme, setPreference, toggle } = useTheme();
+  const { locale, translate } = useI18n();
   const platformShortcut = shortcutLabel();
 
   const close = useCallback(() => {
@@ -81,40 +83,40 @@ export function CommandPaletteProvider({ children }: { children?: ReactNode }) {
 
   const commands = useMemo<CommandItem[]>(() => {
     const base: CommandItem[] = [
-      { id: "dashboard", label: "Ir para Hoje", to: routes.dashboard, Icon: LayoutDashboard },
-      { id: "expenses", label: "Ir para Movimentos", to: routes.expenses, Icon: ReceiptText },
-      { id: "accounts", label: "Ir para Contas", to: routes.accounts, Icon: Landmark },
-      { id: "planning", label: "Ir para Plano", to: routes.planning, Icon: CalendarClock },
-      { id: "investments", label: "Ir para Investir", to: routes.investments, Icon: TrendingUp },
-      { id: "banks", label: "Ir para Bancos", to: routes.bankConnections, Icon: Building2 },
-      { id: "privacy", label: "Ir para Privacidade", to: routes.privacy, Icon: Shield },
-      { id: "categories", label: "Ir para Categorias", to: routes.categories, Icon: FolderOpen },
+      { id: "dashboard", label: translate("command.dashboard"), to: routes.dashboard, Icon: LayoutDashboard },
+      { id: "expenses", label: translate("command.expenses"), to: routes.expenses, Icon: ReceiptText },
+      { id: "accounts", label: translate("command.accounts"), to: routes.accounts, Icon: Landmark },
+      { id: "planning", label: translate("command.planning"), to: routes.planning, Icon: CalendarClock },
+      { id: "investments", label: translate("command.investments"), to: routes.investments, Icon: TrendingUp },
+      { id: "banks", label: translate("command.banks"), to: routes.bankConnections, Icon: Building2 },
+      { id: "privacy", label: translate("command.privacy"), to: routes.privacy, Icon: Shield },
+      { id: "categories", label: translate("command.categories"), to: routes.categories, Icon: FolderOpen },
       {
         id: "new-expense",
-        label: "Registar despesa",
-        hint: "formulário completo",
+        label: translate("command.newExpense"),
+        hint: translate("command.fullForm"),
         to: routes.newExpense,
         Icon: Plus,
       },
       {
         id: "toggle-theme",
-        label: theme === "dark" ? "Ativar tema claro" : "Ativar tema escuro",
+        label: theme === "dark" ? translate("command.enableLight") : translate("command.enableDark"),
         Icon: theme === "dark" ? Sun : Moon,
         action: toggle,
       },
       {
         id: "theme-system",
-        label: preference === "system" ? "Tema: sistema" : "Usar tema do sistema",
+        label: preference === "system" ? translate("command.systemCurrent") : translate("command.useSystem"),
         Icon: Monitor,
         action: () => setPreference("system"),
       },
     ];
-    const needle = query.trim().toLocaleLowerCase("pt-PT");
+    const needle = query.trim().toLocaleLowerCase(locale);
     if (!needle) return base;
     return base.filter((item) =>
-      `${item.label} ${item.hint ?? ""}`.toLocaleLowerCase("pt-PT").includes(needle),
+      `${item.label} ${item.hint ?? ""}`.toLocaleLowerCase(locale).includes(needle),
     );
-  }, [preference, query, setPreference, theme, toggle]);
+  }, [locale, preference, query, setPreference, theme, toggle, translate]);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -209,7 +211,7 @@ export function CommandPaletteProvider({ children }: { children?: ReactNode }) {
             className="command-palette"
             role="dialog"
             aria-modal="true"
-            aria-label="Pesquisa rápida"
+            aria-label={translate("command.dialog")}
             onClick={(event) => event.stopPropagation()}
             onKeyDown={handleKeyDown}
           >
@@ -222,8 +224,8 @@ export function CommandPaletteProvider({ children }: { children?: ReactNode }) {
                   setQuery(event.target.value);
                   setActiveIndex(0);
                 }}
-                placeholder="Para onde ir? O que fazer?"
-                aria-label="Pesquisar comandos"
+                placeholder={translate("command.input")}
+                aria-label={translate("command.search")}
                 autoComplete="off"
               />
               <kbd aria-hidden="true">esc</kbd>
@@ -232,7 +234,7 @@ export function CommandPaletteProvider({ children }: { children?: ReactNode }) {
               className="command-palette__list"
               ref={listRef}
               role="listbox"
-              aria-label="Comandos"
+              aria-label={translate("command.list")}
             >
               {commands.length ? (
                 commands.map((item, index) => (
@@ -252,7 +254,7 @@ export function CommandPaletteProvider({ children }: { children?: ReactNode }) {
                   </button>
                 ))
               ) : (
-                <p className="command-palette__empty">Nada encontrado para “{query}”.</p>
+                <p className="command-palette__empty">{translate("command.empty", { query })}</p>
               )}
             </div>
           </div>
@@ -264,6 +266,7 @@ export function CommandPaletteProvider({ children }: { children?: ReactNode }) {
 
 export function CommandPaletteTrigger({ compact = false }: { compact?: boolean }) {
   const context = useContext(CommandPaletteContext);
+  const { translate } = useI18n();
   const label = context?.shortcutLabel ?? shortcutLabel();
   return (
     <button
@@ -274,8 +277,8 @@ export function CommandPaletteTrigger({ compact = false }: { compact?: boolean }
           : "command-palette-trigger"
       }
       onClick={() => context?.open()}
-      aria-label={`Abrir pesquisa rápida de comandos (${label})`}
-      title={`Pesquisa rápida (${label})`}
+      aria-label={translate("command.open", { shortcut: label })}
+      title={translate("command.title", { shortcut: label })}
     >
       <Search size={15} aria-hidden="true" />
       {!compact && <kbd aria-hidden="true">{label}</kbd>}

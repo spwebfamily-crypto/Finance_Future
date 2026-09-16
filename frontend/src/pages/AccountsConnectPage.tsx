@@ -10,6 +10,8 @@ import { errorMessage } from "../api/client";
 import type { BankInstitution, PsuType } from "../types";
 import { useI18n } from "../i18n/I18nContext";
 
+const supportedCountries = ["PT", "ES", "GB", "FR", "DE", "IT"] as const;
+
 function useOnlineStatus() {
   const [isOnline, setIsOnline] = useState(
     () => typeof navigator === "undefined" || navigator.onLine,
@@ -28,7 +30,7 @@ function useOnlineStatus() {
 }
 
 export function AccountsConnectPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const navigate = useNavigate();
   const isOnline = useOnlineStatus();
   const [institutions, setInstitutions] = useState<BankInstitution[]>([]);
@@ -76,6 +78,10 @@ export function AccountsConnectPage() {
     () => institutions.find((institution) => institution.id === selectedId) ?? null,
     [institutions, selectedId],
   );
+  const countryNames = useMemo(() => {
+    const names = new Intl.DisplayNames(locale, { type: "region" });
+    return new Map(supportedCountries.map((code) => [code, names.of(code) ?? code]));
+  }, [locale]);
 
   async function continueInBank() {
     if (!selected) return;
@@ -162,12 +168,9 @@ export function AccountsConnectPage() {
               <span>{t("País")}</span>
               <select value={country} onChange={(event) => { setCountry(event.target.value); setSelectedId(null); setQuery(""); }}>
                 <option value="">{t("Escolher")}</option>
-                <option value="PT">Portugal</option>
-                <option value="ES">España</option>
-                <option value="GB">United Kingdom</option>
-                <option value="FR">France</option>
-                <option value="DE">Deutschland</option>
-                <option value="IT">Italia</option>
+                {supportedCountries.map((code) => (
+                  <option key={code} value={code}>{countryNames.get(code)}</option>
+                ))}
               </select>
             </label>
             <div className="segmented-control" role="group" aria-label={t("Tipo de conta")}>

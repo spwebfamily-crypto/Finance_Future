@@ -706,7 +706,7 @@ h3 {
 }
 
 .field__error {
-  color: var(--danger) !important;
+  color: var(--danger);
   font-size: 0.75rem;
   font-weight: 600;
 }
@@ -1568,16 +1568,16 @@ h3 {
 }
 
 .recharts-tooltip-wrapper .recharts-default-tooltip {
-  padding: 0.625rem 0.75rem !important;
-  background: var(--surface) !important;
-  border: 0.0625rem solid var(--line) !important;
-  border-radius: var(--radius-md) !important;
+  padding: 0.625rem 0.75rem;
+  background: var(--surface);
+  border: 0.0625rem solid var(--line);
+  border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
 }
 
 .recharts-tooltip-wrapper .recharts-tooltip-label,
 .recharts-tooltip-wrapper .recharts-tooltip-item {
-  color: var(--ink) !important;
+  color: var(--ink);
   font-family: var(--font-mono);
   font-size: 0.75rem;
 }
@@ -5457,8 +5457,8 @@ a.auth-forgot {
 }
 
 .planning-overview__available {
-  background: linear-gradient(135deg, var(--brand-dark), var(--brand)) !important;
-  border-color: transparent !important;
+  background: var(--brand);
+  border-color: var(--brand);
 }
 
 .planning-overview__available span,
@@ -5469,7 +5469,7 @@ a.auth-forgot {
 }
 
 .planning-overview__available--negative {
-  background: linear-gradient(135deg, #f3b2a5, #d16a56) !important;
+  background: var(--danger);
 }
 
 .planning-alerts {

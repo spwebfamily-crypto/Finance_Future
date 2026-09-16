@@ -21,7 +21,7 @@ describe("ThemeProvider", () => {
     fireEvent.click(screen.getByRole("button", { name: "dark" }));
     await waitFor(() => expect(document.documentElement.dataset.theme).toBe("dark"));
     expect(localStorage.getItem("expensesnap.theme")).toBe("dark");
-    expect(document.querySelector('meta[name="theme-color"]')?.getAttribute("content")).toBe("#12130f");
+    expect(document.querySelector('meta[name="theme-color"]')?.getAttribute("content")).toBe("#111714");
   });
 
   it("reacts to a system colour-scheme change while preference is system", async () => {
