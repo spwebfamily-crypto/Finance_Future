@@ -1,0 +1,653 @@
+/* ExpenseSnap product layer: deliberately loaded after legacy styles while pages
+   migrate. It establishes the same quiet, editorial system across the app. */
+
+:root {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+*,
+*::before,
+*::after {
+  border-color: var(--line);
+}
+
+body {
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  letter-spacing: -0.011em;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+h1,
+h2,
+h3,
+.auth-story__headline,
+.dashboard-total__value,
+.accounts-total__value {
+  font-family: var(--font-display);
+  letter-spacing: -0.045em;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.app-shell {
+  min-height: 100dvh;
+  background: var(--canvas);
+}
+
+.sidebar {
+  background: var(--brand-dark) !important;
+  border-right: 0 !important;
+  box-shadow: none !important;
+}
+
+.sidebar::before,
+.sidebar::after,
+.page-header::after,
+.dashboard-total::after,
+.auth-story::after {
+  display: none !important;
+}
+
+.sidebar .brand,
+.sidebar .brand__word,
+.sidebar .brand__word span,
+.sidebar .side-nav,
+.sidebar .sidebar__secondary,
+.sidebar .account-card {
+  color: #fffdf8;
+}
+
+.sidebar .brand__symbol,
+.sidebar .account-card__avatar {
+  background: var(--accent);
+  color: #172015;
+}
+
+.sidebar__rule {
+  background: color-mix(in srgb, #fffdf8 18%, transparent) !important;
+}
+
+.nav-link,
+.sidebar__secondary-link,
+.more-sheet__link {
+  border-radius: var(--radius-md);
+  color: color-mix(in srgb, #fffdf8 76%, transparent);
+  font-weight: 590;
+}
+
+.nav-link:hover,
+.sidebar__secondary-link:hover,
+.more-sheet__link:hover {
+  background: color-mix(in srgb, #fffdf8 10%, transparent);
+  color: #fffdf8;
+}
+
+.nav-link--active,
+.sidebar__secondary-link.is-active {
+  background: color-mix(in srgb, var(--accent) 16%, transparent) !important;
+  color: #fffdf8 !important;
+}
+
+.nav-link__active-marker {
+  background: var(--accent) !important;
+}
+
+.sidebar__add {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: #172015 !important;
+  font-weight: 760;
+}
+
+.sidebar__add:hover {
+  background: var(--accent-hover) !important;
+  box-shadow: none !important;
+}
+
+.sidebar__tools,
+.sidebar__secondary {
+  border-color: color-mix(in srgb, #fffdf8 16%, transparent) !important;
+}
+
+.sidebar .command-trigger,
+.sidebar .theme-toggle,
+.sidebar .language-switcher,
+.sidebar .icon-button,
+.sidebar .account-card {
+  background: color-mix(in srgb, #fffdf8 8%, transparent) !important;
+  border-color: color-mix(in srgb, #fffdf8 12%, transparent) !important;
+  color: #fffdf8 !important;
+  box-shadow: none !important;
+}
+
+.sidebar .account-card__identity small {
+  color: color-mix(in srgb, #fffdf8 62%, transparent);
+}
+
+.main-content {
+  background: var(--canvas) !important;
+}
+
+.page {
+  max-width: 91rem;
+  padding: clamp(1.5rem, 3vw, 3.25rem) clamp(1rem, 4vw, 4rem) 4rem;
+}
+
+.page--dashboard,
+.page--accounts,
+.page--planning,
+.page--expenses,
+.page--bank-connections {
+  max-width: 98rem;
+}
+
+.page-header {
+  align-items: end;
+  gap: 1rem 2rem;
+  margin-bottom: clamp(1.5rem, 3.4vw, 2.75rem);
+  padding-bottom: 1.25rem;
+  border-bottom: 0.0625rem solid var(--line);
+}
+
+.eyebrow {
+  color: var(--brand) !important;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.page-header h1 {
+  max-width: 17ch;
+  color: var(--ink-strong);
+  font-size: clamp(2.15rem, 4vw, 4.25rem);
+  font-weight: 680;
+  line-height: 0.98;
+}
+
+.page-header__description {
+  max-width: 63ch;
+  color: var(--muted);
+  font-size: 0.975rem;
+  line-height: 1.6;
+}
+
+.button,
+.icon-button,
+.text-button {
+  border-radius: var(--radius-md) !important;
+  box-shadow: none !important;
+  font-weight: 680;
+  letter-spacing: -0.012em;
+}
+
+.button {
+  min-height: 2.75rem;
+  padding: 0.6875rem 1rem;
+}
+
+.button--primary {
+  background: var(--brand) !important;
+  border-color: var(--brand) !important;
+  color: var(--primary-foreground) !important;
+}
+
+.button--primary:hover,
+.button--primary:focus-visible {
+  background: var(--brand-dark) !important;
+}
+
+.button--accent {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+}
+
+.button--accent:hover,
+.button--accent:focus-visible {
+  background: var(--accent-hover) !important;
+}
+
+.button--secondary,
+.button--ghost,
+.text-button,
+.icon-button {
+  background: transparent !important;
+  border-color: var(--line) !important;
+  color: var(--ink) !important;
+}
+
+.button--secondary:hover,
+.button--ghost:hover,
+.text-button:hover,
+.icon-button:hover {
+  background: var(--surface-soft) !important;
+  border-color: var(--line-strong) !important;
+}
+
+.button--danger {
+  background: var(--danger) !important;
+  border-color: var(--danger) !important;
+  color: #fffdf8 !important;
+}
+
+.button:not(:disabled):hover,
+.dashboard-shortcut:hover,
+.goal-card:hover,
+.recurring-card:hover,
+.debt-card:hover,
+.account-card-large:hover,
+.invest-example:hover,
+.invest-platform:hover,
+.invest-source:hover {
+  transform: none !important;
+}
+
+.field > span:first-child,
+.field > label > span:first-child,
+.field__header label,
+.section-heading h2,
+.section-heading h3 {
+  color: var(--ink-strong);
+  font-weight: 700;
+}
+
+.field input,
+.field select,
+.field textarea,
+.search-control input,
+.filters-panel input,
+.filters-panel select,
+.onboarding-money-field input,
+.money-question input {
+  background: var(--surface) !important;
+  border: 0.0625rem solid var(--input) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: none !important;
+  color: var(--ink) !important;
+}
+
+.field input:hover,
+.field select:hover,
+.field textarea:hover,
+.search-control input:hover,
+.filters-panel input:hover,
+.filters-panel select:hover {
+  border-color: var(--line-strong) !important;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus,
+.search-control input:focus,
+.filters-panel input:focus,
+.filters-panel select:focus {
+  border-color: var(--ring) !important;
+  box-shadow: 0 0 0 0.1875rem color-mix(in srgb, var(--ring) 22%, transparent) !important;
+}
+
+.dashboard-panel,
+.dashboard-section,
+.expense-section,
+.category-create,
+.category-library,
+.accounts-panel,
+.planning-panel,
+.planning-calendar,
+.planning-alerts,
+.filter-panel,
+.filters-panel,
+.form-section,
+.bank-connection-card,
+.account-detail-card,
+.account-card-large,
+.goal-card,
+.recurring-card,
+.debt-card,
+.upcoming-card,
+.invest-page > section,
+.invest-disclaimer,
+.invest-context-section,
+.invest-path-section,
+.invest-study-section,
+.invest-platforms-section,
+.invest-sources-section,
+.state-panel,
+.auth-form-panel,
+.modal,
+.confirm-dialog,
+.command-palette {
+  background: var(--surface) !important;
+  border: 0.0625rem solid var(--line) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: none !important;
+}
+
+.dashboard-total,
+.accounts-total,
+.planning-overview,
+.today-overview,
+.month-pulse {
+  background: var(--brand-dark) !important;
+  border: 0 !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: none !important;
+  color: #fffdf8 !important;
+}
+
+.dashboard-total *,
+.accounts-total *,
+.planning-overview *,
+.today-overview *,
+.month-pulse * {
+  color: inherit;
+}
+
+.dashboard-total .eyebrow,
+.accounts-total .eyebrow,
+.planning-overview small,
+.today-overview small,
+.month-pulse small {
+  color: color-mix(in srgb, #fffdf8 68%, transparent) !important;
+}
+
+.dashboard-total__value,
+.accounts-total__value,
+.planning-overview strong {
+  color: #fffdf8 !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.dashboard-shortcut {
+  background: transparent !important;
+  border: 0.0625rem solid var(--line) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: none !important;
+}
+
+.dashboard-shortcut:hover {
+  background: var(--surface-soft) !important;
+  border-color: var(--line-strong) !important;
+}
+
+.dashboard-shortcut--primary {
+  border-color: color-mix(in srgb, var(--brand) 32%, var(--line)) !important;
+}
+
+.dashboard-shortcut--primary > span,
+.dashboard-shortcut--account > span {
+  background: var(--accent-subtle) !important;
+  color: var(--brand) !important;
+}
+
+.expense-list,
+.planning-list,
+.bank-transaction-list,
+.bank-connection-list,
+.category-list {
+  border-color: var(--line) !important;
+}
+
+.expense-row,
+.category-row,
+.planning-row,
+.bank-transaction-row,
+.bank-connection-card__detail,
+.accounts-grid .accounts-panel,
+.planning-calendar__item {
+  border-color: var(--line) !important;
+  border-radius: var(--radius-md) !important;
+}
+
+.expense-row:hover,
+.category-row:hover,
+.planning-row:hover,
+.bank-transaction-row:hover {
+  background: var(--surface-soft) !important;
+}
+
+.expense-row__amount,
+.bank-balance__value,
+.planning-row > strong,
+.accounts-total strong,
+.dashboard-total h2 {
+  font-variant-numeric: tabular-nums;
+}
+
+.expense-origin,
+.status-pill,
+.bank-status,
+.chip,
+.tag,
+.filter-chip {
+  border-radius: 999px !important;
+  box-shadow: none !important;
+}
+
+.status-pill--success,
+.bank-status--active,
+.expense-origin--bank {
+  background: var(--accent-subtle) !important;
+  color: var(--brand-dark) !important;
+}
+
+.planning-alerts {
+  background: var(--warning-soft) !important;
+  border-color: color-mix(in srgb, var(--warning) 35%, var(--line)) !important;
+  color: var(--ink) !important;
+}
+
+.bank-connection-card,
+.bank-connection-card__header,
+.bank-connection-card__footer,
+.bank-connection-card__detail,
+.bank-sync-status {
+  background-image: none !important;
+}
+
+.bank-connection-card__header,
+.bank-connection-card__footer {
+  border-color: var(--line) !important;
+}
+
+.bank-connection-card__logo,
+.bank-logo {
+  border-radius: var(--radius-md) !important;
+  box-shadow: none !important;
+}
+
+.chart-card,
+.dashboard-chart,
+.chart-summary,
+.spending-heatmap {
+  background: transparent !important;
+  border-color: var(--line) !important;
+  box-shadow: none !important;
+}
+
+.recharts-cartesian-grid line,
+.recharts-cartesian-axis-line,
+.recharts-cartesian-axis-tick-line {
+  stroke: var(--chart-grid) !important;
+}
+
+.recharts-text {
+  fill: var(--chart-tick) !important;
+}
+
+.recharts-tooltip-wrapper .recharts-default-tooltip {
+  background: var(--popover) !important;
+  border: 0.0625rem solid var(--line) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: var(--shadow-md) !important;
+}
+
+.modal-backdrop,
+.confirm-dialog-backdrop,
+.command-palette-backdrop,
+.more-sheet-backdrop {
+  background: rgb(18 19 15 / 48%) !important;
+  backdrop-filter: blur(3px);
+}
+
+.modal,
+.confirm-dialog,
+.command-palette,
+.more-sheet {
+  background: var(--popover) !important;
+  border-color: var(--line) !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+
+.command-palette__input,
+.command-palette input {
+  background: var(--surface-soft) !important;
+  border-color: var(--line) !important;
+}
+
+.command-palette__item[aria-selected="true"],
+.command-palette__item:hover {
+  background: var(--accent-subtle) !important;
+  color: var(--accent-foreground) !important;
+}
+
+.toast,
+.notice-toast {
+  background: var(--popover) !important;
+  border: 0.0625rem solid var(--line) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: var(--shadow-md) !important;
+}
+
+.state-panel {
+  min-height: 11rem;
+  color: var(--muted);
+}
+
+.state-panel--error {
+  background: var(--danger-soft) !important;
+  border-color: color-mix(in srgb, var(--danger) 34%, var(--line)) !important;
+}
+
+.state-panel--empty svg,
+.state-panel--loading .spinner {
+  color: var(--brand);
+}
+
+.auth-page {
+  background: var(--canvas) !important;
+}
+
+.auth-story {
+  background: var(--brand-dark) !important;
+  color: #fffdf8 !important;
+}
+
+.auth-story__content .eyebrow,
+.auth-story__headline em {
+  color: var(--accent) !important;
+}
+
+.auth-story__content > p:last-child,
+.auth-story__footer {
+  color: color-mix(in srgb, #fffdf8 72%, transparent) !important;
+}
+
+.auth-form-wrap {
+  background: var(--canvas) !important;
+}
+
+.auth-form-panel {
+  max-width: 31rem;
+  padding: clamp(1.5rem, 4vw, 3.25rem) !important;
+}
+
+.auth-form-heading h1 {
+  font-size: clamp(2rem, 4vw, 3.4rem);
+  line-height: 0.98;
+}
+
+.mobile-header,
+.mobile-nav {
+  background: var(--popover) !important;
+  border-color: var(--line) !important;
+  box-shadow: var(--shadow-md) !important;
+}
+
+.mobile-header .brand,
+.mobile-header .brand__word,
+.mobile-header .brand__word span {
+  color: var(--brand-dark) !important;
+}
+
+.mobile-header .brand__symbol,
+.mobile-nav__add {
+  background: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+}
+
+.mobile-nav .nav-link {
+  color: var(--muted) !important;
+}
+
+.mobile-nav .nav-link--active {
+  background: var(--accent-subtle) !important;
+  color: var(--brand-dark) !important;
+}
+
+@media (max-width: 63.9375rem) {
+  .page {
+    padding: 1.75rem 1.25rem calc(7.5rem + env(safe-area-inset-bottom));
+  }
+
+  .page-header {
+    align-items: start;
+    padding-bottom: 1rem;
+  }
+}
+
+@media (max-width: 47.9375rem) {
+  .page {
+    padding: 1.5rem 1rem calc(7.5rem + env(safe-area-inset-bottom));
+  }
+
+  .page-header h1 {
+    font-size: clamp(2.1rem, 10vw, 3rem);
+  }
+
+  .dashboard-panel,
+  .dashboard-section,
+  .expense-section,
+  .category-create,
+  .category-library,
+  .accounts-panel,
+  .planning-panel,
+  .planning-calendar,
+  .filter-panel,
+  .form-section,
+  .bank-connection-card,
+  .auth-form-panel {
+    border-radius: var(--radius-md) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
