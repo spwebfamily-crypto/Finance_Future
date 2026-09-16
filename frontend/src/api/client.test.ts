@@ -106,6 +106,15 @@ describe("API client", () => {
 
   it("localises stable error codes before legacy server text", () => {
     document.documentElement.lang = "en-GB";
-    expect(errorMessage(new ApiError("Mensagem antiga", 401, "UNAUTHORIZED"))).toMatch(/not authorised/i);
+    expect(errorMessage(new ApiError("Mensagem antiga", 401, "UNAUTHORIZED"))).toMatch(
+      /not authorised/i,
+    );
+  });
+
+  it("explains the expense confirmation cooldown in the selected language", () => {
+    document.documentElement.lang = "pt-PT";
+    expect(
+      errorMessage(new ApiError("rate limited", 429, "BANK_EXPENSE_REVIEW_RATE_LIMITED")),
+    ).toBe("Pode confirmar até 10 despesas a cada 3 minutos. Aguarde antes de continuar.");
   });
 });

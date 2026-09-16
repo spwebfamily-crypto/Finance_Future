@@ -75,6 +75,24 @@ const authenticatedLimiter = rateLimit({
   handler: (_request, response) => tooManyRequests(response),
 });
 
+/** Limita apenas confirmações de gastos; outras revisões não consomem esta quota. */
+const expenseReviewLimiter = rateLimit({
+  windowMs: 3 * 60_000,
+  limit: 10,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  skipFailedRequests: true,
+  keyGenerator: (request) => (request as AuthenticatedRequest).user!.id,
+  skip: (request) => request.body?.classification !== "expense",
+  handler: (_request, response) =>
+    sendError(
+      response,
+      429,
+      "BANK_EXPENSE_REVIEW_RATE_LIMITED",
+      "Pode confirmar até 10 despesas a cada 3 minutos. Aguarde antes de continuar.",
+    ),
+});
+
 /** O callback é público: o limite é mais estrito e feito por IP. */
 const callbackLimiter = rateLimit({
   windowMs: 15 * 60_000,
@@ -596,6 +614,7 @@ router.patch(
   "/transactions/:transactionId",
   requireAuth,
   authenticatedLimiter,
+  expenseReviewLimiter,
   async (request: AuthenticatedRequest, response, next) => {
     try {
       const input = openBankingTransactionReviewSchema.parse(request.body ?? {});
@@ -667,7 +686,11 @@ router.patch(
       });
 
       // Gastos contabilizados voltam a despesa (ou saem delas) de imediato.
-      await materializeBookedTransactions(request.user!.id);
+      await materializeBookedTransactions(
+        request.user!.id,
+        undefined,
+        input.categoryId ? new Map([[transaction.id, input.categoryId]]) : undefined,
+      );
 
       return response.json({ data: updated });
     } catch (error) {

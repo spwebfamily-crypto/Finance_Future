@@ -222,6 +222,7 @@ async function accountIdFor(transaction: BankTransaction): Promise<string | null
 export async function materializeBookedTransactions(
   userId: string,
   linkId?: string,
+  categoryByTransactionId: ReadonlyMap<string, string> = new Map(),
 ): Promise<MaterializationCounters> {
   const counters: MaterializationCounters = {
     expensesCreated: 0,
@@ -279,12 +280,13 @@ export async function materializeBookedTransactions(
         counters.skipped += 1;
         continue;
       }
-      if (!categoryId) {
+      const selectedCategoryId = categoryByTransactionId.get(transaction.id);
+      if (!selectedCategoryId && !categoryId) {
         const fallback = await defaultCategoryId(userId);
         categoryId = fallback.id;
         if (fallback.created) counters.categoryCreated += 1;
       }
-      const created = await materializeExpense(transaction, categoryId);
+      const created = await materializeExpense(transaction, selectedCategoryId ?? categoryId!);
       if (created) counters.expensesCreated += 1;
       continue;
     }

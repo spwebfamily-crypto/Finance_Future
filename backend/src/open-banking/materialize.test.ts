@@ -180,6 +180,33 @@ describe("materialization", () => {
     expect(stored!.classification).toBe("expense");
   });
 
+  it("uses the category selected during the first expense confirmation", async () => {
+    await seedCategory("Outros");
+    const food = await prisma.category.create({
+      data: { userId, name: "Alimentação", isDefault: false },
+    });
+    const { link } = await seedBankAccount({
+      displayName: "Conta",
+      hash: "hash-selected-category",
+    });
+    const debit = await seedTransaction(link.id as string, {
+      direction: "debit",
+      amount: "18.40",
+      description: "Supermercado",
+      classification: "expense",
+    });
+
+    const counters = await materializeBookedTransactions(
+      userId,
+      undefined,
+      new Map([[debit.id as string, food.id as string]]),
+    );
+
+    expect(counters.expensesCreated).toBe(1);
+    const expense = (await prisma.expense.findMany({ where: { userId } }))[0]!;
+    expect(expense.categoryId).toBe(food.id);
+  });
+
   it("keeps an unreviewed pending transaction out of expenses", async () => {
     await seedCategory();
     const { link } = await seedBankAccount({ displayName: "Conta", hash: "hash-1" });
