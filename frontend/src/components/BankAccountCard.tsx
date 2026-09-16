@@ -49,6 +49,7 @@ export function BankAccountCard({
         balanceSource={account.balanceSource ?? "derived"}
         balanceAsOf={account.balanceAsOf ?? null}
         currency={account.currency ?? currency}
+        label={account.balanceLabel ?? undefined}
       />
 
       {isLinked && account.connectionStatus && (

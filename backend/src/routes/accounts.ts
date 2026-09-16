@@ -63,6 +63,8 @@ interface AccountBalanceView {
   /** Diferença provider − derived (positivo = banco mostra mais) */
   balanceDelta: number | null;
   balanceSource: "derived" | "provider" | "unavailable";
+  /** Distingue um saldo contabilístico de um saldo disponível do banco. */
+  balanceLabel: "Saldo contabilístico" | "Saldo disponível" | null;
   balanceAsOf: Date | null;
   connectionStatus: string | null;
   lastSyncedAt: Date | null;
@@ -77,18 +79,23 @@ interface AccountBalanceView {
 function balanceView(account: PublicAccount, derivedBalance: Prisma.Decimal): AccountBalanceView {
   const connection = account.bankAccountLink?.connection ?? null;
   const isLinked = account.source === "bank";
+  // Alguns bancos expõem apenas o saldo disponível. Continua a ser um snapshot
+  // real do banco e é preferível a esconder o valor ou a derivar um saldo a
+  // partir de movimentos importados. O rótulo deixa explícita a sua natureza.
+  const providerSnapshot = account.providerCurrentBalance ?? account.providerAvailableBalance;
   const hasCompatibleSnapshot =
-    account.providerCurrentBalance !== null && account.providerBalanceCurrency === account.currency;
+    providerSnapshot !== null && account.providerBalanceCurrency === account.currency;
 
   if (isLinked && hasCompatibleSnapshot) {
-    const providerNum = account.providerCurrentBalance!.toDecimalPlaces(2).toNumber();
+    const providerNum = providerSnapshot!.toDecimalPlaces(2).toNumber();
     return {
       currentBalance: providerNum,
-      availableBalance: null,
+      availableBalance: account.providerAvailableBalance?.toDecimalPlaces(2).toNumber() ?? null,
       derivedBalance: null,
       providerBalance: providerNum,
       balanceDelta: null,
       balanceSource: "provider",
+      balanceLabel: account.providerCurrentBalance ? "Saldo contabilístico" : "Saldo disponível",
       balanceAsOf: account.providerBalanceUpdatedAt,
       connectionStatus: connection?.status ?? null,
       lastSyncedAt: connection?.lastSyncedAt ?? null,
@@ -103,6 +110,7 @@ function balanceView(account: PublicAccount, derivedBalance: Prisma.Decimal): Ac
       providerBalance: null,
       balanceDelta: null,
       balanceSource: "unavailable",
+      balanceLabel: null,
       balanceAsOf: null,
       connectionStatus: connection?.status ?? null,
       lastSyncedAt: connection?.lastSyncedAt ?? null,
@@ -118,6 +126,7 @@ function balanceView(account: PublicAccount, derivedBalance: Prisma.Decimal): Ac
     providerBalance: null,
     balanceDelta: null,
     balanceSource: "derived",
+    balanceLabel: "Saldo contabilístico",
     balanceAsOf: null,
     connectionStatus: connection?.status ?? null,
     lastSyncedAt: connection?.lastSyncedAt ?? null,
@@ -184,6 +193,7 @@ router.post("/", async (request: AuthenticatedRequest, response, next) => {
         providerBalance: null,
         balanceDelta: null,
         balanceSource: "derived",
+        balanceLabel: "Saldo contabilístico",
         balanceAsOf: null,
         connectionStatus: null,
         lastSyncedAt: null,

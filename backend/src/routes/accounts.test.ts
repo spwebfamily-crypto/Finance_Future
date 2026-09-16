@@ -394,7 +394,7 @@ describe("account contract with linked bank accounts", () => {
     expect(linked).toMatchObject({
       source: "bank",
       currentBalance: 1250.3,
-      availableBalance: null,
+      availableBalance: 1180.3,
       derivedBalance: null,
       balanceDelta: null,
       balanceSource: "provider",
@@ -422,6 +422,29 @@ describe("account contract with linked bank accounts", () => {
       providerBalance: null,
     });
     expect(repositories.accountUpdate).not.toHaveBeenCalled();
+  });
+
+  it("shows the provider available balance when that is the only snapshot returned", async () => {
+    repositories.accountFindMany.mockResolvedValue([
+      {
+        ...linkedAccount,
+        providerCurrentBalance: null,
+        providerAvailableBalance: new Prisma.Decimal("1180.30"),
+      },
+    ]);
+
+    const response = await fetch(`${baseUrl}/api/accounts`, {
+      headers: { Authorization: authorization() },
+    });
+    const body = await response.json();
+
+    expect(body.data[0]).toMatchObject({
+      currentBalance: 1180.3,
+      availableBalance: 1180.3,
+      providerBalance: 1180.3,
+      balanceSource: "provider",
+      balanceLabel: "Saldo disponível",
+    });
   });
 
   it("rejects a stored provider snapshot whose currency differs from the account", async () => {

@@ -218,6 +218,7 @@ export function AccountDetailPage() {
           balanceSource={account.balanceSource ?? "derived"}
           balanceAsOf={account.balanceAsOf ?? null}
           currency={currency}
+          label={account.balanceLabel ?? undefined}
         />
       </section>
 

@@ -152,6 +152,7 @@ export type AccountType = "current" | "savings" | "cash" | "credit_card" | "othe
 export type AccountSource = "manual" | "bank";
 
 export type BalanceSource = "derived" | "provider" | "unavailable";
+export type BalanceLabel = "Saldo contabilístico" | "Saldo disponível";
 
 export interface FinancialAccount {
   id: string;
@@ -167,6 +168,7 @@ export interface FinancialAccount {
   providerBalance?: number | null;
   balanceDelta?: number | null;
   balanceSource?: BalanceSource;
+  balanceLabel?: BalanceLabel | null;
   balanceAsOf?: string | null;
   connectionStatus?: BankConnectionStatus | null;
   lastSyncedAt?: string | null;

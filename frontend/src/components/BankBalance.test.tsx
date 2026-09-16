@@ -16,4 +16,18 @@ describe("BankBalance", () => {
     expect(screen.getAllByText("Ainda sem sincronização")).toHaveLength(2);
     expect(screen.queryByText(/0,00/)).not.toBeInTheDocument();
   });
+
+  it("labels an available-only bank snapshot without hiding its amount", () => {
+    render(
+      <BankBalance
+        currentBalance={1180.3}
+        balanceSource="provider"
+        currency="EUR"
+        label="Saldo disponível"
+      />,
+    );
+
+    expect(screen.getByText("Saldo disponível")).toBeInTheDocument();
+    expect(screen.getByText(/1\.?180,30/)).toBeInTheDocument();
+  });
 });

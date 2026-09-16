@@ -651,3 +651,387 @@ h3,
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Page systems ------------------------------------------------------------ */
+
+.section-heading,
+.form-section__heading,
+.invest-section-heading,
+.csv-import__heading {
+  align-items: baseline;
+  gap: 0.75rem 1rem;
+}
+
+.section-heading h2,
+.section-heading h3,
+.form-section__heading h2,
+.invest-section-heading h2,
+.csv-import__heading h2 {
+  color: var(--ink-strong);
+  font-family: var(--font-display);
+  font-size: clamp(1.2rem, 2vw, 1.55rem);
+  font-weight: 650;
+  letter-spacing: -0.035em;
+}
+
+.section-heading__note,
+.section-heading small,
+.form-section__heading p,
+.invest-section-heading p,
+.csv-import__heading p {
+  color: var(--muted) !important;
+}
+
+.form-section__number,
+.category-row__index,
+.budget-row__icon,
+.planning-row__icon,
+.goal-card__icon,
+.recurring-card__icon,
+.debt-card__due,
+.account-card-large__icon {
+  background: var(--accent-subtle) !important;
+  border: 0 !important;
+  color: var(--brand) !important;
+}
+
+.form-section--receipt,
+.receipt-preview,
+.receipt-file-card,
+.receipt-ocr,
+.csv-import,
+.csv-import__preview {
+  background: var(--surface-soft) !important;
+  border-color: var(--line) !important;
+  box-shadow: none !important;
+}
+
+.upload-zone,
+.receipt-preview__image-link {
+  background: color-mix(in srgb, var(--accent-subtle) 45%, var(--surface)) !important;
+  border: 0.09375rem dashed color-mix(in srgb, var(--brand) 38%, var(--line)) !important;
+  border-radius: var(--radius-md) !important;
+}
+
+.upload-zone:hover,
+.upload-zone:focus-within {
+  background: var(--accent-subtle) !important;
+  border-color: var(--brand) !important;
+}
+
+.receipt-ocr__icon,
+.upload-zone__icon {
+  background: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+}
+
+.receipt-ocr__progress,
+.goal-card__progress,
+.month-pulse__bar,
+.onboarding-progress {
+  background: color-mix(in srgb, var(--brand) 14%, var(--surface)) !important;
+}
+
+.receipt-ocr__progress > span,
+.goal-card__progress > span,
+.month-pulse__bar > span,
+.onboarding-progress > span {
+  background: var(--brand) !important;
+}
+
+.categories-layout,
+.budgets-layout,
+.planning-grid,
+.recurring-layout,
+.debt-grid,
+.accounts-grid,
+.connect-layout {
+  gap: clamp(1rem, 2vw, 1.5rem);
+}
+
+.category-create,
+.category-library,
+.budget-create,
+.dashboard-budgets,
+.planning-panel,
+.accounts-panel,
+.connect-cta,
+.connect-aside {
+  padding: clamp(1rem, 2.2vw, 1.75rem) !important;
+}
+
+.icon-picker,
+.segmented-control,
+.month-picker,
+.filter-shortcuts {
+  background: var(--surface-soft) !important;
+  border: 0.0625rem solid var(--line) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: none !important;
+}
+
+.icon-picker button,
+.segmented-control button,
+.filter-shortcuts button,
+.month-picker button {
+  border-radius: calc(var(--radius-md) - 0.18rem) !important;
+  color: var(--muted) !important;
+}
+
+.icon-picker button:hover,
+.segmented-control button:hover,
+.filter-shortcuts button:hover,
+.month-picker button:hover,
+.segmented-control .is-current,
+.filter-shortcuts .is-active {
+  background: var(--surface) !important;
+  color: var(--brand-dark) !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+.category-row,
+.budget-row,
+.level-row,
+.planning-row,
+.planning-calendar__item,
+.transfer-list > li,
+.privacy-list > li,
+.privacy-connections li {
+  border-bottom: 0.0625rem solid var(--line) !important;
+}
+
+.category-row:last-child,
+.budget-row:last-child,
+.level-row:last-child,
+.planning-row:last-child,
+.transfer-list > li:last-child,
+.privacy-list > li:last-child,
+.privacy-connections li:last-child {
+  border-bottom: 0 !important;
+}
+
+.category-tag,
+.bank-transaction-row__badge,
+.level-row__state,
+.budget-row__usage,
+.planning-row__status,
+.receipt-ocr__confidence {
+  background: var(--surface-soft) !important;
+  border-color: var(--line) !important;
+  color: var(--muted) !important;
+}
+
+.category-tag,
+.bank-transaction-row__badge,
+.level-row__state,
+.budget-row__usage,
+.planning-row__status,
+.receipt-ocr__confidence {
+  border-radius: 999px !important;
+}
+
+.account-card-large,
+.goal-card,
+.recurring-card,
+.debt-card,
+.invest-example,
+.invest-platform,
+.invest-source,
+.bank-account-card {
+  padding: 1rem !important;
+}
+
+.account-card-large::before,
+.goal-card::before,
+.recurring-card::before,
+.debt-card::before,
+.invest-example::before,
+.bank-account-card::before {
+  display: none !important;
+}
+
+.account-card-large__identity h3,
+.goal-card__header h3,
+.recurring-card h3,
+.debt-card h3,
+.bank-account-card h3 {
+  color: var(--ink-strong);
+  font-family: var(--font-display);
+  letter-spacing: -0.027em;
+}
+
+.account-card-large__meta,
+.goal-card small,
+.recurring-card small,
+.debt-card small,
+.bank-account-card__type,
+.bank-balance__label,
+.bank-balance__source,
+.bank-balance__available {
+  color: var(--muted) !important;
+}
+
+.accounts-insight,
+.accounts-insight--invite,
+.connect-cta__trust,
+.onboarding-privacy,
+.invest-product-warning,
+.invest-disclaimer {
+  background: var(--accent-subtle) !important;
+  border: 0.0625rem solid color-mix(in srgb, var(--brand) 22%, var(--line)) !important;
+  border-radius: var(--radius-md) !important;
+  color: var(--ink) !important;
+}
+
+.accounts-insight a,
+.connect-cta__trust a,
+.invest-product-warning a,
+.invest-official-link {
+  color: var(--brand-dark) !important;
+  font-weight: 720;
+}
+
+.connect-steps {
+  counter-reset: connect-step;
+}
+
+.connect-steps li {
+  border-color: var(--line) !important;
+}
+
+.connect-steps li::before {
+  background: var(--surface-soft) !important;
+  border-color: var(--line) !important;
+  color: var(--brand) !important;
+}
+
+.connect-steps li.is-current::before {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+}
+
+.bank-connection-grid {
+  gap: 1rem;
+}
+
+.bank-connection-card:has(.bank-status--active) {
+  border-top: 0.25rem solid var(--brand) !important;
+}
+
+.bank-connection-card:has(.bank-status--error),
+.bank-connection-card:has(.bank-status--reauth_required),
+.bank-connection-card:has(.bank-status--expired),
+.bank-connection-card:has(.bank-status--revoked) {
+  border-top: 0.25rem solid var(--danger) !important;
+}
+
+.bank-status--active,
+.bank-transaction-row__badge--review {
+  background: var(--accent-subtle) !important;
+  color: var(--brand-dark) !important;
+}
+
+.bank-status--reauth_required,
+.bank-status--expired,
+.bank-status--revoked,
+.bank-status--error {
+  background: var(--danger-soft) !important;
+  color: var(--danger) !important;
+}
+
+.bank-account-card,
+.bank-transaction-row {
+  background: var(--surface) !important;
+  border: 0.0625rem solid var(--line) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: none !important;
+}
+
+.bank-transaction-row--pending {
+  background: var(--surface-soft) !important;
+}
+
+.onboarding-page {
+  background: var(--canvas) !important;
+}
+
+.onboarding-page::before {
+  display: none !important;
+}
+
+.onboarding-shell {
+  background: var(--surface) !important;
+  border: 0.0625rem solid var(--line) !important;
+  border-radius: var(--radius-xl) !important;
+  box-shadow: var(--shadow-md) !important;
+}
+
+.onboarding-step__icon,
+.choice-button__icon {
+  background: var(--accent-subtle) !important;
+  color: var(--brand) !important;
+}
+
+.choice-button {
+  background: var(--surface) !important;
+  border-color: var(--line) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: none !important;
+}
+
+.choice-button:hover,
+.choice-button:has(input:checked) {
+  background: var(--accent-subtle) !important;
+  border-color: var(--brand) !important;
+}
+
+.choice-button__check {
+  background: var(--brand) !important;
+  color: var(--primary-foreground) !important;
+}
+
+.invest-page > section,
+.invest-disclaimer {
+  padding: clamp(1rem, 2.5vw, 2rem) !important;
+}
+
+.invest-context-section,
+.invest-path-section,
+.invest-study-section,
+.invest-platforms-section,
+.invest-sources-section {
+  background-image: none !important;
+}
+
+.invest-context__profile,
+.invest-context__focus,
+.invest-context__figures > div,
+.invest-path__item,
+.invest-comparison,
+.invest-example__reading,
+.invest-example__risk {
+  background: var(--surface-soft) !important;
+  border-color: var(--line) !important;
+  box-shadow: none !important;
+}
+
+.invest-path__number,
+.invest-path__icon,
+.invest-platform__wordmark,
+.invest-source > span {
+  background: var(--accent-subtle) !important;
+  color: var(--brand) !important;
+}
+
+.not-found {
+  background: var(--surface) !important;
+  border: 0.0625rem solid var(--line) !important;
+  border-radius: var(--radius-xl) !important;
+  box-shadow: none !important;
+}
+
+.not-found__number {
+  color: var(--brand) !important;
+  font-family: var(--font-display);
+}
