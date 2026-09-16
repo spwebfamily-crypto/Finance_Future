@@ -33,17 +33,23 @@ export function AccountsConnectPage() {
   const isOnline = useOnlineStatus();
   const [institutions, setInstitutions] = useState<BankInstitution[]>([]);
   const [query, setQuery] = useState("");
+  const [country, setCountry] = useState("");
   const [psuType, setPsuType] = useState<PsuType>("personal");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
-    setIsLoading(true);
     setError("");
+    if (!country) {
+      setInstitutions([]);
+      setIsLoading(false);
+      return;
+    }
+    setIsLoading(true);
     try {
-      const items = await openBankingApi.institutions("PT", psuType);
+      const items = await openBankingApi.institutions(country, psuType);
       setInstitutions(items);
       setSelectedId((current) =>
         current && items.some((item) => item.id === current) ? current : null,
@@ -53,9 +59,10 @@ export function AccountsConnectPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [psuType]);
+  }, [country, psuType]);
 
   useEffect(() => {
+    if (!country) return;
     let active = true;
     queueMicrotask(() => {
       if (active) void load();
@@ -77,7 +84,7 @@ export function AccountsConnectPage() {
     try {
       const authorization = await openBankingApi.authorize({
         institutionId: selected.id,
-        country: selected.country,
+        country,
         psuType,
         returnPath: "/accounts",
       });
@@ -101,31 +108,29 @@ export function AccountsConnectPage() {
       <PageHeader
         eyebrow={t("Ligar banco")}
         title={t("Ligar um banco")}
-        description={t(
-          "Autorize a leitura no próprio banco. Cada gasto contabilizado passa a despesa — no arquivo, no painel e nos limites.",
-        )}
+        description={t("Autorize a leitura no próprio banco. Os movimentos entram primeiro em revisão, antes de afectar as despesas.")}
       />
 
       <ol className="connect-steps" aria-label={t("Como funciona")}>
-        <li className={selected ? "is-done" : "is-current"}>
+        <li className={country ? "is-done" : "is-current"}>
           <span>1</span>
+          <div>
+            <strong>{t("Escolha o país")}</strong>
+            <small>{t("A lista de bancos depende do país seleccionado.")}</small>
+          </div>
+        </li>
+        <li className={selected ? "is-done" : country ? "is-current" : ""}>
+          <span>2</span>
           <div>
             <strong>{t("Escolha o banco")}</strong>
             <small>{t("Só leitura de saldos e movimentos.")}</small>
           </div>
         </li>
         <li className={selected ? "is-current" : ""}>
-          <span>2</span>
-          <div>
-            <strong>{t("Confirme no banco")}</strong>
-            <small>{t("A palavra-passe nunca passa por aqui.")}</small>
-          </div>
-        </li>
-        <li>
           <span>3</span>
           <div>
             <strong>{t("Gastos viram despesas")}</strong>
-            <small>{t("Ficam no arquivo no instante da sincronização.")}</small>
+            <small>{t("Confirme primeiro os movimentos em revisão.")}</small>
           </div>
         </li>
       </ol>
@@ -153,6 +158,18 @@ export function AccountsConnectPage() {
               <p className="eyebrow">{t("Banco")}</p>
               <h2 id="psu-title">{t("Onde está o dinheiro")}</h2>
             </div>
+            <label className="field field--compact">
+              <span>{t("País")}</span>
+              <select value={country} onChange={(event) => { setCountry(event.target.value); setSelectedId(null); setQuery(""); }}>
+                <option value="">{t("Escolher")}</option>
+                <option value="PT">Portugal</option>
+                <option value="ES">España</option>
+                <option value="GB">United Kingdom</option>
+                <option value="FR">France</option>
+                <option value="DE">Deutschland</option>
+                <option value="IT">Italia</option>
+              </select>
+            </label>
             <div className="segmented-control" role="group" aria-label={t("Tipo de conta")}>
               <button
                 type="button"
@@ -173,7 +190,9 @@ export function AccountsConnectPage() {
             </div>
           </div>
 
-          {institutions.length ? (
+          {!country ? (
+            <p className="accounts-empty"><Landmark aria-hidden="true" /> {t("Escolha primeiro o país para ver os bancos disponíveis.")}</p>
+          ) : institutions.length ? (
             <InstitutionPicker
               institutions={institutions}
               query={query}

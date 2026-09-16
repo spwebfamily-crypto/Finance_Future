@@ -34,7 +34,7 @@ const rawSchema = z.object({
     .enum(["true", "false"])
     .default("false")
     .transform((value) => value === "true"),
-  OPEN_BANKING_PROVIDER: z.enum(["enable_banking", "fake"]).default("fake"),
+  OPEN_BANKING_PROVIDER: z.enum(["enable_banking", "fake"]).default("enable_banking"),
   OPEN_BANKING_DEFAULT_COUNTRY: z
     .string()
     .trim()
@@ -178,6 +178,10 @@ function load(): OpenBankingConfig {
       redirectOrigin: "",
       enableBanking: null,
     };
+  }
+
+  if (isProduction && raw.OPEN_BANKING_PROVIDER === "fake") {
+    return invalid("OPEN_BANKING_PROVIDER=fake não é permitido em produção.");
   }
 
   const redirectOrigin = normalizeOrigin(env.FRONTEND_ORIGIN, "FRONTEND_ORIGIN", isProduction);

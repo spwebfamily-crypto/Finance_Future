@@ -14,14 +14,10 @@
     "db:migrate": "prisma migrate deploy",
     "db:migrate:dev": "prisma migrate dev",
     "db:inspect-movement-migration": "tsx src/scripts/inspectMovementCurrencyMigration.ts",
-    "db:seed": "tsx prisma/seed.ts",
     "postinstall": "prisma generate",
     "open-banking:sync": "tsx src/scripts/processOpenBankingJobs.ts",
     "open-banking:dedupe": "tsx src/scripts/cleanupDuplicateBankTransactions.ts",
     "data:purge-september": "tsx src/scripts/purgeSeptemberData.ts"
-  },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "6.12.0",

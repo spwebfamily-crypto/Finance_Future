@@ -45,7 +45,6 @@ Copy-Item frontend/.env.example frontend/.env
 npm install
 npm run db:up
 npm run db:migrate
-npm run db:seed
 npm run dev
 ```
 
@@ -61,7 +60,6 @@ O frontend fica em <http://localhost:5173>, a API em <http://localhost:3000/api>
 | `npm run db:up` | Arranca PostgreSQL e aguarda pelo health check |
 | `npm run db:down` | Para os contentores, preservando o volume |
 | `npm run db:migrate` | Aplica migrations Prisma |
-| `npm run db:seed` | Cria categorias base de forma idempotente |
 | `npm run test:e2e` | Testa registo, fotografia e criação de despesa no Chromium |
 | `npm run open-banking:sync` | Processa sincronizações bancárias agendadas (CLI/cron) |
 | `npm run open-banking:dedupe -w backend` | Audita movimentos bancários repetidos; a limpeza aplicada continua separada e explícita |
@@ -69,10 +67,16 @@ O frontend fica em <http://localhost:5173>, a API em <http://localhost:3000/api>
 
 ## Open Banking (somente leitura)
 
-Ligação de contas bancárias para leitura de saldos e movimentos (AIS), sem pagamentos. Está atrás
-da flag `OPEN_BANKING_ENABLED=false` por omissão: enquanto estiver desligada, nada muda na
-aplicação. Documentação completa, configuração, limitações e rollback em
+Ligação de contas bancárias para leitura de saldos e movimentos (AIS), sem pagamentos. Para ativar
+em produção, configure o provedor real, o callback HTTPS e os segredos exigidos. Documentação
+completa, configuração, limitações e rollback em
 [`docs/open-banking/README.md`](./docs/open-banking/README.md).
+
+No ambiente do backend de produção, use `OPEN_BANKING_ENABLED=true`,
+`OPEN_BANKING_PROVIDER=enable_banking`, `ENABLE_BANKING_ENV=production`, o callback HTTPS
+registado no provedor, `OPEN_BANKING_DATA_KEY_B64`, `OPEN_BANKING_CRON_SECRET`,
+`ENABLE_BANKING_APP_ID` e `ENABLE_BANKING_PRIVATE_KEY_B64`. A aplicação recusa iniciar se algum
+destes itens for inválido ou se for selecionado o provedor de testes.
 
 ```powershell
 # Chave de cifragem dos dados sensíveis em repouso (exatamente 32 bytes)

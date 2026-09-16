@@ -5,8 +5,10 @@ import { MotionConfig } from "framer-motion";
 import App from "./App";
 import { AuthProvider } from "./auth/AuthContext";
 import { SessionLoadingOverlay } from "./components/SessionLoadingOverlay";
+import { ThemeProvider } from "./components/ThemeProvider";
 import { I18nProvider } from "./i18n/I18nContext";
 import "./styles.css";
+import "./styles/tokens.css";
 
 if ("serviceWorker" in navigator)
   window.addEventListener("load", () => {
@@ -18,10 +20,12 @@ createRoot(document.getElementById("root")!).render(
     <BrowserRouter>
       <MotionConfig reducedMotion="user" transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}>
         <I18nProvider>
-          <AuthProvider>
-            <App />
-            <SessionLoadingOverlay />
-          </AuthProvider>
+          <ThemeProvider>
+            <AuthProvider>
+              <App />
+              <SessionLoadingOverlay />
+            </AuthProvider>
+          </ThemeProvider>
         </I18nProvider>
       </MotionConfig>
     </BrowserRouter>

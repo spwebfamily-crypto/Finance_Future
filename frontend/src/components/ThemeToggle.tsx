@@ -1,58 +1,29 @@
-import { Moon, Sun } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Monitor, Moon, Sun } from "lucide-react";
 import { useI18n } from "../i18n/I18nContext";
-
-const THEME_KEY = "expensesnap.theme";
-const THEME_COLORS = { light: "#ffffff", dark: "#0c0c09" } as const;
-
-type Theme = "light" | "dark";
-
-function preferredTheme(): Theme {
-  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return "light";
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-}
-
-function storedTheme(): Theme {
-  if (typeof window === "undefined") return preferredTheme();
-  try {
-    const value = window.localStorage.getItem(THEME_KEY);
-    return value === "light" || value === "dark" ? value : preferredTheme();
-  } catch {
-    return preferredTheme();
-  }
-}
-
-export function applyTheme(theme: Theme) {
-  document.documentElement.dataset.theme = theme;
-  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", THEME_COLORS[theme]);
-  try {
-    window.localStorage.setItem(THEME_KEY, theme);
-  } catch {
-    // O tema continua a funcionar quando o armazenamento estiver indisponível.
-  }
-}
+import { useTheme } from "./ThemeProvider";
 
 export function ThemeToggle({ compact = false }: { compact?: boolean }) {
   const { t } = useI18n();
-  const [theme, setTheme] = useState<Theme>(storedTheme);
-
-  useEffect(() => {
-    applyTheme(theme);
-  }, [theme]);
-
+  const { preference, theme, setPreference } = useTheme();
   const dark = theme === "dark";
-  const nextLabel = t(dark ? "Ativar tema claro" : "Ativar tema escuro");
+  const label = preference === "system" ? "Sistema" : dark ? t("Tema escuro") : t("Tema claro");
 
   return (
-    <button
+    <label
       className={compact ? "theme-toggle theme-toggle--compact" : "theme-toggle"}
-      type="button"
-      aria-label={nextLabel}
-      title={nextLabel}
-      onClick={() => setTheme(dark ? "light" : "dark")}
+      title={t("Tema")}
     >
-      {dark ? <Sun aria-hidden="true" /> : <Moon aria-hidden="true" />}
-      {!compact && <span>{t(dark ? "Tema claro" : "Tema escuro")}</span>}
-    </button>
+      {preference === "system" ? <Monitor aria-hidden="true" /> : dark ? <Moon aria-hidden="true" /> : <Sun aria-hidden="true" />}
+      {!compact && <span className="theme-toggle__label">{label}</span>}
+      <select
+        value={preference}
+        onChange={(event) => setPreference(event.target.value as "system" | "light" | "dark")}
+        aria-label={t("Tema")}
+      >
+        <option value="system">Sistema</option>
+        <option value="light">{t("Tema claro")}</option>
+        <option value="dark">{t("Tema escuro")}</option>
+      </select>
+    </label>
   );
 }

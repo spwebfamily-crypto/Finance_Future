@@ -1,4 +1,4 @@
-import type { ApiErrorPayload, RefreshResponse } from "../types";
+import type { ApiErrorCode, ApiErrorPayload, RefreshResponse } from "../types";
 import {
   clearSession,
   getAccessToken,
@@ -27,10 +27,10 @@ export const API_URL = resolveApiUrl(import.meta.env.VITE_API_URL, import.meta.e
 
 export class ApiError extends Error {
   readonly status: number;
-  readonly code?: string;
+  readonly code?: ApiErrorCode | string;
   readonly details?: unknown;
 
-  constructor(message: string, status: number, code?: string, details?: unknown) {
+  constructor(message: string, status: number, code?: ApiErrorCode | string, details?: unknown) {
     super(message);
     this.name = "ApiError";
     this.status = status;
@@ -257,5 +257,23 @@ export async function apiBlobRequest(
 }
 
 export function errorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "Ocorreu um erro inesperado. Tente novamente.";
+  const fallback = error instanceof Error ? error.message : "Ocorreu um erro inesperado. Tente novamente.";
+  const code = error instanceof ApiError ? error.code : undefined;
+  return code ? localizedErrorMessage(code, document.documentElement.lang || "pt-PT", fallback) : fallback;
+}
+
+const errorMessages: Record<string, Record<string, string>> = {
+  "pt-PT": {
+    TIMEOUT: "A API não respondeu a tempo. Verifique a ligação e tente novamente.", NETWORK_ERROR: "Não foi possível ligar ao servidor. Verifique a ligação e tente novamente.", SESSION_EXPIRED: "A sua sessão terminou. Inicie sessão novamente.", UNAUTHORIZED: "Não tem autorização para executar esta ação.", NOT_FOUND: "O recurso pedido não foi encontrado.", VALIDATION_ERROR: "Existem campos inválidos. Reveja os dados e tente novamente.", CONFLICT: "Já existe um registo com estes dados.", RESOURCE_IN_USE: "Este registo está em utilização e não pode ser eliminado.", INVALID_RECEIPT: "Não foi possível processar o comprovativo.", INTERNAL_ERROR: "Ocorreu um erro inesperado. Tente novamente.",
+  },
+  "en-GB": {
+    TIMEOUT: "The API took too long to respond. Check your connection and try again.", NETWORK_ERROR: "Could not reach the server. Check your connection and try again.", SESSION_EXPIRED: "Your session has ended. Please sign in again.", UNAUTHORIZED: "You are not authorised to perform this action.", NOT_FOUND: "The requested resource was not found.", VALIDATION_ERROR: "Some fields are invalid. Review the data and try again.", CONFLICT: "A record with these details already exists.", RESOURCE_IN_USE: "This record is in use and cannot be deleted.", INVALID_RECEIPT: "The receipt could not be processed.", INTERNAL_ERROR: "An unexpected error occurred. Please try again.",
+  },
+  "es-ES": {
+    TIMEOUT: "La API tardó demasiado en responder. Comprueba la conexión e inténtalo de nuevo.", NETWORK_ERROR: "No se pudo conectar al servidor. Comprueba la conexión e inténtalo de nuevo.", SESSION_EXPIRED: "Tu sesión ha terminado. Inicia sesión de nuevo.", UNAUTHORIZED: "No tienes autorización para realizar esta acción.", NOT_FOUND: "No se encontró el recurso solicitado.", VALIDATION_ERROR: "Hay campos no válidos. Revisa los datos e inténtalo de nuevo.", CONFLICT: "Ya existe un registro con estos datos.", RESOURCE_IN_USE: "Este registro está en uso y no se puede eliminar.", INVALID_RECEIPT: "No se pudo procesar el comprobante.", INTERNAL_ERROR: "Ocurrió un error inesperado. Inténtalo de nuevo.",
+  },
+};
+
+export function localizedErrorMessage(code: string, locale: string, fallback: string) {
+  return errorMessages[locale]?.[code] ?? errorMessages["pt-PT"]?.[code] ?? fallback;
 }

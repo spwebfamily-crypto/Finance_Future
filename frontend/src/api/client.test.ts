@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { apiRequest, ApiError, REQUEST_TIMEOUT_MS, resolveApiUrl } from "./client";
+import { apiRequest, ApiError, errorMessage, REQUEST_TIMEOUT_MS, resolveApiUrl } from "./client";
 import { clearSession, saveSession } from "./token-store";
 
 function jsonResponse(body: unknown, status = 200) {
@@ -102,5 +102,10 @@ describe("API client", () => {
       "https://api.example.com/api",
     );
     expect(() => resolveApiUrl(undefined, true)).toThrow(/VITE_API_URL/);
+  });
+
+  it("localises stable error codes before legacy server text", () => {
+    document.documentElement.lang = "en-GB";
+    expect(errorMessage(new ApiError("Mensagem antiga", 401, "UNAUTHORIZED"))).toMatch(/not authorised/i);
   });
 });

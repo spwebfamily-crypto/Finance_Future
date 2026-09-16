@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#ffffff" />
+    <meta name="theme-color" content="#f2eee2" />
     <script>
       try {
         const stored = localStorage.getItem("expensesnap.theme");
@@ -16,11 +16,11 @@
         document.documentElement.dataset.theme = theme;
         const themeColor = document.querySelector('meta[name="theme-color"]');
         if (themeColor)
-          themeColor.setAttribute("content", theme === "dark" ? "#0c0c09" : "#ffffff");
+          themeColor.setAttribute("content", theme === "dark" ? "#12130f" : "#f2eee2");
       } catch {
         document.documentElement.dataset.theme = "light";
         const themeColor = document.querySelector('meta[name="theme-color"]');
-        if (themeColor) themeColor.setAttribute("content", "#ffffff");
+        if (themeColor) themeColor.setAttribute("content", "#f2eee2");
       }
     </script>
     <meta name="mobile-web-app-capable" content="yes" />

@@ -19,6 +19,7 @@ import recurringIncomeRoutes from "./routes/recurringIncomes.js";
 import debtRoutes from "./routes/debts.js";
 import openBankingRoutes from "./routes/openBanking.js";
 import internalOpenBankingRoutes from "./routes/internalOpenBanking.js";
+import v1Routes from "./routes/v1.js";
 
 export const app = express();
 
@@ -38,6 +39,12 @@ app.use(
   }),
 );
 app.use(express.json({ limit: "1mb" }));
+app.use((request, response, next) => {
+  const requestId = request.header("X-Request-Id")?.slice(0, 128) || crypto.randomUUID();
+  response.locals.requestId = requestId;
+  response.setHeader("X-Request-Id", requestId);
+  next();
+});
 
 // Rede de segurança por IP para toda a API. Os limiters específicos (login,
 // mutações de despesas) continuam a aplicar-se por cima deste teto genérico.
@@ -81,6 +88,8 @@ app.use("/api/debts", debtRoutes);
 app.use("/api/open-banking", openBankingRoutes);
 // Rotas internas de agendamento: protegidas por OPEN_BANKING_CRON_SECRET.
 app.use("/api/internal", internalOpenBankingRoutes);
+// API versionada: dados manuais e leitura; Open Banking continua fora de escrita.
+app.use("/v1", globalApiLimiter, v1Routes);
 
 app.use(notFound);
 app.use(errorHandler);

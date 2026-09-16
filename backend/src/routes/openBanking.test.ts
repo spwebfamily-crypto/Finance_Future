@@ -606,11 +606,18 @@ describe("open banking callback in production", () => {
   it("requires HTTPS", async () => {
     vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("OPEN_BANKING_ENABLED", "true");
-    vi.stubEnv("OPEN_BANKING_PROVIDER", "fake");
+    vi.stubEnv("OPEN_BANKING_PROVIDER", "enable_banking");
     vi.stubEnv("FRONTEND_ORIGIN", "https://app.example.com");
     vi.stubEnv("OPEN_BANKING_CALLBACK_URL", "https://api.example.com/api/open-banking/callback");
     vi.stubEnv("OPEN_BANKING_CRON_SECRET", "test-cron-secret-with-at-least-32-characters");
     vi.stubEnv("OPEN_BANKING_DATA_KEY_B64", Buffer.alloc(32, 3).toString("base64"));
+    vi.stubEnv("ENABLE_BANKING_APP_ID", "00000000-1111-4222-8333-444444444444");
+    vi.stubEnv(
+      "ENABLE_BANKING_PRIVATE_KEY_B64",
+      Buffer.from("-----BEGIN PRIVATE KEY-----\nabc\n-----END PRIVATE KEY-----\n").toString(
+        "base64",
+      ),
+    );
     vi.resetModules();
 
     const { default: productionRoutes } = await import("./openBanking.js");

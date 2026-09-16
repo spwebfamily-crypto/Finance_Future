@@ -116,9 +116,8 @@ describe("AccountsPage account actions", () => {
     expect(combined).toHaveTextContent("US$");
   });
 
-  it("keeps manual accounts usable when the bank connections API is unavailable", async () => {
+  it("keeps manual accounts independent from the bank connections service", async () => {
     api.connections.mockRejectedValueOnce(new Error("serviço bancário indisponível"));
-    const user = userEvent.setup();
     render(
       <MemoryRouter>
         <AccountsPage />
@@ -126,10 +125,6 @@ describe("AccountsPage account actions", () => {
     );
 
     expect((await screen.findAllByText("Conta principal")).length).toBeGreaterThan(0);
-    expect(screen.getByText(/serviço bancário indisponível/)).toBeInTheDocument();
-
-    api.connections.mockResolvedValueOnce([]);
-    await user.click(screen.getByRole("button", { name: "Tentar novamente" }));
-    await waitFor(() => expect(api.connections).toHaveBeenCalledTimes(2));
+    expect(api.connections).not.toHaveBeenCalled();
   });
 });

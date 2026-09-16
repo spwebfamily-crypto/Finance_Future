@@ -16,6 +16,7 @@ import {
   FolderOpen,
   Landmark,
   LayoutDashboard,
+  Monitor,
   Moon,
   Plus,
   ReceiptText,
@@ -24,7 +25,7 @@ import {
   Sun,
   TrendingUp,
 } from "lucide-react";
-import { applyTheme } from "./ThemeToggle";
+import { useTheme } from "./ThemeProvider";
 import { routes } from "../routes";
 
 interface CommandItem {
@@ -42,10 +43,6 @@ interface CommandPaletteContextValue {
 }
 
 const CommandPaletteContext = createContext<CommandPaletteContextValue | null>(null);
-
-function currentTheme() {
-  return document.documentElement.dataset.theme === "dark" ? "dark" : "light";
-}
 
 function isApplePlatform() {
   if (typeof navigator === "undefined") return false;
@@ -67,7 +64,7 @@ export function CommandPaletteProvider({ children }: { children?: ReactNode }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
-  const theme = currentTheme();
+  const { preference, theme, setPreference, toggle } = useTheme();
   const platformShortcut = shortcutLabel();
 
   const close = useCallback(() => {
@@ -80,17 +77,6 @@ export function CommandPaletteProvider({ children }: { children?: ReactNode }) {
     setIsOpen(true);
     setQuery("");
     setActiveIndex(0);
-  }, []);
-
-  const toggleTheme = useCallback(() => {
-    const toggle = document.querySelector<HTMLButtonElement>(".theme-toggle");
-    if (toggle) {
-      toggle.click();
-      return;
-    }
-
-    const next = currentTheme() === "dark" ? "light" : "dark";
-    applyTheme(next);
   }, []);
 
   const commands = useMemo<CommandItem[]>(() => {
@@ -114,7 +100,13 @@ export function CommandPaletteProvider({ children }: { children?: ReactNode }) {
         id: "toggle-theme",
         label: theme === "dark" ? "Ativar tema claro" : "Ativar tema escuro",
         Icon: theme === "dark" ? Sun : Moon,
-        action: toggleTheme,
+        action: toggle,
+      },
+      {
+        id: "theme-system",
+        label: preference === "system" ? "Tema: sistema" : "Usar tema do sistema",
+        Icon: Monitor,
+        action: () => setPreference("system"),
       },
     ];
     const needle = query.trim().toLocaleLowerCase("pt-PT");
@@ -122,7 +114,7 @@ export function CommandPaletteProvider({ children }: { children?: ReactNode }) {
     return base.filter((item) =>
       `${item.label} ${item.hint ?? ""}`.toLocaleLowerCase("pt-PT").includes(needle),
     );
-  }, [query, theme, toggleTheme]);
+  }, [preference, query, setPreference, theme, toggle]);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {

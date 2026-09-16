@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 import {
   ArrowRightLeft,
   Banknote,
@@ -7,30 +7,25 @@ import {
   Landmark,
   PencilLine,
   Plus,
-  RefreshCw,
   Trash2,
   WalletCards,
 } from "lucide-react";
-import { accountApi, openBankingApi } from "../api/resources";
-import { notifyBankSyncCompleted } from "../api/bank-sync-events";
+import { accountApi } from "../api/resources";
 import { errorMessage } from "../api/client";
 import { BalanceCorrectionDialog } from "../components/BalanceCorrectionDialog";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { ErrorState, LoadingState, Spinner } from "../components/States";
-import { NoticeToast } from "../components/NoticeToast";
 import { PageHeader } from "../components/PageHeader";
+import { NoticeToast } from "../components/NoticeToast";
 import { useAuth } from "../auth/AuthContext";
 import type {
   AccountTransfer,
   AccountType,
-  BankConnectionSummary,
   FinancialAccount,
 } from "../types";
 import { formatCurrency, formatDate, parseSignedMoney, todayInputValue } from "../utils/format";
 import { useI18n } from "../i18n/I18nContext";
-import { bankConnectionOutcomeMessage } from "../utils/bankConnectionOutcome";
 import { accountBalanceValue } from "../utils/accountBalance";
-import { bankSyncResultMessage, isBankSyncPending, isBankSyncSuccessful } from "../utils/bankSync";
 
 const initialAccount = {
   name: "",
@@ -45,7 +40,6 @@ const initialTransfer = {
   description: "",
   date: todayInputValue(),
 };
-const SYNC_POLL_INTERVAL_MS = 1_500;
 
 const accountLabels: Record<AccountType, string> = {
   current: "À ordem",
@@ -79,27 +73,14 @@ function AccountIcon({ type }: { type: AccountType }) {
 export function AccountsPage() {
   const { t, locale, formatDate: formatLocaleDate } = useI18n();
   const { user } = useAuth();
-  const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
   const [accounts, setAccounts] = useState<FinancialAccount[]>([]);
   const [transfers, setTransfers] = useState<AccountTransfer[]>([]);
-  const [connections, setConnections] = useState<BankConnectionSummary[]>([]);
-  const [syncingConnectionId, setSyncingConnectionId] = useState<string | null>(null);
-  const [pendingSyncJobs, setPendingSyncJobs] = useState<
-    Array<{ connectionId: string; jobId: string; pollFailures?: number }>
-  >([]);
   const [accountForm, setAccountForm] = useState(initialAccount);
   const [transferForm, setTransferForm] = useState(initialTransfer);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
-  const [connectionError, setConnectionError] = useState("");
-  const [notice, setNotice] = useState(() => {
-    const outcome = searchParams.get("bankConnection");
-    return outcome
-      ? t(bankConnectionOutcomeMessage(outcome, searchParams.get("reason") ?? ""))
-      : "";
-  });
+  const [notice, setNotice] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<FinancialAccount | null>(null);
   const [balanceTarget, setBalanceTarget] = useState<FinancialAccount | null>(null);
   const [correctedBalance, setCorrectedBalance] = useState("");
@@ -126,7 +107,6 @@ export function AccountsPage() {
   const load = useCallback(async (showLoading = true) => {
     if (showLoading) setIsLoading(true);
     setError("");
-    setConnectionError("");
     try {
       const [nextAccounts, nextTransfers] = await Promise.all([
         accountApi.list(),
@@ -134,14 +114,6 @@ export function AccountsPage() {
       ]);
       setAccounts(nextAccounts);
       setTransfers(nextTransfers);
-      // As ligações só são necessárias para as contas ligadas; uma falha não
-      // impede a utilização das contas manuais.
-      try {
-        setConnections(await openBankingApi.connections());
-      } catch (requestError) {
-        setConnections([]);
-        setConnectionError(errorMessage(requestError));
-      }
     } catch (requestError) {
       setError(errorMessage(requestError));
     } finally {
@@ -158,71 +130,6 @@ export function AccountsPage() {
       active = false;
     };
   }, [load]);
-
-  useEffect(() => {
-    if (!pendingSyncJobs.length) return;
-    let cancelled = false;
-    const timer = window.setTimeout(async () => {
-      const remaining: typeof pendingSyncJobs = [];
-      let completed = false;
-      for (const pending of pendingSyncJobs) {
-        try {
-          const job = await openBankingApi.syncJob(pending.jobId);
-          if (isBankSyncPending(job)) remaining.push({ ...pending, pollFailures: 0 });
-          else if (isBankSyncSuccessful(job)) {
-            completed = true;
-            notifyBankSyncCompleted(pending.connectionId);
-            if (!cancelled) setNotice(bankSyncResultMessage(job, t));
-          } else if (!cancelled) setError(bankSyncResultMessage(job, t));
-        } catch (requestError) {
-          const pollFailures = (pending.pollFailures ?? 0) + 1;
-          if (pollFailures < 4) remaining.push({ ...pending, pollFailures });
-          else if (!cancelled) setError(errorMessage(requestError));
-        }
-      }
-      if (cancelled) return;
-      setPendingSyncJobs(remaining);
-      if (!remaining.length) setSyncingConnectionId(null);
-      if (completed) {
-        void load(false);
-      }
-    }, SYNC_POLL_INTERVAL_MS);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
-    };
-  }, [pendingSyncJobs, load, t]);
-
-  // Resultado do callback do banco: `?bankConnection=success|error&reason=...`.
-  useEffect(() => {
-    if (!searchParams.get("bankConnection")) return;
-    const nextParams = new URLSearchParams(searchParams);
-    nextParams.delete("bankConnection");
-    nextParams.delete("reason");
-    setSearchParams(nextParams, { replace: true });
-  }, [searchParams, setSearchParams]);
-
-  async function syncConnection(connectionId: string) {
-    setSyncingConnectionId(connectionId);
-    setError("");
-    try {
-      const job = await openBankingApi.sync(connectionId);
-      setPendingSyncJobs((jobs) => [
-        ...jobs.filter((pending) => pending.jobId !== job.jobId),
-        { connectionId, jobId: job.jobId, pollFailures: 0 },
-      ]);
-      setNotice(
-        t(
-          job.reused
-            ? "A sincronização já estava em curso. A acompanhar o progresso…"
-            : "A sincronizar saldos e movimentos…",
-        ),
-      );
-    } catch (requestError) {
-      setError(errorMessage(requestError));
-      setSyncingConnectionId(null);
-    }
-  }
 
   const currency = user?.currency || "EUR";
   const visibleAccounts = useMemo(() => accounts.filter(isVisibleAccount), [accounts]);
@@ -405,43 +312,17 @@ export function AccountsPage() {
         eyebrow={t("Dinheiro disponível")}
         title={t("Contas e cartões")}
         description={t(
-          "Saldos, cartões e transferências. Os gastos das contas ligadas ao banco entram automaticamente nas despesas.",
+          "Saldos, cartões e transferências. A gestão de ligações e sincronização está na aba Bancos.",
         )}
         action={
-          <>
-            <button
-              type="button"
-              className="button button--accent"
-              onClick={() => navigate("/accounts/connect")}
-            >
-              <Plus aria-hidden="true" /> {t("Ligar banco")}
-            </button>
-            <Link className="button button--secondary" to="/accounts/connections">
-              {t("Bancos ligados")}
-            </Link>
-          </>
+          <Link className="button button--secondary" to="/accounts/connections">
+            {t("Gerir bancos")}
+          </Link>
         }
       />
       {error && (
         <div className="form-alert form-alert--page" role="alert">
           {error}
-        </div>
-      )}
-      {connectionError && (
-        <div className="form-alert form-alert--page form-alert--action" role="alert">
-          <span>
-            {t(
-              "As contas manuais estão disponíveis, mas não foi possível carregar o estado dos bancos: {message}",
-              { message: connectionError },
-            )}
-          </span>
-          <button
-            type="button"
-            className="button button--secondary button--small"
-            onClick={() => void load(false)}
-          >
-            {t("Tentar novamente")}
-          </button>
         </div>
       )}
       <p className={`accounts-insight${hasLinkedBank ? "" : " accounts-insight--invite"}`}>
@@ -739,12 +620,6 @@ export function AccountsPage() {
                   ? Math.max(0, -balance) / account.creditLimit
                   : null;
               const isLinked = account.source === "bank";
-              const connection = connections.find(
-                (item) =>
-                  item.status !== "disconnected" &&
-                  item.accounts.some((link) => link.accountId === account.id),
-              );
-              const canSync = connection?.status === "active" || connection?.status === "error";
               return (
                 <article
                   className={`account-card-large account-card-large--${account.type}${isLinked ? " account-card-large--linked" : ""}`}
@@ -789,23 +664,7 @@ export function AccountsPage() {
                       : formatCurrency(balance, account.currency ?? currency, locale)}
                   </strong>
                   <div className="account-card-large__actions">
-                    {isLinked && connection && canSync && (
-                      <button
-                        type="button"
-                        className="icon-button"
-                        aria-label={t("Sincronizar {bank}", { bank: connection.institutionName })}
-                        disabled={syncingConnectionId === connection.id}
-                        onClick={() => void syncConnection(connection.id)}
-                      >
-                        <RefreshCw aria-hidden="true" />
-                        <span>{t("Sincronizar")}</span>
-                      </button>
-                    )}
-                    {isLinked && connection && !canSync && connection.status !== "pending" && (
-                      <Link className="text-button" to="/accounts/connections">
-                        {t("Gerir ligação")}
-                      </Link>
-                    )}
+                    {isLinked && <Link className="text-button" to="/accounts/connections">{t("Gerir ligação")}</Link>}
                     {!isLinked && (
                       <button
                         type="button"

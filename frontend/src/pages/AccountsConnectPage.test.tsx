@@ -66,9 +66,13 @@ describe("AccountsConnectPage", () => {
     );
   }
 
+  async function choosePortugal() {
+    await userEvent.setup().selectOptions(screen.getByLabelText("País"), "PT");
+  }
+
   it("shows the loading state and then the available banks", async () => {
     renderPage();
-    expect(screen.getByText(/A carregar os bancos disponíveis/)).toBeInTheDocument();
+    await choosePortugal();
     expect(await screen.findByText("Banco Demonstração")).toBeInTheDocument();
     expect(screen.getByText("Outro Banco")).toBeInTheDocument();
   });
@@ -76,6 +80,7 @@ describe("AccountsConnectPage", () => {
   it("shows an error state with a retry when the list fails", async () => {
     api.institutions.mockRejectedValueOnce(new Error("indisponível"));
     renderPage();
+    await choosePortugal();
     expect(await screen.findByText("indisponível")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Tentar novamente" })).toBeInTheDocument();
   });
@@ -83,6 +88,7 @@ describe("AccountsConnectPage", () => {
   it("filters banks by name", async () => {
     const user = userEvent.setup();
     renderPage();
+    await user.selectOptions(screen.getByLabelText("País"), "PT");
     await screen.findByText("Banco Demonstração");
 
     await user.type(screen.getByLabelText("Pesquisar banco"), "Outro");
@@ -94,6 +100,7 @@ describe("AccountsConnectPage", () => {
   it("requires a bank before continuing and then redirects to the bank", async () => {
     const user = userEvent.setup();
     renderPage();
+    await user.selectOptions(screen.getByLabelText("País"), "PT");
     await screen.findByText("Banco Demonstração");
 
     const continueButton = screen.getByRole("button", { name: "Continuar no banco" });
@@ -115,6 +122,7 @@ describe("AccountsConnectPage", () => {
 
   it("explains that the password is never shared", async () => {
     renderPage();
+    await choosePortugal();
     await screen.findByText("Banco Demonstração");
     expect(screen.getByText(/recebe nem guarda a sua palavra-passe/i)).toBeInTheDocument();
   });
@@ -122,6 +130,7 @@ describe("AccountsConnectPage", () => {
   it("disables the flow when the browser is offline", async () => {
     setOnline(false);
     renderPage();
+    await choosePortugal();
     await screen.findByText("Banco Demonstração");
 
     expect(screen.getByRole("button", { name: "Continuar no banco" })).toBeDisabled();

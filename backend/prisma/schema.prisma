@@ -38,6 +38,25 @@ model User {
   bankAuthorizationAttempts BankAuthorizationAttempt[]
   bankTransactions          BankTransaction[]
   bankSyncJobs              BankSyncJob[]
+  apiIdempotencyKeys        ApiIdempotencyKey[]
+}
+
+// Chaves de criação da API pública. A resposta é guardada para que um retry
+// do parceiro não duplique um movimento financeiro manual.
+model ApiIdempotencyKey {
+  id         String   @id @default(uuid())
+  userId     String
+  scope      String
+  key        String
+  statusCode Int
+  response   Json
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, scope, key])
+  @@index([expiresAt])
 }
 
 enum FinancialGoal {

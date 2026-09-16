@@ -254,16 +254,30 @@ export interface ExpenseImportResult {
 
 export interface ApiEnvelope<T> {
   data: T;
+  meta?: Record<string, unknown>;
 }
 
 export interface ApiErrorPayload {
   error?: {
-    code?: string;
+    code?: ApiErrorCode | string;
     message?: string;
     details?: unknown;
   };
   message?: string;
 }
+
+/** Stable errors are localised client-side while unknown codes preserve server text. */
+export type ApiErrorCode =
+  | "TIMEOUT"
+  | "NETWORK_ERROR"
+  | "SESSION_EXPIRED"
+  | "UNAUTHORIZED"
+  | "NOT_FOUND"
+  | "VALIDATION_ERROR"
+  | "CONFLICT"
+  | "RESOURCE_IN_USE"
+  | "INVALID_RECEIPT"
+  | "INTERNAL_ERROR";
 
 export interface Budget {
   id: string;

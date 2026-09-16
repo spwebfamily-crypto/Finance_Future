@@ -1,0 +1,129 @@
+/* ExpenseSnap foundations. Imported last while legacy page rules are migrated. */
+:root {
+  color-scheme: light;
+  --background: #f2eee2;
+  --foreground: #171914;
+  --card: #fffdf8;
+  --card-foreground: #171914;
+  --popover: #fffdf8;
+  --popover-foreground: #171914;
+  --primary: #1f604a;
+  --primary-foreground: #fffdf8;
+  --secondary: #e6e0d2;
+  --secondary-foreground: #262820;
+  --muted-bg: #ebe5d8;
+  --muted-foreground: #64645b;
+  --accent-subtle: #edf4d5;
+  --accent-foreground: #1b2215;
+  --accent: #caed62;
+  --accent-hover: #b7dd48;
+  --destructive: #a83c2b;
+  --border: #cfc7b8;
+  --input: #dcd5c7;
+  --ring: #8eb52f;
+  --sidebar: #ebe5d8;
+  --sidebar-foreground: #171914;
+  --sidebar-primary: #1f604a;
+  --sidebar-primary-foreground: #fffdf8;
+  --sidebar-accent: #e0ecc2;
+  --sidebar-accent-foreground: #171914;
+  --sidebar-border: #cfc7b8;
+  --sidebar-ring: #8eb52f;
+  --canvas: var(--background);
+  --surface: var(--card);
+  --surface-soft: var(--muted-bg);
+  --ink: var(--foreground);
+  --ink-strong: var(--foreground);
+  --ink-soft: #35372f;
+  --muted: var(--muted-foreground);
+  --line: var(--border);
+  --line-strong: #999487;
+  --brand: var(--primary);
+  --brand-dark: #164a3c;
+  --brand-soft: #deeee5;
+  --danger: var(--destructive);
+  --danger-soft: #f8ddd6;
+  --success: #267152;
+  --success-soft: #e0f0e6;
+  --warning: #8a6418;
+  --warning-soft: #f8efd5;
+  --chart-1: #1f604a;
+  --chart-2: #527d3e;
+  --chart-3: #8eb52f;
+  --chart-4: #caed62;
+  --chart-5: #7a6d45;
+  --chart-grid: var(--border);
+  --chart-tick: var(--muted);
+  --chart-tick-muted: #858176;
+  --chart-cursor: var(--muted-bg);
+  --font-ui: "Figtree", system-ui, sans-serif;
+  --font-display: "Zalando Sans Expanded", "Figtree", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --radius-sm: .35rem;
+  --radius-md: .7rem;
+  --radius-lg: 1.1rem;
+  --radius-xl: 1.5rem;
+  --shadow-sm: 0 .125rem .375rem rgb(23 25 20 / 7%);
+  --shadow-md: 0 1rem 2.5rem rgb(23 25 20 / 9%);
+  --shadow-lg: 0 2rem 5rem rgb(23 25 20 / 14%);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #12130f;
+  --foreground: #f1eee5;
+  --card: #1c1e18;
+  --card-foreground: #f1eee5;
+  --popover: #23251e;
+  --popover-foreground: #f1eee5;
+  --primary: #6fb58e;
+  --primary-foreground: #10120e;
+  --secondary: #292b23;
+  --secondary-foreground: #e7e4db;
+  --muted-bg: #24261f;
+  --muted-foreground: #b7b4aa;
+  --accent-subtle: #27331c;
+  --accent-foreground: #f2f7df;
+  --accent: #caed62;
+  --accent-hover: #d8f87f;
+  --destructive: #fa927d;
+  --border: #3a3c32;
+  --input: #3a3c32;
+  --ring: #caed62;
+  --sidebar: #171914;
+  --sidebar-foreground: #f1eee5;
+  --sidebar-primary: #6fb58e;
+  --sidebar-primary-foreground: #10120e;
+  --sidebar-accent: #242c1c;
+  --sidebar-accent-foreground: #f1eee5;
+  --sidebar-border: #35372d;
+  --sidebar-ring: #caed62;
+  --ink-soft: #d3d0c6;
+  --line-strong: #585a4d;
+  --brand-dark: #a5d8b9;
+  --brand-soft: #193c2b;
+  --danger-soft: #48231e;
+  --success: #75c99b;
+  --success-soft: #183c29;
+  --warning: #e6c66d;
+  --warning-soft: #433719;
+  --chart-1: #72bd91;
+  --chart-2: #9dbb55;
+  --chart-3: #caed62;
+  --chart-4: #e7f9a9;
+  --chart-5: #d3c48e;
+  --chart-grid: var(--border);
+  --chart-tick: var(--muted);
+  --chart-tick-muted: #888b7e;
+  --chart-cursor: var(--muted-bg);
+  --shadow-sm: 0 .125rem .375rem rgb(0 0 0 / 25%);
+  --shadow-md: 0 1rem 2.5rem rgb(0 0 0 / 32%);
+  --shadow-lg: 0 2rem 5rem rgb(0 0 0 / 44%);
+}
+
+:where(button, input, select, textarea):focus-visible { outline: .1875rem solid var(--ring); outline-offset: .1875rem; }
+:where(.money, .amount, .numeric, [data-numeric]) { font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; } }
+.theme-toggle { position: relative; }
+.theme-toggle select { min-width: 0; color: inherit; background: transparent; border: 0; font: inherit; }
+.theme-toggle--compact select { position: absolute; inset: 0; opacity: 0; cursor: pointer; }

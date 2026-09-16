@@ -43,7 +43,7 @@ describe("open banking configuration", () => {
     });
 
     expect(config.enabled).toBe(false);
-    expect(config.provider).toBe("fake");
+    expect(config.provider).toBe("enable_banking");
     expect(config.defaultCountry).toBe("PT");
     expect(config.syncIntervalMinutes).toBe(360);
     expect(config.automaticSyncEnabled).toBe(false);
@@ -108,6 +108,7 @@ describe("open banking configuration", () => {
     const production = {
       ...enabledFake,
       NODE_ENV: "production",
+      OPEN_BANKING_PROVIDER: "enable_banking",
       FRONTEND_ORIGIN: "https://app.example.com",
       OPEN_BANKING_CALLBACK_URL: "https://api.example.com/api/open-banking/callback",
       JWT_ACCESS_SECRET: "prod-access-secret-with-more-than-32-chars",
@@ -129,6 +130,19 @@ describe("open banking configuration", () => {
         OPEN_BANKING_CALLBACK_URL: "http://api.example.com/api/open-banking/callback",
       }),
     ).rejects.toThrow(/HTTPS em produção/);
+  });
+
+  it("never allows the in-memory fake provider in production", async () => {
+    await expect(
+      loadConfig({
+        ...enabledFake,
+        NODE_ENV: "production",
+        FRONTEND_ORIGIN: "https://app.example.com",
+        OPEN_BANKING_CALLBACK_URL: "https://api.example.com/api/open-banking/callback",
+        JWT_ACCESS_SECRET: "prod-access-secret-with-more-than-32-chars",
+        JWT_REFRESH_SECRET: "prod-refresh-secret-with-more-than-32-chars",
+      }),
+    ).rejects.toThrow(/fake não é permitido em produção/);
   });
 
   it("requires the provider credentials when enable_banking is selected", async () => {
