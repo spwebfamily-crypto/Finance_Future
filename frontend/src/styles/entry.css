@@ -1,10 +1,14 @@
 /*
- * ExpenseSnap — Main style entry point
- * Layers (low → high specificity): legacy → tokens → primitives → shell → pages → utilities
- * Legacy is kept only for temporary backward compatibility during migration.
+ * ExpenseSnap — Main style entry point.
+ *
+ * The legacy file is deliberately isolated in the lowest layer. It may keep
+ * selectors that have not yet earned a semantic primitive, but it can never
+ * override a token, shell, page, or utility rule. This is the single seam for
+ * retiring styles.css route by route without changing financial behaviour.
  */
+@layer legacy, tokens, primitives, shell, pages, utilities;
 
-@import "./legacy.css" layer(legacy);
+@import "../styles.css" layer(legacy);
 @import "./tokens.css" layer(tokens);
 @import "./primitives.css" layer(primitives);
 @import "./shell.css" layer(shell);

@@ -83,14 +83,44 @@ export function CommandPaletteProvider({ children }: { children?: ReactNode }) {
 
   const commands = useMemo<CommandItem[]>(() => {
     const base: CommandItem[] = [
-      { id: "dashboard", label: translate("command.dashboard"), to: routes.dashboard, Icon: LayoutDashboard },
-      { id: "expenses", label: translate("command.expenses"), to: routes.expenses, Icon: ReceiptText },
+      {
+        id: "dashboard",
+        label: translate("command.dashboard"),
+        to: routes.dashboard,
+        Icon: LayoutDashboard,
+      },
+      {
+        id: "expenses",
+        label: translate("command.expenses"),
+        to: routes.expenses,
+        Icon: ReceiptText,
+      },
       { id: "accounts", label: translate("command.accounts"), to: routes.accounts, Icon: Landmark },
-      { id: "planning", label: translate("command.planning"), to: routes.planning, Icon: CalendarClock },
-      { id: "investments", label: translate("command.investments"), to: routes.investments, Icon: TrendingUp },
-      { id: "banks", label: translate("command.banks"), to: routes.bankConnections, Icon: Building2 },
+      {
+        id: "planning",
+        label: translate("command.planning"),
+        to: routes.planning,
+        Icon: CalendarClock,
+      },
+      {
+        id: "investments",
+        label: translate("command.investments"),
+        to: routes.investments,
+        Icon: TrendingUp,
+      },
+      {
+        id: "banks",
+        label: translate("command.banks"),
+        to: routes.bankConnections,
+        Icon: Building2,
+      },
       { id: "privacy", label: translate("command.privacy"), to: routes.privacy, Icon: Shield },
-      { id: "categories", label: translate("command.categories"), to: routes.categories, Icon: FolderOpen },
+      {
+        id: "categories",
+        label: translate("command.categories"),
+        to: routes.categories,
+        Icon: FolderOpen,
+      },
       {
         id: "new-expense",
         label: translate("command.newExpense"),
@@ -100,13 +130,17 @@ export function CommandPaletteProvider({ children }: { children?: ReactNode }) {
       },
       {
         id: "toggle-theme",
-        label: theme === "dark" ? translate("command.enableLight") : translate("command.enableDark"),
+        label:
+          theme === "dark" ? translate("command.enableLight") : translate("command.enableDark"),
         Icon: theme === "dark" ? Sun : Moon,
         action: toggle,
       },
       {
         id: "theme-system",
-        label: preference === "system" ? translate("command.systemCurrent") : translate("command.useSystem"),
+        label:
+          preference === "system"
+            ? translate("command.systemCurrent")
+            : translate("command.useSystem"),
         Icon: Monitor,
         action: () => setPreference("system"),
       },

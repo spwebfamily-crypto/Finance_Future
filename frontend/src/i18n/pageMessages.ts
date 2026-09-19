@@ -2,6 +2,19 @@ import type { AppLocale } from "./I18nContext";
 
 export const pageMessages = {
   "pt-PT": {
+    Avisos: "Avisos",
+    "{count} por ler": "{count} por ler",
+    "Tudo visto": "Tudo visto",
+    "Marcar como lidos": "Marcar como lidos",
+    "Ainda não há avisos.": "Ainda não há avisos.",
+    "Ativar avisos no dispositivo": "Ativar avisos no dispositivo",
+    "Mostrar avisos na aplicação": "Mostrar avisos na aplicação",
+    "Alguns dados não puderam ser atualizados. Tente novamente.":
+      "Alguns dados não puderam ser atualizados. Tente novamente.",
+    "O seu espaço financeiro": "O seu espaço financeiro",
+    "Ferramentas e ligações": "Ferramentas e ligações",
+    Ferramentas: "Ferramentas",
+    Preferências: "Preferências",
     "A sincronização já estava em curso. A acompanhar o progresso…":
       "A sincronização já estava em curso. A acompanhar o progresso…",
     "Sincronização parcial. As contas disponíveis foram atualizadas; tente novamente para concluir.":
@@ -74,6 +87,19 @@ export const pageMessages = {
     "Eliminar despesa": "Eliminar despesa",
   },
   "en-GB": {
+    Avisos: "Alerts",
+    "{count} por ler": "{count} unread",
+    "Tudo visto": "All caught up",
+    "Marcar como lidos": "Mark all read",
+    "Ainda não há avisos.": "There are no alerts yet.",
+    "Ativar avisos no dispositivo": "Enable device alerts",
+    "Mostrar avisos na aplicação": "Show alerts in the app",
+    "Alguns dados não puderam ser atualizados. Tente novamente.":
+      "Some data could not be refreshed. Try again.",
+    "O seu espaço financeiro": "Your financial space",
+    "Ferramentas e ligações": "Tools and connections",
+    Ferramentas: "Tools",
+    Preferências: "Preferences",
     "A sincronização já estava em curso. A acompanhar o progresso…":
       "Sync was already in progress. Following its progress…",
     "Sincronização parcial. As contas disponíveis foram atualizadas; tente novamente para concluir.":
@@ -146,6 +172,19 @@ export const pageMessages = {
     "Eliminar despesa": "Delete expense",
   },
   "es-ES": {
+    Avisos: "Avisos",
+    "{count} por ler": "{count} sin leer",
+    "Tudo visto": "Todo visto",
+    "Marcar como lidos": "Marcar como leídos",
+    "Ainda não há avisos.": "Aún no hay avisos.",
+    "Ativar avisos no dispositivo": "Activar avisos en el dispositivo",
+    "Mostrar avisos na aplicação": "Mostrar avisos en la aplicación",
+    "Alguns dados não puderam ser atualizados. Tente novamente.":
+      "Algunos datos no se pudieron actualizar. Inténtalo de nuevo.",
+    "O seu espaço financeiro": "Tu espacio financiero",
+    "Ferramentas e ligações": "Herramientas y conexiones",
+    Ferramentas: "Herramientas",
+    Preferências: "Preferencias",
     "A sincronização já estava em curso. A acompanhar o progresso…":
       "La sincronización ya estaba en curso. Siguiendo el progreso…",
     "Sincronização parcial. As contas disponíveis foram atualizadas; tente novamente para concluir.":

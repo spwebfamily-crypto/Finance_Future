@@ -1,4 +1,3 @@
-import { Prisma } from "@prisma/client";
 import { Router, type Response } from "express";
 import { requireAuth, sendError } from "../middleware.js";
 import { prisma } from "../prisma.js";

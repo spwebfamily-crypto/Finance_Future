@@ -29,7 +29,7 @@ import {
   YAxis,
 } from "recharts";
 import { Link } from "react-router-dom";
-import { accountApi, analyticsApi, budgetApi, categoryApi } from "../api/resources";
+import { accountApi, analyticsApi, budgetApi, categoryApi, dashboardApi } from "../api/resources";
 import { errorMessage } from "../api/client";
 import { EmptyState, ErrorState, Spinner } from "../components/States";
 import { PageHeader } from "../components/PageHeader";
@@ -48,6 +48,7 @@ import type {
 } from "../types";
 import {
   formatCurrency as formatCurrencyValue,
+  formatSignedCurrency,
   parseSignedMoney,
   todayInputValue,
 } from "../utils/format";
@@ -126,6 +127,33 @@ export function DashboardPage() {
     setLoading(true);
     setError("");
     try {
+      try {
+        const overview = await dashboardApi.overview(month);
+        setSummary(overview.summary);
+        setToday(overview.today);
+        setLevels(overview.levels);
+        setTrend(overview.trend.series);
+        setBudgets(overview.budgets);
+        setCategories(overview.categories);
+        setAccounts(overview.accounts);
+        setHasLinkedBank(
+          overview.accounts.some(
+            (account) =>
+              account.source === "bank" &&
+              account.connectionStatus &&
+              account.connectionStatus !== "disconnected",
+          ),
+        );
+        setError(
+          overview.partialErrors.length
+            ? t("Alguns dados não puderam ser atualizados. Tente novamente.")
+            : "",
+        );
+        return;
+      } catch {
+        // New endpoint unavailable or interrupted: legacy requests are kept as
+        // a compatibility fallback while rolling out the aggregate module.
+      }
       const results = await Promise.allSettled([
         analyticsApi.summary(month),
         analyticsApi.today(),
@@ -167,7 +195,7 @@ export function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, [month]);
+  }, [month, t]);
 
   useEffect(() => {
     let active = true;
@@ -464,20 +492,19 @@ export function DashboardPage() {
                   <article>
                     <span>{t("Entradas")}</span>
                     <strong className="is-positive">
-                      +{formatCurrency(today.incomeTotal, today.currency)}
+                      {formatSignedCurrency(today.incomeTotal, today.currency, locale)}
                     </strong>
                   </article>
                   <article>
                     <span>{t("Saídas")}</span>
                     <strong className="is-negative">
-                      −{formatCurrency(today.expenseTotal, today.currency)}
+                      {formatSignedCurrency(-today.expenseTotal, today.currency, locale)}
                     </strong>
                   </article>
                   <article className="today-metrics__net">
                     <span>{t("Resultado do dia")}</span>
                     <strong className={today.netTotal >= 0 ? "is-positive" : "is-negative"}>
-                      {today.netTotal > 0 ? "+" : ""}
-                      {formatCurrency(today.netTotal, today.currency)}
+                      {formatSignedCurrency(today.netTotal, today.currency, locale)}
                     </strong>
                   </article>
                 </div>

@@ -18,11 +18,7 @@ import { ErrorState, LoadingState, Spinner } from "../components/States";
 import { PageHeader } from "../components/PageHeader";
 import { NoticeToast } from "../components/NoticeToast";
 import { useAuth } from "../auth/AuthContext";
-import type {
-  AccountTransfer,
-  AccountType,
-  FinancialAccount,
-} from "../types";
+import type { AccountTransfer, AccountType, FinancialAccount } from "../types";
 import { formatCurrency, formatDate, parseSignedMoney, todayInputValue } from "../utils/format";
 import { useI18n } from "../i18n/I18nContext";
 import { accountBalanceValue } from "../utils/accountBalance";
@@ -664,7 +660,11 @@ export function AccountsPage() {
                       : formatCurrency(balance, account.currency ?? currency, locale)}
                   </strong>
                   <div className="account-card-large__actions">
-                    {isLinked && <Link className="text-button" to="/accounts/connections">{t("Gerir ligação")}</Link>}
+                    {isLinked && (
+                      <Link className="text-button" to="/accounts/connections">
+                        {t("Gerir ligação")}
+                      </Link>
+                    )}
                     {!isLinked && (
                       <button
                         type="button"

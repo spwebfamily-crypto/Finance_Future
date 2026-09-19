@@ -6,6 +6,8 @@ import { getOpenBankingConfig, isOpenBankingEnabled } from "../open-banking/conf
 import { constantTimeEquals } from "../open-banking/crypto.js";
 import { cleanupOpenBankingData, processDueConnections } from "../open-banking/syncService.js";
 import { bankErrorMessages } from "../open-banking/errors.js";
+import { env } from "../config.js";
+import { generateFinancialNotifications } from "../services/financialNotificationService.js";
 
 const MAX_BATCH = 50;
 const DEFAULT_BATCH = 10;
@@ -33,6 +35,16 @@ function authorized(request: { headers: Record<string, string | string[] | undef
 }
 
 const router = Router();
+
+router.post("/notifications/generate", internalLimiter, async (request, response) => {
+  const header = request.headers.authorization;
+  const token = typeof header === "string" && header.startsWith("Bearer ") ? header.slice(7) : "";
+  if (!token || !env.CRON_SECRET || !constantTimeEquals(token, env.CRON_SECRET)) {
+    return sendError(response, 401, "UNAUTHORIZED", "Segredo de agendamento inválido.");
+  }
+  const result = await generateFinancialNotifications();
+  return response.json({ data: result });
+});
 
 /**
  * Processa um lote de sincronizações agendadas. Não usa autenticação de

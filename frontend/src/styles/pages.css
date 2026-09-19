@@ -1,0 +1,297 @@
+/*
+ * Authenticated page contracts.
+ * Each page owns a query container, so the same interface adapts to the
+ * content column rather than guessing from the viewport. The 1024px viewport
+ * threshold remains exclusively the shell/navigation transition.
+ */
+.page--dashboard,
+.page--planning,
+.invest-page,
+.page--expenses,
+.page--accounts,
+.page--bank-connections {
+  container-type: inline-size;
+  container-name: financial-page;
+}
+
+:where(
+  .dashboard-panel,
+  .dashboard-section,
+  .today-overview,
+  .month-pulse,
+  .filters-panel,
+  .expense-section,
+  .category-create,
+  .category-library,
+  .accounts-panel,
+  .planning-panel,
+  .planning-alerts,
+  .planning-calendar,
+  .invest-page > section,
+  .bank-connection-card,
+  .account-detail-card,
+  .form-section
+) {
+  min-width: 0;
+  background: var(--surface);
+  color: var(--surface-foreground);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-sm);
+}
+
+:where(.dashboard-panel, .dashboard-section, .planning-panel, .invest-page > section) {
+  padding: clamp(1rem, 2.5cqi, 1.5rem);
+}
+
+.dashboard-shortcuts {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-3);
+}
+
+.dashboard-shortcut {
+  min-height: 5.25rem;
+  align-items: flex-start;
+  justify-content: center;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-total {
+  color: var(--brand-foreground);
+  background: var(--brand);
+  border: 1px solid var(--brand);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-md);
+}
+
+.dashboard-total :is(h2, h3, p, span, small, strong) {
+  color: inherit;
+}
+
+.dashboard-grid,
+.planning-grid,
+.debt-grid,
+.invest-context__figures,
+.invest-context__profile,
+.invest-example-list,
+.invest-platform-list,
+.invest-source-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+}
+
+.today-metrics,
+.planning-overview {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3);
+}
+
+.today-metrics > article,
+.planning-overview > article {
+  min-width: 0;
+  padding: var(--space-4);
+  color: var(--surface-foreground);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+}
+
+.planning-overview {
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.planning-overview__available {
+  color: var(--success-soft-foreground);
+  background: var(--success-soft);
+  border-color: var(--success-border);
+}
+
+.planning-overview__available--negative {
+  color: var(--danger-soft-foreground);
+  background: var(--danger-soft);
+  border-color: var(--danger-border);
+}
+
+.planning-overview__available :is(span, strong, small) {
+  color: inherit;
+}
+
+.planning-disclosure {
+  min-height: 0;
+  overflow: clip;
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+}
+
+.planning-disclosure > summary {
+  min-height: var(--control-height);
+  padding: var(--space-3) var(--space-4);
+  cursor: pointer;
+}
+
+.planning-form__split,
+.planning-form--debt,
+.planning-form--recurring,
+.planning-form--recurring-income {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3);
+}
+
+.planning-row,
+.goal-card,
+.recurring-card,
+.debt-card,
+.invest-example,
+.invest-platform,
+.invest-source {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+}
+
+.planning-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: start;
+}
+
+.planning-row > :last-child,
+.planning-row__actions {
+  grid-column: 1 / -1;
+  justify-self: stretch;
+}
+
+.planning-row :is(strong, b, .money, .amount) {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.goal-card__progress,
+.goal-card progress {
+  width: 100%;
+  accent-color: var(--brand);
+}
+
+.invest-page :is(.invest-disclaimer, .invest-context__note) {
+  color: var(--warning-soft-foreground);
+  background: var(--warning-soft);
+  border-color: var(--warning-border);
+}
+
+/* Legacy investment rules carried light-theme foregrounds into dark cards.
+   Keep the educational hierarchy, but resolve every text pair through tokens. */
+.invest-page {
+  color: var(--surface-foreground);
+}
+
+.invest-page :is(p, small, dt, dd, .invest-example__identifier, .invest-platform__action) {
+  color: var(--ink-soft);
+}
+
+.invest-page :is(h2, h3, strong, .invest-path__number, .invest-example__kind) {
+  color: var(--ink-strong);
+}
+
+.invest-page .invest-platform__wordmark {
+  color: var(--brand);
+}
+
+.invest-context__figures > div,
+.invest-context__profile > span {
+  min-width: 0;
+  padding: var(--space-4);
+  color: var(--surface-foreground);
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+}
+
+.invest-page :is(.invest-example, .invest-platform, .invest-source) {
+  display: grid;
+  min-height: 0;
+  padding: var(--space-4);
+}
+
+.dashboard-chart {
+  min-height: clamp(14rem, 42cqi, 22rem);
+}
+
+@container financial-page (min-width: 42rem) {
+  .dashboard-shortcuts,
+  .today-metrics,
+  .planning-overview,
+  .invest-context__figures,
+  .invest-context__profile {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .planning-form__split,
+  .planning-form--recurring,
+  .planning-form--recurring-income,
+  .planning-form--debt,
+  .planning-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .planning-row > :last-child,
+  .planning-row__actions {
+    grid-column: auto;
+    justify-self: end;
+  }
+
+  .dashboard-grid,
+  .planning-grid,
+  .debt-grid,
+  .invest-example-list,
+  .invest-platform-list,
+  .invest-source-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container financial-page (min-width: 72rem) {
+  .dashboard-shortcuts,
+  .planning-overview {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .dashboard-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .planning-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .invest-example-list,
+  .invest-platform-list,
+  .invest-source-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 47.9375rem) {
+  .dashboard-total,
+  .dashboard-section,
+  .dashboard-panel,
+  .planning-panel,
+  .invest-page > section {
+    border-radius: var(--radius-md);
+  }
+
+  .planning-row :is(.button, .icon-button, .text-button) {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+  }
+}

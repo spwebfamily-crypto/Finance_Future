@@ -114,7 +114,9 @@ export function AccountsConnectPage() {
       <PageHeader
         eyebrow={t("Ligar banco")}
         title={t("Ligar um banco")}
-        description={t("Autorize a leitura no próprio banco. Os movimentos entram primeiro em revisão, antes de afectar as despesas.")}
+        description={t(
+          "Autorize a leitura no próprio banco. Os movimentos entram primeiro em revisão, antes de afectar as despesas.",
+        )}
       />
 
       <ol className="connect-steps" aria-label={t("Como funciona")}>
@@ -166,10 +168,19 @@ export function AccountsConnectPage() {
             </div>
             <label className="field field--compact">
               <span>{t("País")}</span>
-              <select value={country} onChange={(event) => { setCountry(event.target.value); setSelectedId(null); setQuery(""); }}>
+              <select
+                value={country}
+                onChange={(event) => {
+                  setCountry(event.target.value);
+                  setSelectedId(null);
+                  setQuery("");
+                }}
+              >
                 <option value="">{t("Escolher")}</option>
                 {supportedCountries.map((code) => (
-                  <option key={code} value={code}>{countryNames.get(code)}</option>
+                  <option key={code} value={code}>
+                    {countryNames.get(code)}
+                  </option>
                 ))}
               </select>
             </label>
@@ -194,7 +205,10 @@ export function AccountsConnectPage() {
           </div>
 
           {!country ? (
-            <p className="accounts-empty"><Landmark aria-hidden="true" /> {t("Escolha primeiro o país para ver os bancos disponíveis.")}</p>
+            <p className="accounts-empty">
+              <Landmark aria-hidden="true" />{" "}
+              {t("Escolha primeiro o país para ver os bancos disponíveis.")}
+            </p>
           ) : institutions.length ? (
             <InstitutionPicker
               institutions={institutions}

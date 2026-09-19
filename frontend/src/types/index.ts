@@ -389,6 +389,72 @@ export interface AnalyticsTrend {
   series: TrendPoint[];
 }
 
+/** Aggregate dashboard response. Each section is independently recoverable. */
+export interface PartialError {
+  section: string;
+  code: string;
+}
+
+export interface DashboardOverviewPayload {
+  summary: AnalyticsSummary;
+  today: TodaySummary;
+  levels: SpendingLevelItem[];
+  trend: AnalyticsTrend;
+  budgets: Budget[];
+  categories: Category[];
+  accounts: FinancialAccount[];
+  partialErrors: PartialError[];
+}
+
+export interface BootstrapPayload {
+  user: Pick<User, "id" | "name" | "email" | "currency" | "timeZone"> & {
+    emailVerifiedAt?: string | null;
+  };
+  categories: Category[];
+  accounts: Array<Pick<FinancialAccount, "id" | "name" | "type" | "source" | "currency">>;
+  onboardingComplete: boolean;
+}
+
+export type FinancialNotificationType =
+  "recurring_expense_due" | "recurring_income_due" | "debt_payment_due" | "goal_reached";
+
+export interface FinancialNotification {
+  id: string;
+  type: FinancialNotificationType;
+  sourceId: string;
+  scheduledFor: string;
+  title: string;
+  body: string;
+  readAt: string | null;
+  createdAt: string;
+}
+
+export interface NotificationPreference {
+  inAppEnabled: boolean;
+  pushEnabled: boolean;
+}
+
+export interface NotificationListPayload {
+  items: FinancialNotification[];
+  unreadCount: number;
+}
+
+export interface PushConfig {
+  enabled: boolean;
+  publicKey: string | null;
+}
+
+export interface PlanningOverviewPayload {
+  from: string;
+  to: string;
+  categories: Category[];
+  incomes: Income[];
+  goals: SavingsGoal[];
+  recurringExpenses: RecurringExpense[];
+  recurringIncomes: RecurringIncome[];
+  debts: Debt[];
+}
+
 export type FinancialGoal =
   | "emergency_fund"
   | "debt_repayment"

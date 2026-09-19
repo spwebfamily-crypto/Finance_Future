@@ -43,6 +43,13 @@ import type {
   PaginatedMeta,
   UserProfileInput,
   User,
+  DashboardOverviewPayload,
+  BootstrapPayload,
+  FinancialNotification,
+  NotificationListPayload,
+  NotificationPreference,
+  PushConfig,
+  PlanningOverviewPayload,
 } from "../types";
 import { apiRequest } from "./client";
 
@@ -237,6 +244,88 @@ export const analyticsApi = {
     return unwrap(
       await apiRequest<ApiEnvelope<AnalyticsTrend> | AnalyticsTrend>(
         `/analytics/trend?${params.toString()}`,
+      ),
+    );
+  },
+};
+
+export const dashboardApi = {
+  overview: async (month: string) =>
+    unwrap(
+      await apiRequest<ApiEnvelope<DashboardOverviewPayload> | DashboardOverviewPayload>(
+        `/dashboard/overview?month=${encodeURIComponent(month)}`,
+        // Financial data stays private to the authenticated user. The HTTP
+        // cache header is private; the offline fallback remains user-scoped.
+        { cacheResponse: true },
+      ),
+    ),
+};
+
+export const bootstrapApi = {
+  get: async () =>
+    unwrap(await apiRequest<ApiEnvelope<BootstrapPayload> | BootstrapPayload>("/bootstrap")),
+};
+
+export const notificationApi = {
+  list: async (unread = false) =>
+    unwrap(
+      await apiRequest<ApiEnvelope<NotificationListPayload> | NotificationListPayload>(
+        `/notifications?unread=${String(unread)}`,
+        { cacheResponse: false },
+      ),
+    ),
+  markRead: async (id: string) =>
+    unwrap(
+      await apiRequest<ApiEnvelope<FinancialNotification> | FinancialNotification>(
+        `/notifications/${encodeURIComponent(id)}/read`,
+        { method: "PATCH", cacheResponse: false },
+      ),
+    ),
+  markAllRead: async () =>
+    unwrap(
+      await apiRequest<ApiEnvelope<{ updated: number }> | { updated: number }>(
+        "/notifications/read-all",
+        { method: "POST", cacheResponse: false },
+      ),
+    ),
+  preferences: async () =>
+    unwrap(
+      await apiRequest<ApiEnvelope<NotificationPreference> | NotificationPreference>(
+        "/notifications/preferences",
+        { cacheResponse: false },
+      ),
+    ),
+  savePreferences: async (input: Partial<NotificationPreference>) =>
+    unwrap(
+      await apiRequest<ApiEnvelope<NotificationPreference> | NotificationPreference>(
+        "/notifications/preferences",
+        { method: "PUT", body: input, cacheResponse: false },
+      ),
+    ),
+  pushConfig: async () =>
+    unwrap(
+      await apiRequest<ApiEnvelope<PushConfig> | PushConfig>("/notifications/push-config", {
+        cacheResponse: false,
+      }),
+    ),
+  subscribePush: async (subscription: {
+    endpoint: string;
+    keys: { p256dh: string; auth: string };
+  }) =>
+    unwrap(
+      await apiRequest<ApiEnvelope<NotificationPreference> | NotificationPreference>(
+        "/notifications/push-subscription",
+        { method: "PUT", body: subscription, cacheResponse: false },
+      ),
+    ),
+};
+
+export const planningApi = {
+  overview: async (from: string, to: string) => {
+    const query = new URLSearchParams({ from, to });
+    return unwrap(
+      await apiRequest<ApiEnvelope<PlanningOverviewPayload> | PlanningOverviewPayload>(
+        `/planning/overview?${query.toString()}`,
       ),
     );
   },

@@ -83,7 +83,12 @@ h6 {
   border-radius: var(--radius-control);
   font-weight: 680;
   letter-spacing: -0.01em;
-  transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease, box-shadow 0.12s ease, transform 0.08s ease;
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease,
+    color 0.12s ease,
+    box-shadow 0.12s ease,
+    transform 0.08s ease;
   min-height: var(--control-height);
   white-space: nowrap;
 }
@@ -288,7 +293,9 @@ h6 {
   border: 1px solid var(--line);
   border-radius: var(--radius-control);
   box-shadow: none;
-  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+  transition:
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
 }
 .field input::placeholder,
 .field textarea::placeholder {
@@ -573,7 +580,9 @@ h6 {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-control);
-  transition: background-color 0.12s ease, border-color 0.12s ease;
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease;
 }
 .list__item:hover {
   background: var(--surface-soft);
@@ -634,29 +643,29 @@ h6 {
   z-index: 10;
 }
 .chart-container .recharts-tooltip {
-  background: var(--surface-raised) !important;
-  border: 1px solid var(--line-strong) !important;
-  border-radius: var(--radius-control) !important;
-  box-shadow: var(--shadow-popover) !important;
-  color: var(--ink) !important;
+  background: var(--surface-raised);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  box-shadow: var(--shadow-popover);
+  color: var(--ink);
 }
 .chart-container .recharts-legend-item-text {
-  color: var(--ink) !important;
+  color: var(--ink);
 }
 .chart-container .recharts-cartesian-grid-horizontal line,
 .chart-container .recharts-cartesian-grid-vertical line {
-  stroke: var(--chart-grid) !important;
+  stroke: var(--chart-grid);
 }
 .chart-container .recharts-axis-line {
-  stroke: var(--line) !important;
+  stroke: var(--line);
 }
 .chart-container .recharts-axis-tick line {
-  stroke: var(--chart-tick) !important;
+  stroke: var(--chart-tick);
 }
 .chart-container .recharts-text {
-  fill: var(--chart-tick) !important;
-  font-family: var(--font-ui) !important;
-  font-size: 0.75rem !important;
+  fill: var(--chart-tick);
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
 }
 
 /* ==========================================================================
@@ -674,8 +683,12 @@ h6 {
   animation: fade-in 0.16s ease;
 }
 @keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .modal {

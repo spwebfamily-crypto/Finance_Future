@@ -6,7 +6,7 @@ import {
   getStoredUser,
   saveSession,
 } from "./token-store";
-import { cacheGet, cacheSet } from "./offline-cache";
+import { cacheGet, cacheSet, clearOfflineCache } from "./offline-cache";
 
 export const REQUEST_TIMEOUT_MS = 20_000;
 const TRANSIENT_RETRY_DELAY_MS = 400;
@@ -208,6 +208,9 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   const payload = await parseResponse(response);
   if (!response.ok) throw buildError(payload, response.status);
   if (auth && cacheResponse && method === "GET") cacheSet(getStoredUser(), path, payload);
+  // Aggregate reads are user-private snapshots. Any successful authenticated
+  // mutation (including a confirmed bank review) invalidates them together.
+  if (auth && method !== "GET") clearOfflineCache(getStoredUser());
   return payload as T;
 }
 

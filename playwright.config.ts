@@ -15,6 +15,10 @@ export default defineConfig({
   },
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:5173",
+    // Service workers can answer fetches before Playwright's deterministic
+    // fixtures see them, especially in WebKit. The PWA itself is covered by
+    // the functional suite; visual checks intentionally isolate the shell.
+    serviceWorkers: "block",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     video: "retain-on-failure",
@@ -24,28 +28,43 @@ export default defineConfig({
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
     },
+    ...(process.env.PLAYWRIGHT_VISUAL
+      ? [
+          {
+            name: "webkit",
+            testMatch: /visual-regression\.spec\.ts/,
+            use: { ...devices["Desktop Safari"] },
+          },
+        ]
+      : []),
   ],
+  // The visual suite fulfils every HTTP request with deterministic fixtures,
+  // so it can verify layout without a PostgreSQL instance or a bank provider.
   webServer: [
-    {
-      command: "npm run dev -w backend",
-      url: "http://127.0.0.1:3000/api/health",
-      reuseExistingServer: !isCI,
-      timeout: 120_000,
-      // Open Banking em modo fake para o E2E: o provedor em memória simula o
-      // banco e nunca é usado fora dos testes. A chave é apenas de teste.
-      env: {
-        OPEN_BANKING_ENABLED: "true",
-        OPEN_BANKING_PROVIDER: "fake",
-        OPEN_BANKING_DEFAULT_COUNTRY: "PT",
-        OPEN_BANKING_CALLBACK_URL: "http://localhost:3000/api/open-banking/callback",
-        // Igual à baseURL do Playwright: o redirecionamento do callback tem de
-        // voltar à mesma origem, senão a sessão do navegador perde-se.
-        FRONTEND_ORIGIN: "http://127.0.0.1:5173",
-        OPEN_BANKING_CRON_SECRET: "playwright-cron-secret-with-at-least-32-characters",
-        OPEN_BANKING_DATA_KEY_B64: "ZXhwZW5zZXNuYXAtZTJlLWZha2UtcHJvdmlkZXItdGU=",
-        OPEN_BANKING_SYNC_INTERVAL_MINUTES: "360",
-      },
-    },
+    ...(process.env.PLAYWRIGHT_VISUAL
+      ? []
+      : [
+          {
+            command: "npm run dev -w backend",
+            url: "http://127.0.0.1:3000/api/health",
+            reuseExistingServer: !isCI,
+            timeout: 120_000,
+            // Open Banking em modo fake para o E2E: o provedor em memória simula o
+            // banco e nunca é usado fora dos testes. A chave é apenas de teste.
+            env: {
+              OPEN_BANKING_ENABLED: "true",
+              OPEN_BANKING_PROVIDER: "fake",
+              OPEN_BANKING_DEFAULT_COUNTRY: "PT",
+              OPEN_BANKING_CALLBACK_URL: "http://localhost:3000/api/open-banking/callback",
+              // Igual à baseURL do Playwright: o redirecionamento do callback tem de
+              // voltar à mesma origem, senão a sessão do navegador perde-se.
+              FRONTEND_ORIGIN: "http://127.0.0.1:5173",
+              OPEN_BANKING_CRON_SECRET: "playwright-cron-secret-with-at-least-32-characters",
+              OPEN_BANKING_DATA_KEY_B64: "ZXhwZW5zZXNuYXAtZTJlLWZha2UtcHJvdmlkZXItdGU=",
+              OPEN_BANKING_SYNC_INTERVAL_MINUTES: "360",
+            },
+          },
+        ]),
     {
       command: "npm run dev -w frontend -- --host 127.0.0.1",
       url: "http://127.0.0.1:5173",

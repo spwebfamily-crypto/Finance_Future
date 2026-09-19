@@ -2,12 +2,8 @@ import { lazy, Suspense, useEffect } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { GuestRoute, ProtectedRoute } from "./auth/ProtectedRoute";
 import { AppShell } from "./layout/AppShell";
-import { CategoriesPage } from "./pages/CategoriesPage";
-import { ExpensesPage } from "./pages/ExpensesPage";
 import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
-import { LoginPage } from "./pages/LoginPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
-import { RegisterPage } from "./pages/RegisterPage";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import { VerifyEmailPage } from "./pages/VerifyEmailPage";
 import { LoadingState } from "./components/States";
@@ -20,12 +16,30 @@ import {
   loadAccountsPage,
   loadBankConnectionsPage,
   loadDashboardPage,
+  loadCategoriesPage,
+  loadExpensesPage,
   loadExpenseFormPage,
   loadFinancialOnboardingPage,
   loadInvestmentsPage,
+  loadLoginPage,
   loadPlanningPage,
   loadPrivacyPage,
+  loadRegisterPage,
 } from "./routePreloads";
+
+const LoginPage = lazy(() => loadLoginPage().then((module) => ({ default: module.LoginPage })));
+
+const RegisterPage = lazy(() =>
+  loadRegisterPage().then((module) => ({ default: module.RegisterPage })),
+);
+
+const ExpensesPage = lazy(() =>
+  loadExpensesPage().then((module) => ({ default: module.ExpensesPage })),
+);
+
+const CategoriesPage = lazy(() =>
+  loadCategoriesPage().then((module) => ({ default: module.CategoriesPage })),
+);
 
 const DashboardPage = lazy(() =>
   loadDashboardPage().then((module) => ({
@@ -136,8 +150,22 @@ export default function App() {
       <Routes>
         <Route element={<GuestRoute />}>
           <Route element={<RouteTransitionOutlet className="guest-route-stage" />}>
-            <Route path={routes.login} element={<LoginPage />} />
-            <Route path={routes.register} element={<RegisterPage />} />
+            <Route
+              path={routes.login}
+              element={
+                <Suspense fallback={routeFallback}>
+                  <LoginPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path={routes.register}
+              element={
+                <Suspense fallback={routeFallback}>
+                  <RegisterPage />
+                </Suspense>
+              }
+            />
             <Route path={routes.forgotPassword} element={<ForgotPasswordPage />} />
           </Route>
         </Route>
@@ -160,7 +188,14 @@ export default function App() {
                 </Suspense>
               }
             />
-            <Route path={routes.expenses} element={<ExpensesPage />} />
+            <Route
+              path={routes.expenses}
+              element={
+                <Suspense fallback={routeFallback}>
+                  <ExpensesPage />
+                </Suspense>
+              }
+            />
             <Route
               path={routes.newExpense}
               element={
@@ -177,7 +212,14 @@ export default function App() {
                 </Suspense>
               }
             />
-            <Route path={routes.categories} element={<CategoriesPage />} />
+            <Route
+              path={routes.categories}
+              element={
+                <Suspense fallback={routeFallback}>
+                  <CategoriesPage />
+                </Suspense>
+              }
+            />
             <Route
               path={routes.planning}
               element={

@@ -3,6 +3,7 @@ import express from "express";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import { env } from "./config.js";
+import { logger } from "./logger.js";
 import { errorHandler, notFound, sendError } from "./middleware.js";
 import { prisma } from "./prisma.js";
 import authRoutes from "./routes/auth.js";
@@ -10,6 +11,10 @@ import categoryRoutes from "./routes/categories.js";
 import expenseRoutes from "./routes/expenses.js";
 import budgetRoutes from "./routes/budgets.js";
 import analyticsRoutes from "./routes/analytics.js";
+import dashboardRoutes from "./routes/dashboard.js";
+import planningRoutes from "./routes/planning.js";
+import bootstrapRoutes from "./routes/bootstrap.js";
+import notificationRoutes from "./routes/notifications.js";
 import financialProfileRoutes from "./routes/financialProfile.js";
 import incomeRoutes from "./routes/incomes.js";
 import savingsGoalRoutes from "./routes/savingsGoals.js";
@@ -45,6 +50,19 @@ app.use((request, response, next) => {
   response.setHeader("X-Request-Id", requestId);
   next();
 });
+app.use((request, response, next) => {
+  const startedAt = performance.now();
+  response.on("finish", () => {
+    logger.info("http_request", {
+      requestId: response.locals.requestId,
+      method: request.method,
+      route: request.route?.path ?? request.path,
+      status: response.statusCode,
+      durationMs: Math.round(performance.now() - startedAt),
+    });
+  });
+  next();
+});
 
 // Rede de segurança por IP para toda a API. Os limiters específicos (login,
 // mutações de despesas) continuam a aplicar-se por cima deste teto genérico.
@@ -78,6 +96,10 @@ app.use("/api/categories", categoryRoutes);
 app.use("/api/expenses", expenseRoutes);
 app.use("/api/budgets", budgetRoutes);
 app.use("/api/analytics", analyticsRoutes);
+app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/planning", planningRoutes);
+app.use("/api/bootstrap", bootstrapRoutes);
+app.use("/api/notifications", notificationRoutes);
 app.use("/api/financial-profile", financialProfileRoutes);
 app.use("/api/incomes", incomeRoutes);
 app.use("/api/savings-goals", savingsGoalRoutes);

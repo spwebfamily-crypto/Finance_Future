@@ -1,10 +1,26 @@
-export function formatCurrency(value: string | number, currency = "EUR", locale = "pt-PT") {
+function monetaryAmount(value: string | number) {
   const amount = typeof value === "number" ? value : Number(value);
+  // Intl can render tiny negative IEEE-754 values as “-0,00 €”. Financial
+  // displays should never communicate a negative zero.
+  return Number.isFinite(amount) && Math.abs(amount) >= 0.005 ? amount : 0;
+}
+
+export function formatCurrency(value: string | number, currency = "EUR", locale = "pt-PT") {
+  const amount = monetaryAmount(value);
 
   return new Intl.NumberFormat(locale, {
     style: "currency",
     currency,
-  }).format(Number.isFinite(amount) ? amount : 0);
+  }).format(amount);
+}
+
+/** Formats a financial result with a visible sign, while keeping zero neutral. */
+export function formatSignedCurrency(value: string | number, currency = "EUR", locale = "pt-PT") {
+  return new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency,
+    signDisplay: "exceptZero",
+  }).format(monetaryAmount(value));
 }
 
 /** Parses the grouped decimal notation used by the Portuguese form fields. */

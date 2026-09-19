@@ -24,6 +24,7 @@ import { CommandPaletteProvider, CommandPaletteTrigger } from "../components/Com
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { EmailVerificationBanner } from "../components/EmailVerificationBanner";
 import { DailyBankReviewModal } from "../components/DailyBankReviewModal";
+import { NotificationCenter } from "../components/NotificationCenter";
 import { openBankingApi } from "../api/resources";
 import { notifyBankSyncCompleted } from "../api/bank-sync-events";
 import { errorMessage } from "../api/client";
@@ -34,7 +35,9 @@ import {
   preloadAccountsPage,
   preloadBankConnectionsPage,
   preloadDashboardPage,
+  preloadCategoriesPage,
   preloadExpenseFormPage,
+  preloadExpensesPage,
   preloadInvestmentsPage,
   preloadPlanningPage,
   preloadPrivacyPage,
@@ -43,7 +46,7 @@ import { routes } from "../routes";
 
 const navItems = [
   { to: routes.dashboard, label: "Hoje", icon: LayoutDashboard, preload: preloadDashboardPage },
-  { to: routes.expenses, label: "Movimentos", icon: ReceiptText },
+  { to: routes.expenses, label: "Movimentos", icon: ReceiptText, preload: preloadExpensesPage },
   { to: routes.accounts, label: "Contas", icon: Landmark, preload: preloadAccountsPage },
   { to: routes.planning, label: "Plano", icon: CalendarClock, preload: preloadPlanningPage },
   { to: routes.investments, label: "Investir", icon: TrendingUp, preload: preloadInvestmentsPage },
@@ -59,7 +62,7 @@ const moreItems = [
     preload: preloadBankConnectionsPage,
   },
   { to: routes.privacy, label: "Privacidade", icon: Shield, preload: preloadPrivacyPage },
-  { to: routes.categories, label: "Categorias", icon: FolderOpen, preload: undefined },
+  { to: routes.categories, label: "Categorias", icon: FolderOpen, preload: preloadCategoriesPage },
 ];
 
 const morePaths = moreItems.map((item) => item.to);
@@ -315,6 +318,10 @@ function MoreSheet({
                 </NavLink>
               ))}
             </nav>
+            <div className="more-sheet__preferences" aria-label={t("Preferências")}>
+              <ThemeToggle />
+              <LanguageSwitcher />
+            </div>
             <button className="more-sheet__logout" type="button" onClick={onLogout}>
               <LogOut aria-hidden="true" /> {t("Terminar sessão")}
             </button>
@@ -427,6 +434,7 @@ export function AppShell() {
         </a>
         <aside className="sidebar">
           <Brand phase={isLoggingOut ? "exit" : "idle"} />
+          <p className="sidebar__eyebrow">{t("O seu espaço financeiro")}</p>
           <DesktopNavigation />
           <NavLink
             className="button button--accent sidebar__add"
@@ -438,11 +446,13 @@ export function AppShell() {
             <Plus aria-hidden="true" /> {t("Registar despesa")}
           </NavLink>
           <div className="sidebar__tools">
+            <NotificationCenter />
             <CommandPaletteTrigger />
             <ThemeToggle />
             <LanguageSwitcher />
           </div>
-          <nav className="sidebar__secondary" aria-label="Open Banking">
+          <nav className="sidebar__secondary" aria-label={t("Ferramentas e ligações")}>
+            <p className="sidebar__section-label">{t("Ferramentas")}</p>
             {secondaryLinks.map(({ to, label, preload }) => (
               <NavLink
                 key={to}
@@ -482,6 +492,7 @@ export function AppShell() {
         <header className="mobile-header">
           <Brand compact phase={isLoggingOut ? "exit" : "idle"} />
           <div className="mobile-header__actions">
+            <NotificationCenter compact />
             <CommandPaletteTrigger compact />
             <ThemeToggle compact />
             <LanguageSwitcher compact />

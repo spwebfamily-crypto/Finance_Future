@@ -37,6 +37,24 @@ const environmentSchema = z
     // mutações de despesas continuam a aplicar-se por cima deste.
     RATE_LIMIT_WINDOW_MINUTES: z.coerce.number().int().min(1).max(1440).default(15),
     RATE_LIMIT_MAX: z.coerce.number().int().min(10).max(10_000).default(300),
+    // Required only by the reminder job. It is intentionally separate from
+    // Open Banking's cron secret so either job can be rotated independently.
+    CRON_SECRET: z.preprocess(
+      (value) => (value === "" || value === undefined ? undefined : value),
+      z.string().min(32).optional(),
+    ),
+    VAPID_PUBLIC_KEY: z.preprocess(
+      (value) => (value === "" || value === undefined ? undefined : value),
+      z.string().min(32).optional(),
+    ),
+    VAPID_PRIVATE_KEY: z.preprocess(
+      (value) => (value === "" || value === undefined ? undefined : value),
+      z.string().min(32).optional(),
+    ),
+    VAPID_SUBJECT: z.preprocess(
+      (value) => (value === "" || value === undefined ? undefined : value),
+      z.string().url().optional(),
+    ),
     RENDER: z.enum(["true", "false"]).optional(),
     // Brevo (emails transacionais). Sem chave, os emails são apenas registados
     // no log — útil em desenvolvimento e testes, nunca envia nada para fora.
@@ -48,6 +66,15 @@ const environmentSchema = z
     EMAIL_FROM_NAME: z.string().min(1).default("ExpenseSnap"),
   })
   .superRefine((data, context) => {
+    const vapidKeys = [data.VAPID_PUBLIC_KEY, data.VAPID_PRIVATE_KEY, data.VAPID_SUBJECT];
+    if (vapidKeys.some(Boolean) && vapidKeys.some((value) => !value)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["VAPID_PUBLIC_KEY"],
+        message:
+          "VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY e VAPID_SUBJECT têm de ser definidos em conjunto.",
+      });
+    }
     if (data.NODE_ENV !== "production") return;
     for (const key of ["JWT_ACCESS_SECRET", "JWT_REFRESH_SECRET"] as const) {
       if (data[key].startsWith("change-me")) {

@@ -7,9 +7,7 @@ import { AuthProvider } from "./auth/AuthContext";
 import { SessionLoadingOverlay } from "./components/SessionLoadingOverlay";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { I18nProvider } from "./i18n/I18nContext";
-import "./styles.css";
-import "./styles/tokens.css";
-import "./styles/design-system.css";
+import "./styles/entry.css";
 
 if ("serviceWorker" in navigator)
   window.addEventListener("load", () => {

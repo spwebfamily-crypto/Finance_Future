@@ -18,7 +18,8 @@ export const THEME_COLORS: Record<ResolvedTheme, string> = {
 };
 
 function systemTheme(): ResolvedTheme {
-  return typeof window !== "undefined" && window.matchMedia?.("(prefers-color-scheme: dark)").matches
+  return typeof window !== "undefined" &&
+    window.matchMedia?.("(prefers-color-scheme: dark)").matches
     ? "dark"
     : "light";
 }
@@ -89,7 +90,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => applyTheme(theme), [theme]);
 
-  const toggle = useCallback(() => setPreference(theme === "dark" ? "light" : "dark"), [setPreference, theme]);
+  const toggle = useCallback(
+    () => setPreference(theme === "dark" ? "light" : "dark"),
+    [setPreference, theme],
+  );
   const value = useMemo<ThemeValue>(
     () => ({ preference, theme, setPreference, toggle }),
     [preference, setPreference, theme, toggle],

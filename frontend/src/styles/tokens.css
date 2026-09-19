@@ -131,7 +131,9 @@
   --page-gutter: clamp(1rem, 3vw, 3.5rem);
   --content-max: 90rem;
   --content-wide: 100rem;
-  --sidebar-width: 15.5rem;
+  --sidebar-width: clamp(16.75rem, 18vw, 19.25rem);
+  --sidebar-rail: rgb(199 238 88 / 12%);
+  --sidebar-card: rgb(255 255 255 / 9%);
   --nav-height: 4.5rem;
 
   /* Shadows */
@@ -275,10 +277,10 @@
   *,
   *::before,
   *::after {
-    scroll-behavior: auto !important;
-    transition-duration: 0.01ms !important;
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
+    scroll-behavior: auto;
+    transition-duration: 0.01ms;
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
   }
 }
 .theme-toggle {

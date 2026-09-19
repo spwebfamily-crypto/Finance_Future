@@ -21,12 +21,14 @@
     "db:down": "docker compose down",
     "db:migrate": "npm run db:migrate -w backend",
     "test:e2e": "npm run db:up && npm run db:migrate && playwright test",
-    "test:e2e:ui": "npm run db:up && npm run db:migrate && playwright test --ui"
+    "test:e2e:ui": "npm run db:up && npm run db:migrate && playwright test --ui",
+    "test:e2e:visual": "PLAYWRIGHT_VISUAL=1 playwright test e2e/visual-regression.spec.ts"
   },
   "engines": {
     "node": ">=20.19.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@eslint/js": "^9.39.5",
     "@playwright/test": "^1.54.2",
     "concurrently": "^9.2.0",

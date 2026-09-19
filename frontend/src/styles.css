@@ -8800,8 +8800,8 @@ a.auth-forgot {
 
 @media (prefers-reduced-motion: reduce) {
   .tilt-card {
-    transform: none !important;
-    transition: none !important;
+    transform: none;
+    transition: none;
     will-change: auto;
   }
 }
@@ -9185,10 +9185,10 @@ a.auth-forgot {
   *,
   *::before,
   *::after {
-    scroll-behavior: auto !important;
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    scroll-behavior: auto;
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+    transition-duration: 0.01ms;
   }
 
   .button:not(:disabled):active,
@@ -9207,7 +9207,7 @@ a.auth-forgot {
   .invest-platform:active,
   .invest-source:active {
     opacity: 1;
-    transform: none !important;
+    transform: none;
   }
 }
 

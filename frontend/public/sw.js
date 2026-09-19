@@ -1,4 +1,4 @@
-const CACHE_NAME = 'expensesnap-shell-v4';
+const CACHE_NAME = 'expensesnap-shell-v5';
 const SHELL = ['/', '/index.html', '/manifest.webmanifest', '/brand-mark.svg'];
 
 self.addEventListener('install', (event) => {

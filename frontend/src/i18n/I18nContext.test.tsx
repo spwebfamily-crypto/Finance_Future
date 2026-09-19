@@ -94,12 +94,18 @@ describe("I18nProvider", () => {
           <output aria-label="calendar-day">
             {formatDate("2026-08-07", { day: "2-digit", month: "2-digit" })}
           </output>
-          <output aria-label="plural">{plural(2, { one: "one item", other: "{count} items" })}</output>
+          <output aria-label="plural">
+            {plural(2, { one: "one item", other: "{count} items" })}
+          </output>
         </>
       );
     }
 
-    render(<I18nProvider><Formats /></I18nProvider>);
+    render(
+      <I18nProvider>
+        <Formats />
+      </I18nProvider>,
+    );
     expect(screen.getByLabelText("calendar-day")).toHaveTextContent("07");
     expect(screen.getByLabelText("plural")).toHaveTextContent("2 items");
   });

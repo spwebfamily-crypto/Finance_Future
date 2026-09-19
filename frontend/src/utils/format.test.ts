@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   formatCurrency,
   formatDate,
+  formatSignedCurrency,
   parseMoney,
   parseSignedMoney,
   toDateInputValue,
@@ -12,6 +13,13 @@ describe("format helpers", () => {
   it("formats decimal strings as euros", () => {
     expect(formatCurrency("12345.50").replace(/\s/g, "")).toContain("12345,50");
     expect(formatCurrency("not-a-number")).toContain("0,00");
+  });
+
+  it("never renders negative zero and exposes signs only for non-zero values", () => {
+    expect(formatCurrency(-0.001)).not.toMatch(/[-−]\s?0[,.]00/);
+    expect(formatSignedCurrency(-0.001)).not.toMatch(/[-−]\s?0[,.]00/);
+    expect(formatSignedCurrency(12.5).replace(/\s/g, "")).toMatch(/^\+12,50/);
+    expect(formatSignedCurrency(-12.5).replace(/\s/g, "")).toMatch(/^-12,50/);
   });
 
   it("keeps the calendar date when preparing an input", () => {

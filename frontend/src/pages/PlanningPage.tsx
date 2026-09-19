@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } fro
 import { Link } from "react-router-dom";
 import {
   AlertTriangle,
-  Bell,
   CalendarDays,
   CalendarClock,
   CheckCircle2,
@@ -25,6 +24,7 @@ import {
   recurringExpenseApi,
   recurringIncomeApi,
   savingsGoalApi,
+  planningApi,
 } from "../api/resources";
 import { errorMessage } from "../api/client";
 import { ConfirmDialog } from "../components/ConfirmDialog";
@@ -144,9 +144,6 @@ export function PlanningPage() {
   const [recurringForm, setRecurringForm] = useState(initialRecurring);
   const [recurringIncomeForm, setRecurringIncomeForm] = useState(initialRecurringIncome);
   const [debtForm, setDebtForm] = useState(initialDebt);
-  const [notificationPermission, setNotificationPermission] = useState<
-    NotificationPermission | "unsupported"
-  >(() => (typeof Notification === "undefined" ? "unsupported" : Notification.permission));
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
@@ -200,6 +197,33 @@ export function PlanningPage() {
     setIsLoading(true);
     setError("");
     try {
+      try {
+        const month = currentMonth();
+        const [year, monthNumber] = month.split("-").map(Number);
+        const nextMonth = new Date(Date.UTC(year!, monthNumber!, 1)).toISOString().slice(0, 10);
+        const [overview, nextSummary, nextAccounts] = await Promise.all([
+          planningApi.overview(`${month}-01`, nextMonth),
+          analyticsApi.summary(month),
+          accountApi.list(),
+        ]);
+        setSummary(nextSummary);
+        setCategories(overview.categories);
+        setAccounts(nextAccounts);
+        setIncomes(overview.incomes);
+        setGoals(overview.goals);
+        setRecurring(overview.recurringExpenses);
+        setRecurringIncomes(overview.recurringIncomes);
+        setDebts(overview.debts);
+        setGoalProgress(
+          Object.fromEntries(overview.goals.map((goal) => [goal.id, String(goal.currentAmount)])),
+        );
+        setDebtBalances(
+          Object.fromEntries(overview.debts.map((debt) => [debt.id, String(debt.currentBalance)])),
+        );
+        return;
+      } catch {
+        // Keep the existing independent routes as a rollout fallback.
+      }
       const [
         nextSummary,
         nextCategories,
@@ -362,18 +386,6 @@ export function PlanningPage() {
       );
     return items;
   }, [debts, goals, monthlyAvailable, monthlyIncome, upcoming, upcomingIncomes]);
-
-  useEffect(() => {
-    if (notificationPermission !== "granted" || !alerts.length) return;
-    const key = `expensesnap-planning-alert-${todayInputValue()}-${alerts[0]}`;
-    try {
-      if (sessionStorage.getItem(key)) return;
-      new Notification("ExpenseSnap", { body: alerts[0] });
-      sessionStorage.setItem(key, "sent");
-    } catch {
-      // Browser notifications are optional; the visible alert remains available.
-    }
-  }, [alerts, notificationPermission]);
 
   async function createIncome(event: FormEvent) {
     event.preventDefault();
@@ -650,20 +662,6 @@ export function PlanningPage() {
     }
   }
 
-  async function enableNotifications() {
-    if (typeof Notification === "undefined") {
-      setNotice("Este navegador não suporta notificações.");
-      return;
-    }
-    const permission = await Notification.requestPermission();
-    setNotificationPermission(permission);
-    setNotice(
-      permission === "granted"
-        ? "Alertas do navegador ativados."
-        : "Pode continuar a ver todos os alertas nesta página.",
-    );
-  }
-
   async function saveGoalProgress(goal: SavingsGoal) {
     const currentAmount = numberFromInput(goalProgress[goal.id] || "");
     if (!Number.isFinite(currentAmount) || currentAmount < 0) return;
@@ -769,15 +767,6 @@ export function PlanningPage() {
         <Link className="button button--secondary" to="/accounts">
           <Landmark aria-hidden="true" /> Contas e cartões
         </Link>
-        {notificationPermission !== "unsupported" && notificationPermission !== "granted" && (
-          <button
-            className="button button--secondary"
-            type="button"
-            onClick={() => void enableNotifications()}
-          >
-            <Bell aria-hidden="true" /> Ativar alertas
-          </button>
-        )}
       </div>
       {error && (
         <div className="form-alert form-alert--page" role="alert">
