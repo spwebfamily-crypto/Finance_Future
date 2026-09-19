@@ -1,0 +1,12 @@
+/*
+ * ExpenseSnap — Main style entry point
+ * Layers (low → high specificity): legacy → tokens → primitives → shell → pages → utilities
+ * Legacy is kept only for temporary backward compatibility during migration.
+ */
+
+@import "./legacy.css" layer(legacy);
+@import "./tokens.css" layer(tokens);
+@import "./primitives.css" layer(primitives);
+@import "./shell.css" layer(shell);
+@import "./pages.css" layer(pages);
+@import "./utilities.css" layer(utilities);

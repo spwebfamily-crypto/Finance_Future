@@ -1,26 +1,82 @@
-/* ExpenseSnap foundations. Imported last while legacy page rules are migrated. */
+/*
+ * ExpenseSnap semantic tokens — single source for both themes.
+ * Each variant defines a complete surface/text/border/hover/focus family.
+ * Do not hard-code colours in components; use these tokens.
+ */
+
 :root {
+  /* Colour scheme & base */
   color-scheme: light;
   --background: #f6f7f4;
   --foreground: #17211d;
-  --card: #ffffff;
-  --card-foreground: #171914;
-  --popover: #fffdf8;
-  --popover-foreground: #171914;
-  --primary: #145c43;
-  --primary-foreground: #ffffff;
-  --secondary: #edf0eb;
-  --secondary-foreground: #24312b;
-  --muted-bg: #f0f2ef;
-  --muted-foreground: #66716b;
-  --accent-subtle: #eef7d3;
-  --accent-foreground: #1a2412;
+
+  /* Core surfaces */
+  --surface: #ffffff;
+  --surface-foreground: #171914;
+  --surface-soft: #f0f2ef;
+  --surface-soft-foreground: #33423a;
+  --surface-raised: #fbfcfa;
+  --surface-raised-foreground: #171914;
+
+  /* Brand (green/lime identity) */
+  --brand: #145c43;
+  --brand-foreground: #ffffff;
+  --brand-hover: #0d4b36;
+  --brand-hover-foreground: #ffffff;
+  --brand-soft: #dff1e7;
+  --brand-soft-foreground: #13251d;
+  --brand-border: #a8d5ba;
+
+  /* Accent (lime highlight) */
   --accent: #c7ee58;
+  --accent-foreground: #1a2412;
   --accent-hover: #b5df40;
-  --destructive: #a83c2b;
+  --accent-hover-foreground: #1a2412;
+  --accent-soft: #eef7d3;
+  --accent-soft-foreground: #1a2412;
+  --accent-border: #c7ee58;
+
+  /* Semantic: Success */
+  --success: #267152;
+  --success-foreground: #ffffff;
+  --success-hover: #1e5a3f;
+  --success-hover-foreground: #ffffff;
+  --success-soft: #e0f0e6;
+  --success-soft-foreground: #145c43;
+  --success-border: #789934;
+
+  /* Semantic: Warning */
+  --warning: #8a6418;
+  --warning-foreground: #ffffff;
+  --warning-hover: #6d4f12;
+  --warning-hover-foreground: #ffffff;
+  --warning-soft: #f8efd5;
+  --warning-soft-foreground: #8a6418;
+  --warning-border: #e6c66d;
+
+  /* Semantic: Danger */
+  --danger: #a83c2b;
+  --danger-foreground: #ffffff;
+  --danger-hover: #8a2e22;
+  --danger-hover-foreground: #ffffff;
+  --danger-soft: #f8ddd6;
+  --danger-soft-foreground: #a83c2b;
+  --danger-border: #fa927d;
+
+  /* Neutral / Muted */
+  --muted: #f0f2ef;
+  --muted-foreground: #66716b;
+  --muted-border: #dbe1dc;
+
+  /* Lines & borders */
+  --line: #dbe1dc;
+  --line-strong: #aeb9b2;
   --border: #dbe1dc;
   --input: #d3dbd5;
   --ring: #b7e34d;
+  --focus-ring: rgb(183 227 77 / 35%);
+
+  /* Sidebar */
   --sidebar: #123d30;
   --sidebar-foreground: #f5f8f4;
   --sidebar-primary: #c7ee58;
@@ -29,38 +85,28 @@
   --sidebar-accent-foreground: #f5f8f4;
   --sidebar-border: rgb(255 255 255 / 13%);
   --sidebar-ring: #c7ee58;
-  --canvas: var(--background);
-  --surface: var(--card);
-  --surface-soft: var(--muted-bg);
-  --ink: var(--foreground);
-  --ink-strong: var(--foreground);
-  --ink-soft: #33423a;
-  --muted: var(--muted-foreground);
-  --line: var(--border);
-  --line-strong: #aeb9b2;
-  --brand: var(--primary);
-  --brand-dark: #0d4633;
-  --brand-hover: #0d4b36;
-  --brand-soft: #dff1e7;
-  --on-brand: var(--primary-foreground);
-  --danger: var(--destructive);
-  --danger-soft: #f8ddd6;
-  --success: #267152;
-  --success-soft: #e0f0e6;
-  --warning: #8a6418;
-  --warning-soft: #f8efd5;
+  --sidebar-muted: rgb(245 248 244 / 68%);
+  --sidebar-hover: rgb(255 255 255 / 8%);
+  --sidebar-active: rgb(199 238 88 / 16%);
+  --sidebar-control: rgb(255 255 255 / 7%);
+
+  /* Chart palette */
   --chart-1: #145c43;
   --chart-2: #34775c;
   --chart-3: #789934;
   --chart-4: #c7ee58;
   --chart-5: #769087;
   --chart-grid: var(--border);
-  --chart-tick: var(--muted);
+  --chart-tick: var(--muted-foreground);
   --chart-tick-muted: #858176;
-  --chart-cursor: var(--muted-bg);
+  --chart-cursor: var(--muted);
+
+  /* Typography */
   --font-ui: "Figtree", system-ui, sans-serif;
   --font-display: "Zalando Sans Expanded", "Figtree", sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  /* Radius */
   --radius-sm: 0.35rem;
   --radius-md: 0.7rem;
   --radius-lg: 1.1rem;
@@ -68,6 +114,8 @@
   --radius-control: 0.625rem;
   --radius-card: 0.875rem;
   --radius-hero: 1.25rem;
+
+  /* Spacing scale */
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
@@ -77,49 +125,102 @@
   --space-7: 3rem;
   --space-8: 4rem;
   --space-9: 5rem;
+
+  /* Layout */
   --control-height: 2.75rem;
   --page-gutter: clamp(1rem, 3vw, 3.5rem);
   --content-max: 90rem;
   --content-wide: 100rem;
-  --surface-raised: #fbfcfa;
-  --focus-ring: rgb(183 227 77 / 35%);
-  --sidebar-muted: rgb(245 248 244 / 68%);
-  --sidebar-hover: rgb(255 255 255 / 8%);
-  --sidebar-active: rgb(199 238 88 / 16%);
-  --sidebar-control: rgb(255 255 255 / 7%);
-  --auth-story: #123d30;
-  --auth-story-ink: #f5f8f4;
-  --auth-story-border: rgb(255 255 255 / 10%);
+  --sidebar-width: 15.5rem;
+  --nav-height: 4.5rem;
+
+  /* Shadows */
   --shadow-sm: 0 0.125rem 0.5rem rgb(17 38 28 / 6%);
   --shadow-md: 0 0.875rem 2.25rem rgb(17 38 28 / 8%);
   --shadow-lg: 0 1.75rem 4.5rem rgb(17 38 28 / 13%);
   --shadow-card: 0 0.5rem 1.5rem rgb(17 38 28 / 6%);
   --shadow-popover: 0 1rem 2.5rem rgb(17 38 28 / 16%);
   --shadow-hero: 0 1.5rem 4rem rgb(7 31 22 / 18%);
+
+  /* Auth story */
+  --auth-story: #123d30;
+  --auth-story-ink: #f5f8f4;
+  --auth-story-border: rgb(255 255 255 / 10%);
+
+  /* Ink aliases */
+  --ink: var(--foreground);
+  --ink-strong: var(--foreground);
+  --ink-soft: #33423a;
+  --muted-ink: var(--muted-foreground);
+
+  /* Canvas */
+  --canvas: var(--background);
 }
 
+/* Dark theme — complete semantic token overrides */
 :root[data-theme="dark"] {
   color-scheme: dark;
   --background: #111714;
   --foreground: #edf3ee;
-  --card: #18201c;
-  --card-foreground: #edf3ee;
-  --popover: #202a24;
-  --popover-foreground: #edf3ee;
-  --primary: #79c19a;
-  --primary-foreground: #102218;
-  --secondary: #222d27;
-  --secondary-foreground: #e5eee7;
-  --muted-bg: #1d2721;
-  --muted-foreground: #b6c1b9;
-  --accent-subtle: #2d3d1d;
-  --accent-foreground: #16210f;
+
+  --surface: #18201c;
+  --surface-foreground: #edf3ee;
+  --surface-soft: #1d2721;
+  --surface-soft-foreground: #d4ded6;
+  --surface-raised: #1d2822;
+  --surface-raised-foreground: #edf3ee;
+
+  --brand: #79c19a;
+  --brand-foreground: #102218;
+  --brand-hover: #92d0aa;
+  --brand-hover-foreground: #102218;
+  --brand-soft: #1b4734;
+  --brand-soft-foreground: #a1d9b6;
+  --brand-border: #3a6b52;
+
   --accent: #c7ee58;
+  --accent-foreground: #16210f;
   --accent-hover: #d5f873;
-  --destructive: #fa927d;
+  --accent-hover-foreground: #16210f;
+  --accent-soft: #2d3d1d;
+  --accent-soft-foreground: #e6f8b3;
+  --accent-border: #c7ee58;
+
+  --success: #75c99b;
+  --success-foreground: #102218;
+  --success-hover: #92d0aa;
+  --success-hover-foreground: #102218;
+  --success-soft: #183c29;
+  --success-soft-foreground: #75c99b;
+  --success-border: #a5c467;
+
+  --warning: #e6c66d;
+  --warning-foreground: #16210f;
+  --warning-hover: #f0d48a;
+  --warning-hover-foreground: #16210f;
+  --warning-soft: #433719;
+  --warning-soft-foreground: #e6c66d;
+  --warning-border: #e6c66d;
+
+  --danger: #fa927d;
+  --danger-foreground: #102218;
+  --danger-hover: #fcaca5;
+  --danger-hover-foreground: #102218;
+  --danger-soft: #48231e;
+  --danger-soft-foreground: #fa927d;
+  --danger-border: #fa927d;
+
+  --muted: #1d2721;
+  --muted-foreground: #b6c1b9;
+  --muted-border: #34443b;
+
+  --line: #34443b;
+  --line-strong: #56685e;
   --border: #34443b;
   --input: #3a4a41;
   --ring: #c7ee58;
+  --focus-ring: rgb(199 238 88 / 35%);
+
   --sidebar: #0d3024;
   --sidebar-foreground: #edf3ee;
   --sidebar-primary: #c7ee58;
@@ -128,43 +229,41 @@
   --sidebar-accent-foreground: #edf3ee;
   --sidebar-border: rgb(255 255 255 / 12%);
   --sidebar-ring: #c7ee58;
-  --ink-soft: #d4ded6;
-  --line-strong: #56685e;
-  --brand-dark: #a1d9b6;
-  --brand-hover: #92d0aa;
-  --brand-soft: #1b4734;
-  --on-brand: #102218;
-  --danger-soft: #48231e;
-  --success: #75c99b;
-  --success-soft: #183c29;
-  --warning: #e6c66d;
-  --warning-soft: #433719;
+  --sidebar-muted: rgb(237 243 238 / 68%);
+  --sidebar-hover: rgb(255 255 255 / 8%);
+  --sidebar-active: rgb(199 238 88 / 16%);
+  --sidebar-control: rgb(255 255 255 / 7%);
+
   --chart-1: #79c19a;
   --chart-2: #a5c467;
   --chart-3: #c7ee58;
   --chart-4: #e2f7a6;
   --chart-5: #b5cabd;
   --chart-grid: var(--border);
-  --chart-tick: var(--muted);
+  --chart-tick: var(--muted-foreground);
   --chart-tick-muted: #888b7e;
-  --chart-cursor: var(--muted-bg);
-  --surface-raised: #1d2822;
-  --focus-ring: rgb(199 238 88 / 35%);
-  --sidebar-muted: rgb(237 243 238 / 68%);
-  --sidebar-hover: rgb(255 255 255 / 8%);
-  --sidebar-active: rgb(199 238 88 / 16%);
-  --sidebar-control: rgb(255 255 255 / 7%);
-  --auth-story: #0d3024;
-  --auth-story-ink: #edf3ee;
-  --auth-story-border: rgb(255 255 255 / 9%);
+  --chart-cursor: var(--muted);
+
+  --ink: var(--foreground);
+  --ink-strong: var(--foreground);
+  --ink-soft: #d4ded6;
+  --muted-ink: var(--muted-foreground);
+
+  --canvas: var(--background);
+
   --shadow-sm: 0 0.125rem 0.5rem rgb(0 0 0 / 22%);
   --shadow-md: 0 0.875rem 2.25rem rgb(0 0 0 / 30%);
   --shadow-lg: 0 1.75rem 4.5rem rgb(0 0 0 / 42%);
   --shadow-card: 0 0.5rem 1.5rem rgb(0 0 0 / 22%);
   --shadow-popover: 0 1rem 2.5rem rgb(0 0 0 / 35%);
   --shadow-hero: 0 1.5rem 4rem rgb(0 0 0 / 35%);
+
+  --auth-story: #0d3024;
+  --auth-story-ink: #edf3ee;
+  --auth-story-border: rgb(255 255 255 / 9%);
 }
 
+/* Global focus-visible & numeric helpers */
 :where(button, input, select, textarea):focus-visible {
   outline: 0.1875rem solid var(--ring);
   outline-offset: 0.1875rem;

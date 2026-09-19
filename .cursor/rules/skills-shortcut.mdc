@@ -1,0 +1,17 @@
+---
+description: Activate the relevant installed skills when the prompt mentions Skills
+alwaysApply: true
+---
+
+# Skills shortcut
+
+When the user's prompt contains the word "Skills" as a request to use skills:
+
+- Inspect the available installed skills and select only the minimal set that directly applies to the task and project.
+- Prefer the relevant `superpowers` process skill first (for example brainstorming, planning, debugging, TDD, execution, or verification), then add domain-specific skills when needed.
+- For security-related work, consider the installed skills from `mukul975/Anthropic-Cybersecurity-Skills` and choose the narrowest applicable defensive, auditing, incident-response, or authorized testing skill.
+- Treat offensive or dual-use cybersecurity guidance as authorized-use-only: confirm scope and permission from the user's request, avoid targeting third-party systems, and do not activate the entire cybersecurity library automatically.
+- Read each selected `SKILL.md` completely before taking related action, and follow its instructions unless the user explicitly overrides them.
+- Announce which skills are being used and why.
+- Do not invoke every installed skill automatically; use only the precise skills required.
+- Before claiming completion, use the applicable verification skill and report concrete validation results.
