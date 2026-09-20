@@ -38,7 +38,7 @@ describe("ThemeProvider", () => {
     await waitFor(() => expect(document.documentElement.dataset.theme).toBe("dark"));
     expect(localStorage.getItem("expensesnap.theme")).toBe("dark");
     expect(document.querySelector('meta[name="theme-color"]')?.getAttribute("content")).toBe(
-      "#111714",
+      "#0d1411",
     );
   });
 

@@ -99,7 +99,7 @@ h3,
 .page-header__description {
   max-width: 62ch;
   margin-top: var(--space-3);
-  color: var(--muted);
+  color: var(--muted-foreground);
   line-height: 1.55;
 }
 
@@ -316,7 +316,7 @@ h3,
 
 .dashboard-total__source,
 .dashboard-total__compare p {
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 
 .dashboard-total__compare {
@@ -335,7 +335,7 @@ h3,
 .today-balance > div > span,
 .today-overview__activity-title,
 .today-activity-list li > div small {
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 
 .today-metrics strong,
@@ -393,7 +393,7 @@ h3,
 
 .auth-form-heading .form-intro {
   margin-top: var(--space-3);
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 
 .auth-page--recovery .auth-form-panel {
@@ -430,7 +430,7 @@ table {
 }
 
 th {
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.72rem;
   font-weight: 720;
   letter-spacing: 0.06em;
@@ -509,5 +509,623 @@ th {
     width: 100%;
     padding: var(--space-5);
     box-shadow: none;
+  }
+}
+
+/* Theme contract ----------------------------------------------------------
+ * This final layer deliberately repairs legacy text that used the old
+ * `--muted` name as a foreground. `--muted` is a surface token now; text must
+ * always use its paired foreground. The rules below also make hierarchy and
+ * theme choice legible without adding another visual language. */
+
+.theme-toggle:not(.theme-toggle--compact) {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  width: 100%;
+  min-height: var(--control-height);
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  color: var(--ink-soft);
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  box-shadow: var(--shadow-sm);
+}
+
+.theme-toggle:not(.theme-toggle--compact) svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  color: var(--brand);
+}
+
+.theme-toggle__label {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink-strong);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.theme-toggle:not(.theme-toggle--compact) select {
+  width: 100%;
+  min-width: 0;
+  min-height: 2rem;
+  padding-inline: var(--space-2);
+  color: var(--muted-foreground);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+
+.theme-toggle:not(.theme-toggle--compact):hover {
+  color: var(--ink-strong);
+  background: var(--surface-overlay);
+  border-color: var(--line-strong);
+}
+
+.theme-toggle:focus-within {
+  outline: 0.1875rem solid var(--ring);
+  outline-offset: 0.1875rem;
+}
+
+.theme-toggle select:focus-visible {
+  outline: 0;
+}
+
+.sidebar .theme-toggle--compact {
+  display: grid;
+  place-items: center;
+  margin: 0;
+  color: var(--sidebar-foreground);
+  background: var(--sidebar-control);
+  border-color: var(--sidebar-border);
+}
+
+.sidebar .theme-toggle--compact:hover {
+  color: var(--sidebar-primary-foreground);
+  background: var(--sidebar-primary);
+  border-color: var(--sidebar-primary);
+}
+
+.sidebar .command-palette-trigger--compact {
+  display: grid;
+  place-items: center;
+  margin: 0;
+  color: var(--sidebar-foreground);
+  background: var(--sidebar-control);
+  border-color: var(--sidebar-border);
+}
+
+.sidebar .command-palette-trigger--compact:hover {
+  color: var(--sidebar-primary-foreground);
+  background: var(--sidebar-primary);
+  border-color: var(--sidebar-primary);
+}
+
+.sidebar .theme-toggle--compact:focus-within {
+  outline-color: var(--sidebar-ring);
+}
+
+.more-sheet__preferences .theme-toggle:not(.theme-toggle--compact) {
+  box-shadow: none;
+}
+
+:root[data-theme="dark"] .mobile-header,
+:root[data-theme="dark"] .more-sheet {
+  background: color-mix(in srgb, var(--surface-overlay) 94%, transparent);
+}
+
+:root[data-theme="dark"] .dashboard-shortcut,
+:root[data-theme="dark"] .today-metrics article,
+:root[data-theme="dark"] .planning-overview > article {
+  background: var(--surface-raised);
+}
+
+:root[data-theme="dark"] .table-shell,
+:root[data-theme="dark"] .data-table-wrap {
+  background: var(--surface-sunken);
+  border-color: var(--line-strong);
+}
+
+/*
+ * App shell recovery
+ *
+ * The old stylesheet remains available only for page-specific rules that have
+ * not been migrated yet. The application chrome and shared financial surfaces
+ * live here, in the final layer, so legacy rules cannot quietly narrow the
+ * sidebar, turn mobile navigation into a floating pill, or change the
+ * dashboard reading order.
+ */
+:root {
+  --sidebar-width: clamp(16.75rem, 19vw, 18.5rem);
+  --content-max: 82rem;
+  --content-wide: 96rem;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 100dvh;
+}
+
+.sidebar {
+  padding: var(--space-4) var(--space-3) var(--space-3);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--sidebar) 92%, var(--brand)),
+    var(--sidebar)
+  );
+  border-right: 1px solid var(--sidebar-border);
+}
+
+.sidebar > .brand,
+.sidebar > .brand-link {
+  margin: var(--space-1) var(--space-2) var(--space-2);
+  padding-inline: var(--space-3);
+}
+
+.sidebar__eyebrow {
+  padding: 0 var(--space-3) var(--space-4);
+  line-height: 1.35;
+}
+
+.side-nav {
+  gap: var(--space-1);
+  padding-inline: var(--space-2);
+}
+
+.sidebar .nav-link {
+  min-height: 2.875rem;
+  padding-inline: var(--space-3);
+}
+
+.sidebar .nav-link--active {
+  background: linear-gradient(
+    90deg,
+    var(--sidebar-active),
+    color-mix(in srgb, var(--sidebar-active) 30%, transparent)
+  );
+  box-shadow: inset 0.1875rem 0 var(--accent);
+}
+
+.sidebar__add {
+  width: calc(100% - 2 * var(--space-2));
+  min-height: 3rem;
+  margin: var(--space-3) var(--space-2) var(--space-4);
+  padding-inline: var(--space-4);
+  color: var(--accent-foreground);
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0.75rem 1.5rem rgb(0 0 0 / 14%);
+}
+
+.sidebar__add:hover:not(:disabled) {
+  color: var(--accent-hover-foreground);
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.sidebar__tools {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: 0 var(--space-2);
+  padding: var(--space-4) 0;
+}
+
+.sidebar__tools > :is(.notification-center, .command-palette-trigger, .theme-toggle) {
+  min-width: 0;
+}
+
+.sidebar__tools > .command-palette-trigger,
+.sidebar__tools > .theme-toggle,
+.sidebar__tools > .notification-center > .icon-button,
+.sidebar__tools > .notification-center > .notification-trigger {
+  width: 100%;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+}
+
+.sidebar__tools > .language-switcher {
+  grid-column: 1 / -1;
+  min-height: 2.75rem;
+  padding: var(--space-2) var(--space-3);
+}
+
+.sidebar .language-switcher {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.sidebar .language-switcher select {
+  width: auto;
+  min-width: 7.5rem;
+  min-height: 2.25rem;
+}
+
+.sidebar__secondary {
+  margin: 0 var(--space-2);
+  padding: var(--space-4) 0 var(--space-2);
+}
+
+.sidebar__secondary-link {
+  min-height: 2.625rem;
+  padding-inline: var(--space-3);
+}
+
+.sidebar .account-card {
+  margin: auto var(--space-2) 0;
+  padding: var(--space-3);
+  background: color-mix(in srgb, var(--sidebar-card) 92%, transparent);
+  border-radius: var(--radius-card);
+}
+
+.mobile-header {
+  min-height: 4.25rem;
+  padding: var(--space-2) var(--space-4);
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  backdrop-filter: blur(1rem);
+}
+
+.mobile-nav {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  height: auto;
+  min-height: calc(4.5rem + env(safe-area-inset-bottom));
+  padding: var(--space-1) var(--space-2) calc(var(--space-1) + env(safe-area-inset-bottom));
+  background: var(--surface);
+  border-width: 1px 0 0;
+  border-radius: 0;
+  box-shadow: 0 -0.5rem 1.5rem rgb(17 38 28 / 8%);
+}
+
+.mobile-nav .nav-link,
+.mobile-nav__add {
+  min-width: 0;
+  min-height: 2.75rem;
+  justify-content: center;
+  padding: var(--space-1);
+  border-radius: var(--radius-md);
+}
+
+.mobile-nav .nav-link svg,
+.mobile-nav__add svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.mobile-nav .nav-link > span:not(.nav-link__active-marker),
+.mobile-nav__add > span {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 0.6875rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mobile-nav .nav-link--active,
+.mobile-nav__add--active {
+  color: var(--brand);
+  background: var(--brand-soft);
+}
+
+.mobile-nav__add {
+  color: var(--accent-foreground);
+  background: var(--accent);
+}
+
+.mobile-nav .nav-link__active-marker {
+  display: none;
+}
+
+.more-sheet {
+  width: min(100%, 34rem);
+  max-height: min(42rem, calc(100dvh - var(--space-5)));
+  overflow-y: auto;
+  background: var(--surface);
+}
+
+.page {
+  gap: clamp(1.25rem, 2.25vw, 2rem);
+}
+
+.page-header {
+  align-items: flex-start;
+  gap: var(--space-4);
+  margin-bottom: var(--space-2);
+  padding-bottom: var(--space-5);
+}
+
+.page-header h1 {
+  max-width: 20ch;
+  font-size: clamp(2rem, 3.5vw, 3.25rem);
+}
+
+.page-header__description {
+  max-width: 58ch;
+  color: var(--muted-foreground);
+  font-size: 1rem;
+}
+
+.page--dashboard > .page-header {
+  order: 0;
+}
+
+.page--dashboard > .dashboard-total {
+  order: 1;
+}
+
+.page--dashboard > .today-overview {
+  order: 2;
+}
+
+.page--dashboard > .dashboard-shortcuts {
+  order: 3;
+}
+
+.page--dashboard > .month-pulse {
+  order: 4;
+}
+
+.page--dashboard > .dashboard-grid,
+.page--dashboard > .dashboard-section {
+  order: 5;
+}
+
+.page--dashboard > .dashboard-panel {
+  order: 6;
+}
+
+.dashboard-total {
+  min-height: 12.5rem;
+  margin: 0;
+  padding: clamp(1.5rem, 3vw, 2.5rem);
+  border: 1px solid color-mix(in srgb, var(--brand) 65%, var(--line));
+  border-radius: var(--radius-hero);
+  background:
+    radial-gradient(circle at 88% 12%, rgb(199 238 88 / 25%), transparent 28%),
+    linear-gradient(135deg, var(--brand-hover), var(--brand));
+}
+
+.dashboard-total :is(h2, strong) {
+  color: var(--brand-foreground);
+}
+
+.dashboard-total .eyebrow {
+  color: var(--accent);
+}
+
+.dashboard-total__source,
+.dashboard-total__compare p {
+  color: color-mix(in srgb, var(--brand-foreground) 75%, transparent);
+}
+
+.dashboard-total__compare {
+  background: rgb(255 255 255 / 10%);
+  border-color: rgb(255 255 255 / 20%);
+}
+
+.dashboard-shortcuts {
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.dashboard-shortcut {
+  min-height: 5.75rem;
+  padding: var(--space-4);
+  border-radius: var(--radius-card);
+}
+
+.dashboard-shortcut small {
+  margin-top: var(--space-1);
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.today-overview,
+.month-pulse,
+.dashboard-panel,
+.dashboard-section,
+.filters-panel,
+.expense-section,
+.accounts-panel,
+.planning-panel,
+.planning-alerts,
+.planning-calendar,
+.invest-page > section,
+.form-section,
+.bank-connection-card,
+.account-detail-card {
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-sm);
+}
+
+.today-overview {
+  margin: 0;
+}
+
+.today-overview__summary,
+.today-overview__activity {
+  padding: clamp(1rem, 2.5vw, 1.75rem);
+}
+
+.today-overview__summary {
+  background: var(--surface-raised);
+}
+
+.month-pulse__copy > p:last-child,
+.section-heading > p,
+.chart-summary,
+.empty-state p,
+.error-state p {
+  color: var(--muted-foreground);
+}
+
+.month-pulse {
+  margin: 0;
+  padding: var(--space-4) var(--space-5);
+}
+
+@media (min-width: 64rem) {
+  .app-shell {
+    grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+  }
+
+  .sidebar {
+    position: sticky;
+    top: 0;
+    width: auto;
+    height: 100dvh;
+  }
+
+  .mobile-header,
+  .mobile-nav {
+    display: none;
+  }
+
+  .main-content {
+    padding-bottom: var(--space-8);
+  }
+}
+
+/* Keep account controls reachable on common laptop-height viewports without
+   shrinking text or falling back to a second navigation pattern. */
+@media (min-width: 64rem) and (max-height: 52rem) {
+  .sidebar {
+    padding-block: var(--space-2);
+  }
+
+  .sidebar__eyebrow {
+    display: none;
+  }
+
+  .sidebar > .brand,
+  .sidebar > .brand-link {
+    margin-bottom: var(--space-1);
+  }
+
+  .sidebar .nav-link {
+    min-height: 2.625rem;
+  }
+
+  .side-nav {
+    padding-bottom: var(--space-2);
+  }
+
+  .sidebar__add {
+    min-height: 2.75rem;
+    margin-block: var(--space-2);
+  }
+
+  .sidebar__tools,
+  .sidebar__secondary {
+    padding-block: var(--space-2);
+  }
+
+  .sidebar .account-card {
+    padding: var(--space-2);
+  }
+
+  .sidebar .account-card__identity small {
+    display: none;
+  }
+}
+
+@media (max-width: 63.9375rem) {
+  /* Mobile navigation has its own compact header, bottom bar, and More sheet.
+     The desktop sidebar has no mobile trigger, so leaving it off-canvas creates
+     a duplicate navigation tree for assistive technology. */
+  .sidebar {
+    display: none;
+  }
+
+  .page {
+    padding-bottom: calc(var(--nav-height) + var(--space-8) + env(safe-area-inset-bottom));
+  }
+
+  .dashboard-total {
+    min-height: 11.5rem;
+  }
+
+  .dashboard-shortcuts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 47.9375rem) {
+  .mobile-header .brand__word {
+    font-size: 1rem;
+  }
+
+  .page {
+    padding-top: var(--space-5);
+    padding-bottom: calc(var(--nav-height) + var(--space-7) + env(safe-area-inset-bottom));
+  }
+
+  .page-header {
+    gap: var(--space-3);
+    padding-bottom: var(--space-4);
+  }
+
+  .page-header h1 {
+    font-size: clamp(2rem, 9.5vw, 2.65rem);
+  }
+
+  .page-header__description {
+    font-size: 0.9375rem;
+  }
+
+  .dashboard-total {
+    min-height: 0;
+    gap: var(--space-5);
+    padding: var(--space-5);
+  }
+
+  .dashboard-total h2 {
+    font-size: clamp(2.75rem, 13vw, 4rem);
+  }
+
+  .dashboard-total__compare {
+    padding: var(--space-3);
+  }
+
+  .dashboard-shortcuts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dashboard-shortcut {
+    min-height: 4.75rem;
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .dashboard-shortcut > span {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .today-overview,
+  .dashboard-panel,
+  .dashboard-section,
+  .filters-panel,
+  .expense-section,
+  .accounts-panel,
+  .planning-panel,
+  .planning-alerts,
+  .planning-calendar,
+  .invest-page > section,
+  .form-section,
+  .bank-connection-card,
+  .account-detail-card {
+    border-radius: var(--radius-md);
+  }
+
+  .month-pulse {
+    padding: var(--space-4);
   }
 }

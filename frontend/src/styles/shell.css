@@ -356,7 +356,7 @@
 }
 
 /* Account card in sidebar */
-.account-card {
+.sidebar .account-card {
   display: flex;
   align-items: center;
   gap: var(--space-3);
@@ -366,7 +366,7 @@
   border: 1px solid var(--sidebar-border);
   border-radius: var(--radius-lg);
 }
-.account-card__avatar {
+.sidebar .account-card__avatar {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -377,21 +377,21 @@
   font-size: 0.875rem;
   flex-shrink: 0;
 }
-.account-card__identity {
+.sidebar .account-card__identity {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 0.125rem;
 }
-.account-card__identity strong {
+.sidebar .account-card__identity strong {
   font-size: 0.875rem;
   font-weight: 620;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.account-card__identity small {
+.sidebar .account-card__identity small {
   font-size: 0.75rem;
   color: var(--sidebar-muted);
   white-space: nowrap;
@@ -826,7 +826,7 @@
   .sidebar__add,
   .sidebar__tools,
   .sidebar__secondary,
-  .account-card,
+  .sidebar .account-card,
   .page-header__action {
     display: none;
   }

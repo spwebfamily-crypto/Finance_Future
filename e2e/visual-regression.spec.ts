@@ -176,6 +176,13 @@ test.describe("visual financial surfaces", () => {
       await page.setViewportSize(viewport);
       await page.goto("/dashboard");
       await expect(page.getByRole("heading", { name: "Hoje, sem complicações" })).toBeVisible();
+      if (viewport.width >= 1024) {
+        await expect(page.locator(".sidebar .side-nav")).toBeVisible();
+        await expect(page.locator(".mobile-nav")).toBeHidden();
+      } else {
+        await expect(page.locator(".sidebar")).toBeHidden();
+        await expect(page.locator(".mobile-nav")).toBeVisible();
+      }
       await assertNoOverflow(page);
       await capture(page, testInfo, `dashboard-${viewport.name}`);
     });
@@ -206,5 +213,24 @@ test.describe("visual financial surfaces", () => {
         ["critical", "serious"].includes(issue.impact ?? ""),
       ),
     ).toEqual([]);
+  });
+
+  test("System follows the operating system while an explicit theme remains fixed", async ({
+    page,
+  }, testInfo) => {
+    await prepareVisualSession(page);
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });
+    await page.goto("/dashboard");
+
+    await expect(page.getByRole("heading", { name: "Hoje, sem complicações" })).toBeVisible();
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+    await capture(page, testInfo, "dashboard-system-dark");
+
+    await page.locator(".theme-toggle select").first().selectOption("light");
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+
+    await page.emulateMedia({ colorScheme: "dark" });
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
   });
 });

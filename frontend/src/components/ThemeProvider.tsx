@@ -13,8 +13,8 @@ export type ResolvedTheme = Exclude<ThemePreference, "system">;
 
 export const THEME_STORAGE_KEY = "expensesnap.theme";
 export const THEME_COLORS: Record<ResolvedTheme, string> = {
-  light: "#f6f7f4",
-  dark: "#111714",
+  light: "#f7f8f5",
+  dark: "#0d1411",
 };
 
 function systemTheme(): ResolvedTheme {

@@ -527,7 +527,7 @@ h3 {
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  color: var(--muted);
+  color: var(--muted-foreground);
   background: transparent;
   border: 0;
   border-radius: var(--radius-md);
@@ -640,7 +640,7 @@ h3 {
 }
 
 .field small {
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.75rem;
 }
 
@@ -670,7 +670,7 @@ h3 {
   position: absolute;
   z-index: 1;
   left: 0.875rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-family: var(--font-mono);
   font-size: 0.875rem;
   pointer-events: none;
@@ -689,7 +689,7 @@ h3 {
   height: 2.75rem;
   align-items: center;
   justify-content: center;
-  color: var(--muted);
+  color: var(--muted-foreground);
   background: transparent;
   border: 0;
   border-radius: var(--radius-sm);
@@ -940,7 +940,7 @@ h3 {
   place-items: center;
   margin: 0;
   padding: 0;
-  color: var(--muted);
+  color: var(--muted-foreground);
   background: var(--surface);
   border-color: var(--line);
 }
@@ -1077,7 +1077,7 @@ h3 {
   min-width: 0;
   height: 100%;
   padding: 0 0.25rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   text-align: center;
   background: transparent;
   border: 0;
@@ -1243,7 +1243,7 @@ h3 {
 .page-header__description {
   max-width: 38rem;
   margin: 0.875rem 0 0;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.9375rem;
   line-height: 1.55;
 }
@@ -1272,14 +1272,14 @@ h3 {
 .section-heading > p,
 .section-heading > div > p:last-child:not(.eyebrow) {
   margin: 0;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.8125rem;
 }
 
 /* Especificidade igual à regra base (declarada depois) para poder sobrepor-se. */
 .section-heading > div > p:last-child.section-heading__note {
   margin-top: 0.25rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.75rem;
 }
 
@@ -1289,7 +1289,7 @@ h3 {
   align-items: center;
   gap: 0.375rem;
   margin-bottom: 1rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.8125rem;
   font-weight: 650;
   text-decoration: none;
@@ -1307,7 +1307,7 @@ h3 {
 .month-picker {
   display: grid;
   gap: 0.375rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -1479,7 +1479,7 @@ h3 {
 
 .month-pulse__copy > p:last-child {
   margin: 0.1875rem 0 0;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.8125rem;
 }
 
@@ -1492,7 +1492,7 @@ h3 {
   align-items: baseline;
   justify-content: space-between;
   gap: 0.75rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.6875rem;
   font-weight: 650;
 }
@@ -1533,7 +1533,7 @@ h3 {
 .month-pulse__budget small {
   display: block;
   margin-top: 0.375rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.6875rem;
 }
 
@@ -1584,7 +1584,7 @@ h3 {
 
 .chart-summary {
   margin-top: 1rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.75rem;
 }
 
@@ -1667,7 +1667,7 @@ h3 {
 
 .level-row p {
   margin: 0;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.75rem;
 }
 
@@ -1681,7 +1681,7 @@ h3 {
 .level-row__amount small {
   display: block;
   margin-top: 0.1875rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-family: var(--font-ui);
   font-size: 0.6875rem;
   font-weight: 500;
@@ -1780,7 +1780,7 @@ h3 {
 .filter-panel__heading p,
 .filter-panel__toggle p {
   margin: 0.125rem 0 0;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.75rem;
 }
 
@@ -1788,7 +1788,7 @@ h3 {
   width: 1rem;
   height: 1rem;
   margin-left: auto;
-  color: var(--muted);
+  color: var(--muted-foreground);
   transition: transform 180ms var(--ease-out);
 }
 
@@ -1806,7 +1806,7 @@ h3 {
 .filter-chip {
   min-height: 2.125rem;
   padding: 0.375rem 0.6875rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   background: var(--surface-soft);
   border: 0.0625rem solid var(--line);
   border-radius: 999px;
@@ -1838,7 +1838,7 @@ h3 {
   gap: 0.5rem;
   margin-top: 1rem;
   padding: 0 0.75rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   background: var(--surface-soft);
   border: 0.0625rem solid var(--line);
   border-radius: var(--radius-md);
@@ -2024,7 +2024,7 @@ h3 {
   flex-wrap: wrap;
   gap: 0.375rem 1rem;
   margin-top: 0.375rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.75rem;
 }
 
@@ -2100,7 +2100,7 @@ h3 {
 
 .category-create > p:not(.eyebrow) {
   margin-bottom: 1.5rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.8125rem;
 }
 
@@ -2115,7 +2115,7 @@ h3 {
   min-width: 2.5rem;
   min-height: 2.5rem;
   place-items: center;
-  color: var(--muted);
+  color: var(--muted-foreground);
   background: var(--surface-soft);
   border: 0.0625rem solid var(--line);
   border-radius: var(--radius-sm);
@@ -2170,7 +2170,7 @@ h3 {
 
 .category-row__name p {
   margin: 0.1875rem 0 0;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.75rem;
 }
 
@@ -2197,7 +2197,7 @@ h3 {
   align-items: center;
   gap: 0.375rem;
   padding-inline: 0.625rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.6875rem;
   font-weight: 650;
 }
@@ -2251,7 +2251,7 @@ h3 {
 
 .form-section__heading p {
   margin: 0.25rem 0 0;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.75rem;
 }
 
@@ -2280,7 +2280,7 @@ h3 {
   align-content: center;
   gap: 0.5rem;
   padding: 1.5rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   background: var(--surface-soft);
   border: 0.0625rem dashed var(--line-strong);
   border-radius: var(--radius-lg);
@@ -2381,7 +2381,7 @@ h3 {
 
 .receipt-preview__details small {
   margin-top: 0.125rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-family: var(--font-mono);
   font-size: 0.6875rem;
 }
@@ -2462,7 +2462,7 @@ h3 {
 
 .receipt-ocr__copy p {
   margin: 0.25rem 0 0;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.75rem;
 }
 
@@ -2507,7 +2507,7 @@ h3 {
   justify-content: center;
   gap: 1rem;
   padding: 1.5rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   background: var(--surface);
   border: 0.0625rem solid var(--line);
   border-radius: var(--radius-lg);
@@ -2647,7 +2647,7 @@ h3 {
 }
 
 .full-page-loader__label {
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.8125rem;
   font-weight: 650;
 }
@@ -2739,7 +2739,7 @@ h3 {
 
 .confirm-dialog p {
   margin-bottom: 1.5rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.875rem;
 }
 
@@ -3067,7 +3067,7 @@ h3 {
 
 .form-intro {
   margin: 0;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 1rem;
   line-height: 1.5;
 }
@@ -3078,7 +3078,7 @@ h3 {
 
 .auth-switch {
   margin: 1.5rem 0 0;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.875rem;
   text-align: center;
 }
@@ -3170,7 +3170,7 @@ a.auth-forgot {
 
 .auth-status__hint {
   margin: 0;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.8125rem;
   line-height: 1.5;
 }
@@ -3206,7 +3206,7 @@ a.auth-forgot {
 .not-found > p:not(.eyebrow, .not-found__number) {
   max-width: 34rem;
   margin-bottom: 1.5rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 
 .not-found__actions {
@@ -3351,7 +3351,7 @@ a.auth-forgot {
   justify-content: flex-end;
   gap: 0.375rem;
   margin: 0 0 1rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.6875rem;
 }
 
@@ -3375,7 +3375,7 @@ a.auth-forgot {
 }
 
 .budget-row__usage small {
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-family: var(--font-mono);
   font-size: 0.6875rem;
 }
@@ -3446,7 +3446,7 @@ a.auth-forgot {
   min-width: 2.75rem;
   justify-content: center;
   padding: 0;
-  color: var(--muted);
+  color: var(--muted-foreground);
   background: transparent;
   border-color: transparent;
 }
@@ -3519,7 +3519,7 @@ a.auth-forgot {
 }
 
 .command-palette__input kbd {
-  color: var(--muted);
+  color: var(--muted-foreground);
   background: var(--surface-soft);
   border-color: var(--line);
 }
@@ -3547,7 +3547,7 @@ a.auth-forgot {
 }
 
 .command-item small {
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.6875rem;
 }
 
@@ -3560,7 +3560,7 @@ a.auth-forgot {
 .command-palette__empty {
   margin: 0;
   padding: 1.5rem 1rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   text-align: center;
 }
 
@@ -3728,7 +3728,7 @@ a.auth-forgot {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 0.625rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-family: var(--font-mono);
   font-size: 0.6875rem;
   font-weight: 600;
@@ -3794,7 +3794,7 @@ a.auth-forgot {
 .onboarding-step__intro {
   max-width: 42rem;
   margin-bottom: 2rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 1rem;
   line-height: 1.6;
 }
@@ -3856,7 +3856,7 @@ a.auth-forgot {
 }
 
 .money-question small {
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.75rem;
 }
 
@@ -3896,7 +3896,7 @@ a.auth-forgot {
 }
 
 .onboarding-money-field__control > span {
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-family: var(--font-mono);
 }
 
@@ -3945,7 +3945,7 @@ a.auth-forgot {
 }
 
 .onboarding-balance small {
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.6875rem;
 }
 
@@ -4048,7 +4048,7 @@ a.auth-forgot {
 
 .choice-button small {
   margin-top: 0.25rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.75rem;
   line-height: 1.35;
 }
@@ -4080,7 +4080,7 @@ a.auth-forgot {
   gap: 0.75rem;
   margin-top: 1.25rem;
   padding: 1rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   background: rgb(255 255 255 / 62%);
   border: 0.0625rem solid var(--line);
   border-radius: var(--radius-lg);
@@ -4209,7 +4209,7 @@ a.auth-forgot {
 .invest-section-heading > div > p:last-child:not(.invest-kicker) {
   max-width: 48rem;
   margin: 0.625rem 0 0;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.8125rem;
 }
 
@@ -4459,7 +4459,7 @@ a.auth-forgot {
 
 .invest-path__number {
   padding-top: 0.75rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-family: var(--font-mono);
   font-size: 0.625rem;
   font-weight: 600;
@@ -4489,7 +4489,7 @@ a.auth-forgot {
 .invest-path__item p {
   max-width: 64rem;
   margin: 0;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.8125rem;
   line-height: 1.55;
 }
@@ -4536,7 +4536,7 @@ a.auth-forgot {
 
 .invest-example__identifier {
   margin: 0;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-family: var(--font-mono);
   font-size: 0.6875rem;
 }
@@ -4592,7 +4592,7 @@ a.auth-forgot {
   align-items: flex-start;
   gap: 0.5rem;
   margin: 0;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.75rem;
   line-height: 1.45;
 }
@@ -4692,7 +4692,7 @@ a.auth-forgot {
   align-items: center;
   justify-content: space-between;
   gap: 0.375rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.6875rem;
   font-weight: 650;
 }
@@ -4772,7 +4772,7 @@ a.auth-forgot {
 }
 
 .invest-source small {
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.6875rem;
   line-height: 1.45;
 }
@@ -4892,7 +4892,7 @@ a.auth-forgot {
   align-content: center;
   gap: 0.625rem;
   padding: 2rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   background: rgb(238 241 237 / 92%);
   text-align: center;
 }
@@ -4946,7 +4946,7 @@ a.auth-forgot {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-family: var(--font-mono);
   font-size: 0.6875rem;
 }
@@ -4971,7 +4971,7 @@ a.auth-forgot {
   align-content: center;
   gap: 0.625rem;
   padding: 2rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   background: var(--surface-soft);
   border: 0.0625rem solid var(--line);
   border-radius: var(--radius-lg);
@@ -5060,7 +5060,7 @@ a.auth-forgot {
 
 .dashboard-shortcut small {
   margin-top: 0.125rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.6875rem;
   line-height: 1.35;
 }
@@ -5148,7 +5148,7 @@ a.auth-forgot {
 .today-metrics span,
 .today-balance > div > span,
 .today-overview__activity-title {
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.035em;
@@ -5245,7 +5245,7 @@ a.auth-forgot {
   width: 2rem;
   height: 2rem;
   place-items: center;
-  color: var(--muted);
+  color: var(--muted-foreground);
   background: var(--canvas-deep);
   border-radius: 50%;
 }
@@ -5283,7 +5283,7 @@ a.auth-forgot {
 
 .today-activity-list li > div small {
   margin-top: 0.125rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.6875rem;
 }
 
@@ -5303,7 +5303,7 @@ a.auth-forgot {
   place-items: center;
   align-content: center;
   gap: 0.5rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   background: var(--surface-soft);
   border-radius: var(--radius-md);
   text-align: center;
@@ -5332,7 +5332,7 @@ a.auth-forgot {
 }
 
 .expense-import-row > span {
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.8125rem;
 }
 
@@ -5389,14 +5389,14 @@ a.auth-forgot {
 }
 
 .planning-disclosure summary small {
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.6875rem;
 }
 
 .planning-disclosure__hint {
   margin: 0;
   padding: 0.75rem 1rem 0;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.75rem;
 }
 
@@ -5431,7 +5431,7 @@ a.auth-forgot {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.75rem;
   font-weight: 650;
 }
@@ -5452,7 +5452,7 @@ a.auth-forgot {
 }
 
 .planning-overview small {
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.6875rem;
 }
 
@@ -5601,7 +5601,7 @@ a.auth-forgot {
 .planning-row p,
 .recurring-card p {
   margin: 0.1875rem 0 0;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.75rem;
 }
 
@@ -5619,7 +5619,7 @@ a.auth-forgot {
 }
 
 .goal-card__amount span {
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.75rem;
 }
 
@@ -5749,7 +5749,7 @@ a.auth-forgot {
 
 .upcoming-card > p:last-child {
   margin: 0;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.8125rem;
   line-height: 1.5;
 }
@@ -5797,7 +5797,7 @@ a.auth-forgot {
 
 .upcoming-card li small {
   margin-top: 0.125rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.625rem;
 }
 
@@ -5890,7 +5890,7 @@ a.auth-forgot {
 
 .planning-calendar__item small {
   margin-top: 0.1875rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.6875rem;
 }
 
@@ -5924,7 +5924,7 @@ a.auth-forgot {
 .planning-subsection__empty,
 .accounts-empty {
   margin: 0;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.8125rem;
 }
 
@@ -6015,7 +6015,7 @@ a.auth-forgot {
 .debt-card__header p,
 .debt-card__due {
   margin-top: 0.25rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.75rem;
 }
 
@@ -6037,7 +6037,7 @@ a.auth-forgot {
 
 .debt-card__metrics small {
   overflow: hidden;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.625rem;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -6104,7 +6104,7 @@ a.auth-forgot {
 
 .accounts-insight {
   margin: -0.25rem 0 1.25rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.875rem;
 }
 
@@ -6183,7 +6183,7 @@ a.auth-forgot {
 }
 
 .account-card-large p {
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.6875rem;
 }
 
@@ -6220,7 +6220,7 @@ a.auth-forgot {
   flex-wrap: wrap;
   gap: 0.25rem 0.75rem;
   margin-top: 0.5rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.6875rem;
 }
 
@@ -6262,7 +6262,7 @@ a.auth-forgot {
 
 .balance-correction-dialog__current {
   margin-top: -0.5rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.75rem;
 }
 
@@ -6309,12 +6309,12 @@ a.auth-forgot {
 .transfer-list h3 svg {
   width: 0.875rem;
   height: 0.875rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 
 .transfer-list p {
   margin-top: 0.1875rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.75rem;
 }
 
@@ -6357,7 +6357,7 @@ a.auth-forgot {
 .csv-import__heading > div > p:last-child {
   max-width: 38rem;
   margin-top: 0.25rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.8125rem;
 }
 
@@ -6397,7 +6397,7 @@ a.auth-forgot {
 .csv-import__preview p,
 .csv-import__preview small {
   margin: 0;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.75rem;
 }
 
@@ -6534,7 +6534,7 @@ a.auth-forgot {
     justify-content: center;
     gap: 0.375rem;
     padding: 0.375rem;
-    color: var(--muted);
+    color: var(--muted-foreground);
     background: transparent;
     border: 0;
     border-radius: var(--radius-md);
@@ -7665,7 +7665,7 @@ a.auth-forgot {
   }
 
   .field__action:hover {
-    color: var(--muted);
+    color: var(--muted-foreground);
     background: transparent;
   }
 
@@ -7682,7 +7682,7 @@ a.auth-forgot {
   }
 
   .back-link:hover {
-    color: var(--muted);
+    color: var(--muted-foreground);
   }
 
   .expense-row:hover,
@@ -7869,7 +7869,7 @@ a.auth-forgot {
 }
 
 .account-badge--manual {
-  color: var(--muted);
+  color: var(--muted-foreground);
   background: var(--surface-soft);
   border: 0.0625rem solid var(--line);
 }
@@ -7907,7 +7907,7 @@ a.auth-forgot {
   height: 1.75rem;
   flex: 0 0 auto;
   place-items: center;
-  color: var(--muted);
+  color: var(--muted-foreground);
   background: var(--surface-soft);
   border-radius: 999px;
   font-size: 0.75rem;
@@ -7942,7 +7942,7 @@ a.auth-forgot {
 
 .connect-steps li small {
   margin-top: 0.1875rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.75rem;
 }
 
@@ -8003,7 +8003,7 @@ a.auth-forgot {
   align-items: center;
   gap: 0.375rem;
   margin: 0;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.75rem;
 }
 
@@ -8102,7 +8102,7 @@ a.auth-forgot {
 
 .institution-empty {
   padding: 0.75rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.8125rem;
 }
 
@@ -8117,7 +8117,7 @@ a.auth-forgot {
 
 .segmented-control button {
   padding: 0.375rem 0.875rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font: inherit;
   font-size: 0.8125rem;
   font-weight: 700;
@@ -8184,7 +8184,7 @@ a.auth-forgot {
   gap: 0.375rem;
   margin: 0;
   font-size: 0.75rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 
 .bank-status svg {
@@ -8310,7 +8310,7 @@ a.auth-forgot {
 
 .auth-login-security small {
   margin-top: 0.1875rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.6875rem;
 }
 
@@ -8584,7 +8584,7 @@ a.auth-forgot {
 .daily-review-modal__header p {
   max-width: 29rem;
   margin: 0;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.875rem;
 }
 
@@ -8597,7 +8597,7 @@ a.auth-forgot {
   align-items: center;
   justify-content: space-between;
   margin: 1.5rem 0 0.75rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.75rem;
   font-weight: 700;
 }
@@ -8851,13 +8851,13 @@ a.auth-forgot {
 
 .bank-connection-card header p {
   margin: 0;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.6875rem;
 }
 
 .bank-connection-card__consent {
   margin: 0;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.6875rem;
 }
 
@@ -8902,7 +8902,7 @@ a.auth-forgot {
 
 .bank-account-card__type {
   margin: 0;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.6875rem;
 }
 
@@ -8913,7 +8913,7 @@ a.auth-forgot {
 
 .bank-balance__label {
   margin: 0;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.6875rem;
 }
 
@@ -8927,7 +8927,7 @@ a.auth-forgot {
 .bank-balance__source,
 .bank-balance__delta {
   margin: 0;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.75rem;
 }
 
@@ -8968,7 +8968,7 @@ a.auth-forgot {
   flex-wrap: wrap;
   gap: 0.375rem;
   margin: 0.125rem 0 0;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.6875rem;
 }
 
@@ -8983,7 +8983,7 @@ a.auth-forgot {
 }
 
 .bank-transaction-row__badge--muted {
-  color: var(--muted);
+  color: var(--muted-foreground);
   background: var(--surface);
 }
 
@@ -9013,7 +9013,7 @@ a.auth-forgot {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.75rem;
 }
 
@@ -9029,7 +9029,7 @@ a.auth-forgot {
   justify-content: center;
   gap: 0.75rem;
   margin-top: 1rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.8125rem;
 }
 
@@ -9043,7 +9043,7 @@ a.auth-forgot {
 
 .retention-options legend {
   padding: 0;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.75rem;
 }
 
@@ -9071,7 +9071,7 @@ a.auth-forgot {
 .retention-option small {
   display: block;
   margin-top: 0.125rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.75rem;
 }
 
@@ -9121,7 +9121,7 @@ a.auth-forgot {
 
 .privacy-connections p {
   margin: 0.125rem 0 0;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.6875rem;
 }
 
@@ -9135,7 +9135,7 @@ a.auth-forgot {
 
 .sidebar__secondary-link {
   padding: 0.3125rem 0.5rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.75rem;
   text-decoration: none;
   border-radius: var(--radius-sm);

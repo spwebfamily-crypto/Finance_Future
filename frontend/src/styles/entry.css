@@ -14,3 +14,4 @@
 @import "./shell.css" layer(shell);
 @import "./pages.css" layer(pages);
 @import "./utilities.css" layer(utilities);
+@import "./design-system.css";

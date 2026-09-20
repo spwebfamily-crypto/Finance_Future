@@ -16,6 +16,7 @@ export function ThemeToggle({ compact = false }: { compact?: boolean }) {
   return (
     <label
       className={compact ? "theme-toggle theme-toggle--compact" : "theme-toggle"}
+      data-theme-preference={preference}
       title={translate("theme.label")}
     >
       {preference === "system" ? (

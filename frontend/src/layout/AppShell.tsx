@@ -447,8 +447,8 @@ export function AppShell() {
           </NavLink>
           <div className="sidebar__tools">
             <NotificationCenter />
-            <CommandPaletteTrigger />
-            <ThemeToggle />
+            <CommandPaletteTrigger compact />
+            <ThemeToggle compact />
             <LanguageSwitcher />
           </div>
           <nav className="sidebar__secondary" aria-label={t("Ferramentas e ligações")}>

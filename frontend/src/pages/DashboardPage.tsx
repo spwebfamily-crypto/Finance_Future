@@ -469,8 +469,8 @@ export function DashboardPage() {
                 <small>
                   {t(
                     hasLinkedBank
-                      ? "Gastos do banco já estão neste total."
-                      : "Os gastos entram sozinhos nas despesas.",
+                      ? "Inclui os gastos das contas ligadas ao banco."
+                      : "Ligue um banco para os gastos contabilizados entrarem sozinhos.",
                   )}
                 </small>
               </div>
