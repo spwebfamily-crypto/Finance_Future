@@ -17,7 +17,8 @@
     "postinstall": "prisma generate",
     "open-banking:sync": "tsx src/scripts/processOpenBankingJobs.ts",
     "open-banking:dedupe": "tsx src/scripts/cleanupDuplicateBankTransactions.ts",
-    "data:purge-september": "tsx src/scripts/purgeSeptemberData.ts"
+    "data:purge-september": "tsx src/scripts/purgeSeptemberData.ts",
+    "data:remove-outros": "tsx src/scripts/removeOutrosCategory.ts"
   },
   "dependencies": {
     "@prisma/client": "6.12.0",

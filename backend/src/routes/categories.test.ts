@@ -136,6 +136,36 @@ describe("category routes", () => {
     expect(repositories.categoryCreate.mock.calls[0][0].data.icon).toBeNull();
   });
 
+  it("rejeita Outros e variantes normalizadas", async () => {
+    for (const name of ["Outros", " outros ", "OUTROS"]) {
+      const response = await fetch(`${baseUrl}/api/categories`, {
+        method: "POST",
+        headers: { Authorization: authorization(), "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+
+      const body = await response.json();
+      expect(response.status).toBe(422);
+      expect(body.error.code).toBe("CATEGORY_RESERVED");
+    }
+    expect(repositories.categoryCreate).not.toHaveBeenCalled();
+  });
+
+  it("rejeita renomear uma categoria para Outros", async () => {
+    repositories.categoryFindFirst.mockResolvedValue(buildCategory());
+
+    const response = await fetch(`${baseUrl}/api/categories/${categoryId}`, {
+      method: "PATCH",
+      headers: { Authorization: authorization(), "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "Outros" }),
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(422);
+    expect(body.error.code).toBe("CATEGORY_RESERVED");
+    expect(repositories.categoryUpdate).not.toHaveBeenCalled();
+  });
+
   it("rejeita um nome vazio com VALIDATION_ERROR", async () => {
     const response = await fetch(`${baseUrl}/api/categories`, {
       method: "POST",

@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { prisma } from "../prisma.js";
+import { isReservedCategoryName, RESERVED_CATEGORY_ERROR } from "../services/categoryPolicy.js";
 import { requireAuth, sendError } from "../middleware.js";
 import { categoryCreateSchema, categoryUpdateSchema } from "../validation.js";
 import type { AuthenticatedRequest } from "../types.js";
@@ -22,6 +23,14 @@ router.get("/", async (request: AuthenticatedRequest, response, next) => {
 router.post("/", async (request: AuthenticatedRequest, response, next) => {
   try {
     const input = categoryCreateSchema.parse(request.body);
+    if (isReservedCategoryName(input.name)) {
+      return sendError(
+        response,
+        422,
+        RESERVED_CATEGORY_ERROR.code,
+        RESERVED_CATEGORY_ERROR.message,
+      );
+    }
     const category = await prisma.category.create({
       data: {
         name: input.name,
@@ -38,6 +47,14 @@ router.post("/", async (request: AuthenticatedRequest, response, next) => {
 router.patch("/:id", async (request: AuthenticatedRequest, response, next) => {
   try {
     const input = categoryUpdateSchema.parse(request.body);
+    if (input.name && isReservedCategoryName(input.name)) {
+      return sendError(
+        response,
+        422,
+        RESERVED_CATEGORY_ERROR.code,
+        RESERVED_CATEGORY_ERROR.message,
+      );
+    }
     const existing = await prisma.category.findFirst({
       where: { id: request.params.id, userId: request.user!.id },
     });

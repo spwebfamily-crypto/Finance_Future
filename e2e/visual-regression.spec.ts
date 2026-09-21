@@ -16,6 +16,64 @@ const category = {
   icon: "shopping-cart",
   isDefault: true,
 };
+const account = {
+  id: "account-main",
+  name: "Conta principal",
+  type: "current",
+  source: "manual",
+  currency: "EUR",
+  openingBalance: 1200,
+  currentBalance: 1840.4,
+  availableBalance: 1840.4,
+  derivedBalance: 1840.4,
+  balanceSource: "derived",
+  balanceLabel: "Saldo contabilístico",
+  createdAt: "2026-09-01T12:00:00.000Z",
+  updatedAt: "2026-09-19T12:00:00.000Z",
+};
+const expenses = [
+  {
+    id: "expense-market",
+    categoryId: category.id,
+    category,
+    account,
+    accountId: account.id,
+    description: "Mercado semanal",
+    location: "Mercado do bairro",
+    amount: "64.20",
+    currency: "EUR",
+    date: "2026-09-19",
+    source: "bank",
+  },
+  {
+    id: "expense-metro",
+    categoryId: "transport",
+    category: { id: "transport", name: "Transportes", icon: "train-front", isDefault: true },
+    description: "Passe mensal",
+    location: "Lisboa",
+    amount: "40.00",
+    currency: "EUR",
+    date: "2026-09-18",
+    source: "manual",
+  },
+  {
+    id: "expense-coffee",
+    categoryId: "leisure",
+    category: { id: "leisure", name: "Lazer", icon: "coffee", isDefault: true },
+    description: "Café com amigos",
+    location: "Baixa",
+    amount: "8.50",
+    currency: "EUR",
+    date: "2026-09-17",
+    source: "manual",
+  },
+];
+const categories = [
+  category,
+  { id: "transport", name: "Transportes", icon: "train-front", isDefault: true },
+  { id: "leisure", name: "Lazer", icon: "coffee", isDefault: true },
+  { id: "health", name: "Saúde", icon: "heart-pulse", isDefault: false },
+];
 const summary = {
   month: "2026-09",
   timeZone: "Europe/Lisbon",
@@ -117,10 +175,14 @@ async function prepareVisualSession(page: Page, locale: "pt-PT" | "en-GB" = "pt-
         ? dashboard
         : path === "/planning/overview"
           ? planning
-          : path === "/analytics/summary"
-            ? summary
-            : path === "/accounts"
-              ? []
+        : path === "/analytics/summary"
+          ? summary
+          : path === "/expenses"
+            ? { data: expenses, meta: { page: 1, pageSize: 500, total: expenses.length, pageCount: 1 } }
+          : path === "/categories"
+            ? categories
+          : path === "/accounts"
+              ? [account]
               : path === "/financial-profile"
                 ? profile
                 : path === "/open-banking/connections"
@@ -133,6 +195,13 @@ async function prepareVisualSession(page: Page, locale: "pt-PT" | "en-GB" = "pt-
                         ? { enabled: false, publicKey: null }
                         : { data: [] };
     await route.fulfill({ contentType: "application/json", body: JSON.stringify(payload) });
+  });
+}
+
+async function preparePublicVisualSession(page: Page) {
+  page.on("pageerror", (error) => console.error(`[visual page error] ${error.message}`));
+  page.on("console", (message) => {
+    if (message.type() === "error") console.error(`[visual console] ${message.text()}`);
   });
 }
 
@@ -232,5 +301,66 @@ test.describe("visual financial surfaces", () => {
 
     await page.emulateMedia({ colorScheme: "dark" });
     await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  });
+
+  test("operational pages retain the shared system on desktop and mobile", async ({
+    page,
+  }, testInfo) => {
+    await prepareVisualSession(page);
+    const surfaces = [
+      { path: "/expenses", heading: "Despesas", screenshot: "expenses-mobile" },
+      { path: "/accounts", heading: "Contas e cartões", screenshot: "accounts-desktop" },
+      { path: "/categories", heading: "Categorias", screenshot: "categories-mobile" },
+      { path: "/accounts/connections", heading: "Bancos ligados", screenshot: "connections-desktop" },
+      { path: "/accounts/connect", heading: "Ligar um banco", screenshot: "connect-mobile" },
+    ];
+
+    for (const [index, surface] of surfaces.entries()) {
+      await page.setViewportSize(index % 2 ? { width: 1280, height: 900 } : { width: 390, height: 844 });
+      await page.goto(surface.path);
+      await expect(page.getByRole("heading", { name: surface.heading, exact: true })).toBeVisible();
+      await assertNoOverflow(page);
+      await capture(page, testInfo, surface.screenshot);
+    }
+  });
+
+  test("public entry points retain the same clarity on mobile and desktop", async ({
+    page,
+  }, testInfo) => {
+    await preparePublicVisualSession(page);
+    const surfaces = [
+      {
+        path: "/login",
+        heading: "Bem-vindo de volta",
+        screenshot: "login-mobile",
+        viewport: { width: 390, height: 844 },
+      },
+      {
+        path: "/register",
+        heading: "Criar conta",
+        screenshot: "register-desktop",
+        viewport: { width: 1280, height: 900 },
+      },
+      {
+        path: "/forgot-password",
+        heading: "Esqueceu a palavra-passe?",
+        screenshot: "forgot-mobile",
+        viewport: { width: 390, height: 844 },
+      },
+      {
+        path: "/rota-inexistente",
+        heading: "Esta conta não fecha.",
+        screenshot: "not-found-desktop",
+        viewport: { width: 1280, height: 900 },
+      },
+    ];
+
+    for (const surface of surfaces) {
+      await page.setViewportSize(surface.viewport);
+      await page.goto(surface.path);
+      await expect(page.getByRole("heading", { name: surface.heading, exact: true })).toBeVisible();
+      await assertNoOverflow(page);
+      await capture(page, testInfo, surface.screenshot);
+    }
   });
 });

@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { Router } from "express";
 import { requireAuth, sendError } from "../middleware.js";
 import { prisma } from "../prisma.js";
+import { isReservedCategoryName, RESERVED_CATEGORY_ERROR } from "../services/categoryPolicy.js";
 import type { AuthenticatedRequest } from "../types.js";
 import { recurringExpenseCreateSchema, recurringExpenseUpdateSchema } from "../validation.js";
 
@@ -51,7 +52,10 @@ function advanceDueDate(current: Date, dayOfMonth: number) {
 }
 
 async function categoryBelongsToUser(categoryId: string, userId: string) {
-  return prisma.category.findFirst({ where: { id: categoryId, userId }, select: { id: true } });
+  return prisma.category.findFirst({
+    where: { id: categoryId, userId },
+    select: { id: true, name: true },
+  });
 }
 
 async function accountBelongsToUser(accountId: string, userId: string) {
@@ -74,8 +78,17 @@ router.get("/", async (request: AuthenticatedRequest, response, next) => {
 router.post("/", async (request: AuthenticatedRequest, response, next) => {
   try {
     const input = recurringExpenseCreateSchema.parse(request.body);
-    if (!(await categoryBelongsToUser(input.categoryId, request.user!.id))) {
+    const category = await categoryBelongsToUser(input.categoryId, request.user!.id);
+    if (!category) {
       return sendError(response, 404, "CATEGORY_NOT_FOUND", "Categoria não encontrada.");
+    }
+    if (isReservedCategoryName(category.name)) {
+      return sendError(
+        response,
+        422,
+        RESERVED_CATEGORY_ERROR.code,
+        RESERVED_CATEGORY_ERROR.message,
+      );
     }
     if (input.accountId && !(await accountBelongsToUser(input.accountId, request.user!.id))) {
       return sendError(response, 404, "ACCOUNT_NOT_FOUND", "Conta não encontrada.");
@@ -104,8 +117,19 @@ router.patch("/:id", async (request: AuthenticatedRequest, response, next) => {
         "RECURRING_EXPENSE_NOT_FOUND",
         "Despesa recorrente não encontrada.",
       );
-    if (input.categoryId && !(await categoryBelongsToUser(input.categoryId, request.user!.id))) {
-      return sendError(response, 404, "CATEGORY_NOT_FOUND", "Categoria não encontrada.");
+    if (input.categoryId) {
+      const category = await categoryBelongsToUser(input.categoryId, request.user!.id);
+      if (!category) {
+        return sendError(response, 404, "CATEGORY_NOT_FOUND", "Categoria não encontrada.");
+      }
+      if (isReservedCategoryName(category.name)) {
+        return sendError(
+          response,
+          422,
+          RESERVED_CATEGORY_ERROR.code,
+          RESERVED_CATEGORY_ERROR.message,
+        );
+      }
     }
     if (input.accountId && !(await accountBelongsToUser(input.accountId, request.user!.id))) {
       return sendError(response, 404, "ACCOUNT_NOT_FOUND", "Conta não encontrada.");

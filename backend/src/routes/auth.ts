@@ -80,7 +80,6 @@ const defaultCategories = [
   { name: "Saúde", icon: "heart-pulse", isDefault: true },
   { name: "Lazer", icon: "party-popper", isDefault: true },
   { name: "Compras", icon: "shopping-bag", isDefault: true },
-  { name: "Outros", icon: "sparkles", isDefault: true },
 ] as const;
 
 async function issueTokens(

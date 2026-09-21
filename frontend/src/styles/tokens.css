@@ -7,37 +7,37 @@
 :root {
   /* Colour scheme & base */
   color-scheme: light;
-  --background: #f7f8f5;
-  --foreground: #15211b;
+  --background: #f2f4ef;
+  --foreground: #10251c;
 
   /* Core surfaces */
-  --surface: #fcfdfa;
-  --surface-foreground: #15211b;
-  --surface-sunken: #e9eee9;
-  --surface-soft: #f0f3ef;
-  --surface-soft-foreground: #405148;
+  --surface: #ffffff;
+  --surface-foreground: #10251c;
+  --surface-sunken: #e5ebe4;
+  --surface-soft: #f5f7f3;
+  --surface-soft-foreground: #496057;
   --surface-raised: #ffffff;
-  --surface-raised-foreground: #15211b;
+  --surface-raised-foreground: #10251c;
   --surface-overlay: #ffffff;
   --surface-overlay-foreground: #15211b;
 
   /* Brand (green/lime identity) */
-  --brand: #0f6246;
+  --brand: #126444;
   --brand-foreground: #ffffff;
-  --brand-hover: #0a4e38;
+  --brand-hover: #0b4d34;
   --brand-hover-foreground: #ffffff;
-  --brand-soft: #d9efe3;
-  --brand-soft-foreground: #164a35;
-  --brand-border: #9fcdb0;
+  --brand-soft: #dff1e6;
+  --brand-soft-foreground: #134b35;
+  --brand-border: #a7cfb6;
 
   /* Accent (lime highlight) */
-  --accent: #c4ed54;
-  --accent-foreground: #18220e;
-  --accent-hover: #b3dd42;
+  --accent: #d4f65a;
+  --accent-foreground: #14220e;
+  --accent-hover: #c4e84a;
   --accent-hover-foreground: #18220e;
   --accent-soft: #edf7cf;
   --accent-soft-foreground: #31420f;
-  --accent-border: #b3dd42;
+  --accent-border: #c4e84a;
 
   /* Semantic: Success */
   --success: #207252;
@@ -72,9 +72,9 @@
   --muted-border: #d6dfd8;
 
   /* Lines & borders */
-  --line: #d6dfd8;
-  --line-strong: #a8b8ad;
-  --border: #d6dfd8;
+  --line: #d4ddd5;
+  --line-strong: #a5b7aa;
+  --border: #d4ddd5;
   --input: #c8d4cb;
   --ring: #9fc933;
   --focus-ring: rgb(159 201 51 / 38%);
@@ -111,12 +111,12 @@
 
   /* Radius */
   --radius-sm: 0.35rem;
-  --radius-md: 0.7rem;
-  --radius-lg: 1.1rem;
-  --radius-xl: 1.5rem;
-  --radius-control: 0.625rem;
-  --radius-card: 0.875rem;
-  --radius-hero: 1.25rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1.25rem;
+  --radius-xl: 1.75rem;
+  --radius-control: 0.75rem;
+  --radius-card: 1.125rem;
+  --radius-hero: 1.75rem;
 
   /* Spacing scale */
   --space-1: 0.25rem;
@@ -171,34 +171,34 @@
 /* Dark theme — complete semantic token overrides */
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --background: #0d1411;
-  --foreground: #eef5ef;
+  --background: #0a1210;
+  --foreground: #eff7ef;
 
-  --surface: #141d18;
-  --surface-foreground: #eef5ef;
-  --surface-sunken: #09100d;
-  --surface-soft: #1a251f;
-  --surface-soft-foreground: #d6e0d8;
-  --surface-raised: #202c25;
+  --surface: #101b16;
+  --surface-foreground: #eff7ef;
+  --surface-sunken: #070d0a;
+  --surface-soft: #17251e;
+  --surface-soft-foreground: #d8e3da;
+  --surface-raised: #1b2a22;
   --surface-raised-foreground: #eef5ef;
-  --surface-overlay: #26332b;
+  --surface-overlay: #22342a;
   --surface-overlay-foreground: #eef5ef;
 
-  --brand: #85c9a2;
-  --brand-foreground: #0e2519;
-  --brand-hover: #9adbb5;
-  --brand-hover-foreground: #0e2519;
-  --brand-soft: #1b4936;
-  --brand-soft-foreground: #b6edcb;
-  --brand-border: #3e7258;
+  --brand: #82d2a5;
+  --brand-foreground: #0c2518;
+  --brand-hover: #9ae7b9;
+  --brand-hover-foreground: #0c2518;
+  --brand-soft: #1a4935;
+  --brand-soft-foreground: #bff3d2;
+  --brand-border: #427b5d;
 
-  --accent: #c9f05a;
-  --accent-foreground: #142009;
-  --accent-hover: #d6f878;
+  --accent: #d8fb63;
+  --accent-foreground: #122009;
+  --accent-hover: #e1ff83;
   --accent-hover-foreground: #142009;
   --accent-soft: #31421e;
   --accent-soft-foreground: #e9fac0;
-  --accent-border: #bade50;
+  --accent-border: #c8eb55;
 
   --success: #83d1a5;
   --success-foreground: #0d2417;

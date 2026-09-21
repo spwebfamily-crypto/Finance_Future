@@ -24,8 +24,8 @@ beforeEach(() => {
   resetTestPrisma();
 });
 
-async function seedCategory(name = "Outros") {
-  await prisma.category.create({ data: { userId, name, isDefault: true } });
+async function seedCategory(name = "Alimentação") {
+  return prisma.category.create({ data: { userId, name, isDefault: true } });
 }
 
 async function seedBankAccount(options: {
@@ -108,7 +108,7 @@ async function seedTransaction(
 
 describe("materialization", () => {
   it("creates an expense for a booked debit and an income for a booked credit", async () => {
-    await seedCategory();
+    const category = await seedCategory();
     const { link, account } = await seedBankAccount({ displayName: "Conta", hash: "hash-1" });
     const debit = await seedTransaction(link.id as string, {
       direction: "debit",
@@ -124,7 +124,11 @@ describe("materialization", () => {
       counterpartyName: "Empregador",
     });
 
-    const counters = await materializeBookedTransactions(userId);
+    const counters = await materializeBookedTransactions(
+      userId,
+      undefined,
+      new Map([[debit.id as string, category.id as string]]),
+    );
 
     expect(counters).toMatchObject({ expensesCreated: 1, incomesCreated: 1, skipped: 0 });
 
@@ -152,7 +156,7 @@ describe("materialization", () => {
   });
 
   it("does not duplicate materialization on a second run and keeps the chosen category", async () => {
-    await seedCategory("Outros");
+    const category = await seedCategory();
     await prisma.category.create({ data: { userId, name: "Transportes", isDefault: true } });
     const transportes = await prisma.category.findFirst({ where: { userId, name: "Transportes" } });
     const { link } = await seedBankAccount({ displayName: "Conta", hash: "hash-1" });
@@ -163,7 +167,11 @@ describe("materialization", () => {
       classification: "expense",
     });
 
-    await materializeBookedTransactions(userId);
+    await materializeBookedTransactions(
+      userId,
+      undefined,
+      new Map([[debit.id as string, category.id as string]]),
+    );
     const expense = (await prisma.expense.findMany({ where: { userId } }))[0]!;
     await prisma.expense.update({
       where: { id: expense.id as string },
@@ -181,7 +189,7 @@ describe("materialization", () => {
   });
 
   it("uses the category selected during the first expense confirmation", async () => {
-    await seedCategory("Outros");
+    await seedCategory();
     const food = await prisma.category.create({
       data: { userId, name: "Alimentação", isDefault: false },
     });
@@ -219,14 +227,32 @@ describe("materialization", () => {
 
     const counters = await materializeBookedTransactions(userId);
 
-    expect(counters).toMatchObject({ expensesCreated: 0, skipped: 1 });
+    expect(counters).toMatchObject({ expensesCreated: 0, skipped: 1, awaitingReview: 1 });
     expect(await prisma.expense.count({ where: { userId } })).toBe(0);
+    const stored = await prisma.bankTransaction.findFirst({ where: { userId } });
+    expect(stored!.classification).toBe("unreviewed");
+  });
+
+  it("keeps an unreviewed pending credit out of incomes until classified", async () => {
+    await seedCategory();
+    const { link } = await seedBankAccount({ displayName: "Conta", hash: "hash-pending-credit" });
+    await seedTransaction(link.id as string, {
+      status: "pending",
+      direction: "credit",
+      amount: "125.00",
+      description: "Crédito pendente",
+    });
+
+    const counters = await materializeBookedTransactions(userId);
+
+    expect(counters).toMatchObject({ incomesCreated: 0, skipped: 1, awaitingReview: 1 });
+    expect(await prisma.income.count({ where: { userId } })).toBe(0);
   });
 
   it("materializes a pending debit after the user confirms it as an expense", async () => {
-    await seedCategory();
+    const category = await seedCategory();
     const { link } = await seedBankAccount({ displayName: "Conta", hash: "hash-1" });
-    await seedTransaction(link.id as string, {
+    const debit = await seedTransaction(link.id as string, {
       status: "pending",
       direction: "debit",
       amount: "15.00",
@@ -234,14 +260,18 @@ describe("materialization", () => {
       classification: "expense",
     });
 
-    const counters = await materializeBookedTransactions(userId);
+    const counters = await materializeBookedTransactions(
+      userId,
+      undefined,
+      new Map([[debit.id as string, category.id as string]]),
+    );
 
     expect(counters.expensesCreated).toBe(1);
     expect(await prisma.expense.count({ where: { userId } })).toBe(1);
   });
 
   it("treats a matching credit as a refund instead of income", async () => {
-    await seedCategory();
+    const category = await seedCategory();
     const { link } = await seedBankAccount({ displayName: "Conta", hash: "hash-1" });
     await seedTransaction(link.id as string, {
       direction: "debit",
@@ -361,7 +391,7 @@ describe("internal transfer matching", () => {
   });
 
   it("removes the expense and income created before the pair was detected", async () => {
-    await seedCategory();
+    const category = await seedCategory();
     const origin = await seedBankAccount({ displayName: "Origem", hash: "hash-a", iban: ibanA });
     const destination = await seedBankAccount({
       displayName: "Destino",
@@ -384,7 +414,11 @@ describe("internal transfer matching", () => {
       bookingDate: "2026-08-10T00:00:00.000Z",
     });
 
-    await materializeBookedTransactions(userId);
+    await materializeBookedTransactions(
+      userId,
+      undefined,
+      new Map([[debit.id as string, category.id as string]]),
+    );
     expect(await prisma.expense.count({ where: { userId } })).toBe(1);
     expect(await prisma.income.count({ where: { userId } })).toBe(1);
 

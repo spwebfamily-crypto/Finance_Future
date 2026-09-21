@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import type { BankTransaction } from "@prisma/client";
 import { prisma } from "../prisma.js";
+import { isReservedCategoryName } from "../services/categoryPolicy.js";
 import { sanitizeText } from "./normalize.js";
 
 export interface MaterializationCounters {
@@ -8,7 +9,7 @@ export interface MaterializationCounters {
   incomesCreated: number;
   refundsDetected: number;
   skipped: number;
-  categoryCreated: number;
+  awaitingReview: number;
   dematerialized: number;
 }
 
@@ -34,36 +35,6 @@ function transactionDate(transaction: BankTransaction): Date {
 
 function dayDifference(left: Date, right: Date) {
   return Math.abs(left.getTime() - right.getTime()) / 86_400_000;
-}
-
-/** Garante que existe uma categoria fallback ("Outros" ou a primeira do utilizador). */
-async function getOrCreateFallbackCategoryId(
-  userId: string,
-): Promise<{ id: string; created: boolean }> {
-  const outros = await prisma.category.findFirst({
-    where: { userId, name: "Outros" },
-    select: { id: true },
-  });
-  if (outros) return { id: outros.id, created: false };
-
-  const def = await prisma.category.findFirst({
-    where: { userId, isDefault: true },
-    select: { id: true },
-  });
-  if (def) return { id: def.id, created: false };
-
-  const any = await prisma.category.findFirst({ where: { userId }, select: { id: true } });
-  if (any) return { id: any.id, created: false };
-
-  const created = await prisma.category.create({
-    data: { userId, name: "Outros", icon: "sparkles", isDefault: true },
-  });
-  return { id: created.id, created: true };
-}
-
-/** Obtém ID de categoria, criando fallback se necessário. */
-async function defaultCategoryId(userId: string): Promise<{ id: string; created: boolean }> {
-  return getOrCreateFallbackCategoryId(userId);
 }
 
 /**
@@ -130,7 +101,7 @@ async function looksLikeRefund(transaction: BankTransaction): Promise<boolean> {
   });
 }
 
-async function materializeExpense(transaction: BankTransaction, categoryId: string) {
+async function materializeExpense(transaction: BankTransaction, categoryId?: string) {
   const existing = transaction.expenseId
     ? await prisma.expense.findUnique({ where: { id: transaction.expenseId } })
     : null;
@@ -151,6 +122,10 @@ async function materializeExpense(transaction: BankTransaction, categoryId: stri
     });
     return false;
   }
+
+  // Uma despesa nova nunca pode nascer sem uma escolha explícita do utilizador.
+  // O movimento permanece em revisão e volta a ser processado após a seleção.
+  if (!categoryId) return false;
 
   const expense = await prisma.expense.create({
     data: {
@@ -219,6 +194,15 @@ async function accountIdFor(transaction: BankTransaction): Promise<string | null
   return link?.accountId ?? null;
 }
 
+async function validExpenseCategoryId(userId: string, categoryId: string | undefined) {
+  if (!categoryId) return null;
+  const category = await prisma.category.findFirst({
+    where: { id: categoryId, userId },
+    select: { id: true, name: true },
+  });
+  return category && !isReservedCategoryName(category.name) ? category.id : null;
+}
+
 export async function materializeBookedTransactions(
   userId: string,
   linkId?: string,
@@ -229,7 +213,7 @@ export async function materializeBookedTransactions(
     incomesCreated: 0,
     refundsDetected: 0,
     skipped: 0,
-    categoryCreated: 0,
+    awaitingReview: 0,
     dematerialized: 0,
   };
 
@@ -241,8 +225,6 @@ export async function materializeBookedTransactions(
     },
     orderBy: { bookingDate: "asc" },
   });
-
-  let categoryId: string | null = null;
 
   for (const transaction of transactions as BankTransaction[]) {
     // 1) Transferência própria emparelhada — nunca materializa, mas garante que
@@ -277,25 +259,36 @@ export async function materializeBookedTransactions(
       if (transaction.classification !== "expense") {
         const removed = await removeMaterialization(transaction);
         if (removed) counters.dematerialized += 1;
+        if (transaction.status === "pending" && transaction.classification === "unreviewed") {
+          await prisma.bankTransaction.update({
+            where: { id: transaction.id },
+            data: { classification: "unreviewed", reviewedAt: null },
+          });
+          counters.awaitingReview += 1;
+        }
         counters.skipped += 1;
         continue;
       }
-      const selectedCategoryId = categoryByTransactionId.get(transaction.id);
-      if (!selectedCategoryId && !categoryId) {
-        const fallback = await defaultCategoryId(userId);
-        categoryId = fallback.id;
-        if (fallback.created) counters.categoryCreated += 1;
+      const selectedCategoryId = await validExpenseCategoryId(
+        transaction.userId,
+        categoryByTransactionId.get(transaction.id) ?? undefined,
+      );
+      if (!selectedCategoryId && !transaction.expenseId) {
+        await prisma.bankTransaction.update({
+          where: { id: transaction.id },
+          data: { classification: "unreviewed", reviewedAt: null },
+        });
+        counters.awaitingReview += 1;
+        counters.skipped += 1;
+        continue;
       }
-      const created = await materializeExpense(transaction, selectedCategoryId ?? categoryId!);
+      const created = await materializeExpense(transaction, selectedCategoryId ?? undefined);
       if (created) counters.expensesCreated += 1;
       continue;
     }
 
-    // 4) Crédito = rendimento contabilizado (exceto se já for transferência).
-    if (transaction.status !== "booked") {
-      counters.skipped += 1;
-      continue;
-    }
+    // 4) Crédito só entra depois de classificação explícita. Isto também
+    // permite que um pending confirmado siga o mesmo fluxo de revisão.
     if (transaction.transferId) {
       const removed = await removeMaterialization(transaction);
       if (removed) counters.dematerialized += 1;
@@ -303,6 +296,15 @@ export async function materializeBookedTransactions(
       continue;
     }
     if (transaction.classification !== "income") {
+      if (transaction.status !== "booked") {
+        await prisma.bankTransaction.update({
+          where: { id: transaction.id },
+          data: { classification: "unreviewed", reviewedAt: null },
+        });
+        counters.awaitingReview += 1;
+        counters.skipped += 1;
+        continue;
+      }
       const isRefund = await looksLikeRefund(transaction);
       if (isRefund) {
         await prisma.bankTransaction.update({

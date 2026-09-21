@@ -105,13 +105,7 @@ export function calculateSpendingLevel(input: LevelCalculationInput): LevelCalcu
 }
 
 export function currentMonthContext(now: Date, timeZone: string) {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(now);
-  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  const values = localDateParts(now, timeZone);
   const year = Number(values.year);
   const month = Number(values.month);
   const day = Number(values.day);
@@ -131,11 +125,52 @@ export function shiftMonth(month: string, offset: number): MonthKey {
 }
 
 export function monthBounds(month: string) {
+  return monthBoundsInTimeZone(month, "UTC");
+}
+
+export function monthBoundsInTimeZone(month: string, timeZone: string) {
   const [year, monthNumber] = parseMonthParts(month);
   return {
-    start: new Date(Date.UTC(year!, monthNumber! - 1, 1)),
-    end: new Date(Date.UTC(year!, monthNumber!, 1)),
+    start: zonedMidnightToUtc(year!, monthNumber!, 1, timeZone),
+    end:
+      monthNumber === 12
+        ? zonedMidnightToUtc(year! + 1, 1, 1, timeZone)
+        : zonedMidnightToUtc(year!, monthNumber! + 1, 1, timeZone),
   };
+}
+
+export function daysInMonth(month: string) {
+  const [year, monthNumber] = parseMonthParts(month);
+  return new Date(Date.UTC(year!, monthNumber!, 0)).getUTCDate();
+}
+
+export function dayBounds(day: string, timeZone = "UTC") {
+  const match = /^(\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.exec(day);
+  if (!match) throw new RangeError("day must use the YYYY-MM-DD format");
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const date = Number(match[3]);
+  const start = zonedMidnightToUtc(year, month, date, timeZone);
+  const next = new Date(Date.UTC(year, month - 1, date + 1));
+  return {
+    start,
+    end: zonedMidnightToUtc(
+      next.getUTCFullYear(),
+      next.getUTCMonth() + 1,
+      next.getUTCDate(),
+      timeZone,
+    ),
+  };
+}
+
+export function localDateKey(value: Date, timeZone: string) {
+  const parts = localDateParts(value, timeZone);
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+export function monthKeyForDate(value: Date, timeZone: string): MonthKey {
+  const parts = localDateParts(value, timeZone);
+  return `${parts.year}-${parts.month}` as MonthKey;
 }
 
 export function monthsEndingAt(month: string, count: number) {
@@ -153,4 +188,49 @@ function parseMonthParts(month: string): [number, number] {
   const match = monthPattern.exec(month);
   if (!match) throw new RangeError("month must use the YYYY-MM format");
   return [Number(match[1]), Number(match[2])];
+}
+
+function localDateParts(value: Date, timeZone: string) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(value);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return { year: Number(values.year), month: values.month!, day: values.day! };
+}
+
+function timeZoneOffsetMs(value: Date, timeZone: string) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(value);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  const asUtc = Date.UTC(
+    Number(values.year),
+    Number(values.month) - 1,
+    Number(values.day),
+    Number(values.hour),
+    Number(values.minute),
+    Number(values.second),
+  );
+  return asUtc - value.getTime();
+}
+
+function zonedMidnightToUtc(year: number, month: number, day: number, timeZone: string) {
+  const target = Date.UTC(year, month - 1, day);
+  let result = target;
+  // Two passes handle DST changes around the local midnight without relying
+  // on a third-party timezone package.
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    result = target - timeZoneOffsetMs(new Date(result), timeZone);
+  }
+  return new Date(result);
 }

@@ -4,6 +4,7 @@ import rateLimit from "express-rate-limit";
 import { env } from "../config.js";
 import { requireAuth, sendError } from "../middleware.js";
 import { prisma } from "../prisma.js";
+import { isReservedCategoryName } from "../services/categoryPolicy.js";
 import type { AuthenticatedRequest } from "../types.js";
 import {
   openBankingAuthorizationSchema,
@@ -642,9 +643,19 @@ router.patch(
       if (input.categoryId) {
         const category = await prisma.category.findFirst({
           where: { id: input.categoryId, userId: request.user!.id },
-          select: { id: true },
+          select: { id: true, name: true },
         });
         if (!category) throw bankError(404, "CATEGORY_NOT_FOUND");
+        if (isReservedCategoryName(category.name)) throw bankError(422, "CATEGORY_RESERVED");
+      }
+
+      if (
+        transaction.direction === "debit" &&
+        input.classification === "expense" &&
+        !input.categoryId &&
+        !transaction.expenseId
+      ) {
+        throw bankError(422, "CATEGORY_REQUIRED_FOR_EXPENSE");
       }
 
       const nextClassification =

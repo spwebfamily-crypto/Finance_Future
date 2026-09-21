@@ -2,11 +2,14 @@ import { Prisma } from "@prisma/client";
 import {
   calculateSpendingLevel,
   currentMonthContext,
+  dayBounds,
+  daysInMonth,
   moneyNumber,
-  monthBounds,
+  monthBoundsInTimeZone,
   monthsEndingAt,
   shiftMonth,
 } from "./analyticsService.js";
+import { aggregateExpenses } from "./financialAggregationService.js";
 import { prisma } from "../prisma.js";
 
 type PartialError = { section: string; code: string };
@@ -69,10 +72,6 @@ type OverviewAccount = {
   incomingTransfers: { amount: Prisma.Decimal }[];
 };
 
-function monthKey(value: Date) {
-  return `${value.getUTCFullYear()}-${String(value.getUTCMonth() + 1).padStart(2, "0")}`;
-}
-
 function currencyOf(value: string | null, fallback: string) {
   return value || fallback;
 }
@@ -106,11 +105,10 @@ export async function getDashboardOverview(userId: string, requestedMonth?: stri
 
   const previousMonth = shiftMonth(month, -1);
   const historyMonths = monthsEndingAt(month, 6);
-  const historyStart = monthBounds(historyMonths[0]!).start;
-  const selectedBounds = monthBounds(month);
+  const historyStart = monthBoundsInTimeZone(historyMonths[0]!, timeZone).start;
+  const selectedBounds = monthBoundsInTimeZone(month, timeZone);
   const today = `${current.month}-${String(current.elapsedDays).padStart(2, "0")}`;
-  const todayStart = new Date(`${today}T00:00:00.000Z`);
-  const todayEnd = new Date(todayStart.getTime() + 86_400_000);
+  const { start: todayStart, end: todayEnd } = dayBounds(today, timeZone);
 
   const sections = await Promise.allSettled([
     prisma.category.findMany({
@@ -216,35 +214,18 @@ export async function getDashboardOverview(userId: string, requestedMonth?: stri
   const todayTransfers = value<Transfers>(5, []) as unknown as TodayTransfer[];
   const rawAccounts = value<Accounts>(6, []) as unknown as OverviewAccount[];
 
+  const historyAggregate = aggregateExpenses(historyExpenses, timeZone, currency);
   const amounts = new Map<string, Map<string, Prisma.Decimal>>();
-  const byMonthAndCurrency = new Map<string, Map<string, Prisma.Decimal>>();
+  const byMonthAndCurrency = historyAggregate.byMonthCurrency;
   const selectedDailyTotals = new Map<string, Prisma.Decimal>();
-  for (const expense of historyExpenses) {
-    const expenseMonth = monthKey(expense.date);
-    const expenseCurrency = currencyOf(expense.currency, currency);
-    const byCategory = amounts.get(expenseMonth) ?? new Map<string, Prisma.Decimal>();
-    if (expenseCurrency === currency)
-      byCategory.set(
-        expense.categoryId,
-        (byCategory.get(expense.categoryId) ?? new Prisma.Decimal(0)).add(expense.amount),
-      );
-    amounts.set(expenseMonth, byCategory);
-    if (expenseMonth === month && expenseCurrency === currency) {
-      const day = expense.date.toISOString().slice(0, 10);
-      selectedDailyTotals.set(
-        day,
-        (selectedDailyTotals.get(day) ?? new Prisma.Decimal(0)).add(expense.amount),
-      );
+  for (const [expenseMonth, currencies] of historyAggregate.byMonthCurrencyCategory) {
+    amounts.set(expenseMonth, currencies.get(currency) ?? new Map<string, Prisma.Decimal>());
+  }
+  for (const [day, currencies] of historyAggregate.byDayCurrency) {
+    if (day.slice(0, 7) === month) {
+      const amount = currencies.get(currency);
+      if (amount) selectedDailyTotals.set(day, amount);
     }
-    byMonthAndCurrency.set(
-      expenseMonth,
-      new Map(byMonthAndCurrency.get(expenseMonth) ?? []).set(
-        expenseCurrency,
-        (byMonthAndCurrency.get(expenseMonth)?.get(expenseCurrency) ?? new Prisma.Decimal(0)).add(
-          expense.amount,
-        ),
-      ),
-    );
   }
   const currentAmounts = amounts.get(month) ?? new Map<string, Prisma.Decimal>();
   const previousAmounts = amounts.get(previousMonth) ?? new Map<string, Prisma.Decimal>();
@@ -265,14 +246,8 @@ export async function getDashboardOverview(userId: string, requestedMonth?: stri
       historyAmounts: history,
       monthlyLimit: budget?.monthlyLimit,
       isCurrentMonth: month === current.month,
-      elapsedDays:
-        month === current.month
-          ? current.elapsedDays
-          : new Date(selectedBounds.end.getTime() - 1).getUTCDate(),
-      daysInMonth:
-        month === current.month
-          ? current.daysInMonth
-          : new Date(selectedBounds.end.getTime() - 1).getUTCDate(),
+      elapsedDays: month === current.month ? current.elapsedDays : daysInMonth(month),
+      daysInMonth: month === current.month ? current.daysInMonth : daysInMonth(month),
     });
     return {
       category,
@@ -340,7 +315,7 @@ export async function getDashboardOverview(userId: string, requestedMonth?: stri
         type: "expense" as const,
         description: item.description,
         amount: moneyNumber(item.amount),
-        currency: currencyOf(item.currency, currency),
+        currency: currencyOf(item.currency, item.account?.currency ?? currency),
         date: item.date,
         createdAt: item.createdAt,
         accountName: item.account?.name ?? null,
@@ -358,7 +333,7 @@ export async function getDashboardOverview(userId: string, requestedMonth?: stri
         type: "income" as const,
         description: item.description,
         amount: moneyNumber(item.amount),
-        currency: currencyOf(item.currency, currency),
+        currency: currencyOf(item.currency, item.account?.currency ?? currency),
         date: item.date,
         createdAt: item.createdAt,
         accountName: item.account?.name ?? null,
@@ -380,7 +355,7 @@ export async function getDashboardOverview(userId: string, requestedMonth?: stri
         type: "transfer" as const,
         description: item.description || `Transferência para ${item.toAccount.name}`,
         amount: moneyNumber(item.amount),
-        currency: currencyOf(item.currency, currency),
+        currency: currencyOf(item.currency, item.fromAccount.currency ?? currency),
         date: item.date,
         createdAt: item.createdAt,
         accountName: `${item.fromAccount.name} → ${item.toAccount.name}`,

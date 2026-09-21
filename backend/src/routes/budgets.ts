@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { Router } from "express";
 import { prisma } from "../prisma.js";
 import { requireAuth, sendError } from "../middleware.js";
+import { isReservedCategoryName, RESERVED_CATEGORY_ERROR } from "../services/categoryPolicy.js";
 import type { AuthenticatedRequest } from "../types.js";
 import { budgetCreateSchema, budgetUpdateSchema } from "../validation.js";
 
@@ -36,6 +37,13 @@ router.post("/", async (request: AuthenticatedRequest, response, next) => {
     });
     if (!category)
       return sendError(response, 404, "CATEGORY_NOT_FOUND", "Categoria não encontrada.");
+    if (isReservedCategoryName(category.name))
+      return sendError(
+        response,
+        422,
+        RESERVED_CATEGORY_ERROR.code,
+        RESERVED_CATEGORY_ERROR.message,
+      );
     const budget = await prisma.budget.create({
       data: {
         userId: request.user!.id,

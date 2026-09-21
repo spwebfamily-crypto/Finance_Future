@@ -139,6 +139,7 @@ describe("analytics daily summary", () => {
           categoryId,
           amount: new Prisma.Decimal("5.00"),
           currency: "USD",
+          date: new Date("2026-06-03T08:00:00.000Z"),
         },
       ]);
 

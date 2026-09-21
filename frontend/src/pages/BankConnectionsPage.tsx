@@ -259,11 +259,23 @@ export function BankConnectionsPage() {
             ))}
           </div>
         ) : (
-          <p className="accounts-empty">
-            {t(
-              "Ainda não tem bancos ligados. Ligue um banco para importar saldos — cada gasto contabilizado passa a despesa.",
-            )}
-          </p>
+          <div className="bank-connections-empty">
+            <div className="bank-connections-empty__mark" aria-hidden="true">
+              <Plus />
+            </div>
+            <p>
+              {t(
+                "Ainda não tem bancos ligados. Ligue um banco para importar saldos — cada gasto contabilizado passa a despesa.",
+              )}
+            </p>
+            <button
+              type="button"
+              className="button button--accent"
+              onClick={() => navigate("/accounts/connect")}
+            >
+              <Plus aria-hidden="true" /> {t("Ligar banco")}
+            </button>
+          </div>
         )}
       </section>
 

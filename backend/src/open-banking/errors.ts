@@ -30,6 +30,8 @@ export const bankErrorMessages = {
   BANK_TRANSFER_REVIEW_REQUIRED:
     "Confirme a transferência entre contas próprias antes de a classificar.",
   CATEGORY_NOT_FOUND: "Categoria não encontrada.",
+  CATEGORY_RESERVED: 'A categoria "Outros" deixou de existir. Escolha outra categoria.',
+  CATEGORY_REQUIRED_FOR_EXPENSE: "Escolha uma categoria antes de confirmar este gasto.",
 } as const;
 
 export type BankErrorCode = keyof typeof bankErrorMessages;

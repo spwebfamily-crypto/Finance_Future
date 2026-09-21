@@ -192,6 +192,16 @@ h3,
   box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
+/* Field icons are decorative, but their reserved space must remain visible in
+   every form. Legacy login selectors handled this only on one route. */
+.field__control > svg + :is(input, select) {
+  padding-left: 2.75rem;
+}
+
+.field__control--password > input {
+  padding-right: 3.5rem;
+}
+
 .card,
 .state-panel,
 .modal,
@@ -513,6 +523,238 @@ th {
 }
 
 /* --------------------------------------------------------------------------
+   2026 application remake
+   A quiet financial ledger: generous canvas, a dark navigation rail and
+   crisp information blocks. This is intentionally a full component language,
+   not a route-specific skin. All colours come from the semantic token pairs.
+   -------------------------------------------------------------------------- */
+
+.main-content {
+  background:
+    radial-gradient(circle at 92% 2%, color-mix(in srgb, var(--brand-soft) 58%, transparent), transparent 24rem),
+    var(--canvas);
+}
+
+.page {
+  max-width: var(--content-wide);
+  padding-top: clamp(2rem, 4vw, 4.5rem);
+}
+
+.page-header {
+  position: relative;
+  align-items: end;
+  margin-bottom: var(--space-6);
+  padding-bottom: var(--space-6);
+}
+
+.page-header::after {
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  width: min(11rem, 22%);
+  height: 0.1875rem;
+  content: "";
+  background: var(--accent);
+  border-radius: 999px;
+}
+
+.page-header h1 {
+  max-width: 16ch;
+  font-size: clamp(2.3rem, 4.2vw, 4.5rem);
+  font-weight: 720;
+  line-height: 0.94;
+}
+
+.page-header__description { max-width: 55ch; font-size: 1.02rem; }
+.eyebrow,
+.invest-kicker { letter-spacing: 0.14em; font-weight: 800; }
+
+.sidebar {
+  position: relative;
+  padding: var(--space-5) var(--space-3) var(--space-4);
+  background:
+    radial-gradient(circle at 20% 0%, rgb(212 246 90 / 16%), transparent 22rem),
+    linear-gradient(160deg, #0d3525, var(--sidebar) 62%);
+}
+
+.sidebar::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 1px;
+  content: "";
+  background: rgb(255 255 255 / 12%);
+}
+
+.sidebar > .brand,
+.sidebar > .brand-link { margin-bottom: var(--space-4); }
+.sidebar .brand__symbol { border-radius: 0.8rem; transform: rotate(-4deg); }
+.sidebar .brand__word { font-size: 1.3rem; letter-spacing: -0.06em; }
+.sidebar__eyebrow { margin-bottom: var(--space-2); color: color-mix(in srgb, var(--sidebar-muted) 80%, var(--accent)); }
+.side-nav { gap: 0.375rem; }
+.sidebar .nav-link { position: relative; min-height: 3.125rem; border: 1px solid transparent; }
+.sidebar .nav-link:hover { background: rgb(255 255 255 / 8%); border-color: rgb(255 255 255 / 8%); }
+.sidebar .nav-link--active { background: rgb(212 246 90 / 13%); border-color: rgb(212 246 90 / 17%); box-shadow: none; }
+.sidebar .nav-link__active-marker { width: 0.3125rem; height: 1.75rem; border-radius: 1rem; }
+.sidebar__add { border-radius: 0.875rem; box-shadow: none; }
+.sidebar__tools { padding-top: var(--space-5); border-color: rgb(255 255 255 / 10%); }
+.sidebar .account-card { background: rgb(255 255 255 / 7%); border-color: rgb(255 255 255 / 10%); box-shadow: none; }
+
+.button { min-height: 3rem; border-radius: 0.75rem; }
+.button--primary { box-shadow: 0 0.625rem 1.5rem color-mix(in srgb, var(--brand) 20%, transparent); }
+.button--accent { box-shadow: 0 0.625rem 1.5rem color-mix(in srgb, var(--accent) 20%, transparent); }
+.icon-button { min-width: 2.75rem; min-height: 2.75rem; border-radius: 0.75rem; }
+
+:is(.field input, .field select, .field textarea, .filter-form input, .filter-form select, .archive-search input) {
+  color: var(--surface-foreground);
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+}
+
+:is(.field input, .field select, .field textarea, .filter-form input, .filter-form select):focus {
+  background: var(--surface);
+  border-color: var(--brand);
+}
+
+:is(.dashboard-panel, .dashboard-section, .today-overview, .month-pulse, .filters-panel, .expense-section, .accounts-panel, .planning-panel, .planning-alerts, .planning-calendar, .invest-page > section, .category-create, .category-library, .bank-connection-card, .form-section) {
+  border-color: color-mix(in srgb, var(--line) 92%, transparent);
+  box-shadow: none;
+}
+
+.dashboard-total {
+  display: grid;
+  min-height: clamp(15rem, 24vw, 19rem);
+  align-content: space-between;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--radius-hero);
+  background:
+    radial-gradient(circle at 84% 22%, rgb(216 251 99 / 34%), transparent 10rem),
+    radial-gradient(circle at 100% 100%, rgb(255 255 255 / 12%), transparent 18rem),
+    linear-gradient(135deg, #073b29, var(--brand));
+  box-shadow: 0 1.5rem 3.5rem rgb(7 50 35 / 18%);
+}
+
+.dashboard-total h2,
+.dashboard-total__value { font-size: clamp(2.8rem, 6vw, 5.75rem); letter-spacing: -0.075em; }
+.dashboard-total__compare { width: fit-content; max-width: 100%; border-radius: 999px; backdrop-filter: blur(0.5rem); }
+.dashboard-shortcuts { grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: var(--space-3); }
+.dashboard-shortcut { min-height: 6.5rem; padding: var(--space-4); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card); box-shadow: none; }
+.dashboard-shortcut:hover { transform: translateY(-0.2rem); border-color: var(--brand-border); box-shadow: var(--shadow-sm); }
+.dashboard-shortcut > span { border-radius: 0.8rem; }
+.dashboard-shortcut--primary { color: var(--brand-foreground); background: var(--brand); border-color: var(--brand); }
+.dashboard-shortcut--primary :is(strong, small) { color: inherit; }
+.today-overview { overflow: hidden; border-radius: var(--radius-hero); }
+.today-overview__summary { background: var(--surface); }
+.today-metrics > article { min-height: 7rem; background: var(--surface-soft); border: 0; border-radius: 0.875rem; }
+.month-pulse { border-left: 0.3rem solid var(--accent); background: var(--surface); }
+
+.filter-panel { padding: var(--space-5); border-radius: var(--radius-hero); }
+.filter-panel__heading { padding-bottom: var(--space-4); border-bottom: 1px solid var(--line); }
+.filter-shortcuts { gap: 0.5rem; }
+.filter-chip { min-height: 2.625rem; padding-inline: var(--space-3); color: var(--ink-soft); background: var(--surface-soft); border: 1px solid transparent; border-radius: 999px; }
+.filter-chip--active { color: var(--accent-foreground); background: var(--accent); border-color: var(--accent); }
+.archive-search { min-height: 3.5rem; margin-top: var(--space-4); padding-inline: var(--space-4); background: var(--surface-raised); border-radius: 0.875rem; }
+.expense-import-row { padding: var(--space-4) var(--space-5); background: var(--brand-soft); border: 1px solid var(--brand-border); border-radius: var(--radius-card); }
+.expense-section { padding: var(--space-2); border-radius: var(--radius-hero); }
+.expense-section__heading { padding: var(--space-4) var(--space-3); }
+.expense-row { margin: 0; padding: var(--space-4); border: 0; border-bottom: 1px solid var(--line); border-radius: 0; transition: background-color 0.16s ease; }
+.expense-row:first-child { border-radius: 0.875rem 0.875rem 0 0; }
+.expense-row:last-child { border-bottom: 0; border-radius: 0 0 0.875rem 0.875rem; }
+.expense-row:hover { background: var(--surface-soft); box-shadow: none; }
+.expense-row__index { color: var(--brand); background: var(--brand-soft); border-radius: 0.75rem; }
+.category-tag { border-radius: 999px; }
+.expense-row__amount { font-size: 1.125rem; font-weight: 780; }
+
+.planning-overview { gap: var(--space-3); }
+.planning-overview > article { min-height: 9.5rem; padding: var(--space-5); border: 0; border-top: 0.25rem solid var(--line); border-radius: var(--radius-card); background: var(--surface); }
+.planning-overview > article:nth-child(1) { border-top-color: var(--brand); }
+.planning-overview > article:nth-child(2) { border-top-color: var(--danger); }
+.planning-overview > article:nth-child(4) { border-top-color: var(--accent); }
+.planning-overview__available { border-top-color: var(--success) !important; }
+.planning-overview > article > strong { margin-block: var(--space-2); font-size: clamp(1.75rem, 4cqi, 3rem); }
+.planning-alerts { padding: var(--space-4) var(--space-5); border-left: 0.3rem solid var(--warning); }
+.planning-calendar { padding: var(--space-5); border-radius: var(--radius-hero); }
+.planning-calendar__item { padding: var(--space-3) var(--space-4); background: var(--surface-soft); border: 0; }
+.planning-calendar__item time { border-radius: 0.75rem; }
+.planning-panel { padding: var(--space-5); border-radius: var(--radius-hero); }
+.planning-disclosure { border-radius: 0.875rem; background: var(--surface-soft); }
+.planning-disclosure[open] { background: var(--surface-raised); border-color: var(--brand-border); }
+.planning-row,
+.goal-card,
+.recurring-card,
+.debt-card { background: var(--surface-soft); border: 0; border-radius: 0.875rem; }
+
+.accounts-insight { padding: var(--space-4) var(--space-5); border-radius: var(--radius-card); }
+.accounts-total { padding: clamp(1.5rem, 3vw, 2.5rem); border: 0; border-radius: var(--radius-hero); background: linear-gradient(135deg, var(--brand-soft), var(--surface)); }
+.accounts-total__value { font-size: clamp(2.75rem, 5vw, 4.75rem); }
+.accounts-panel { padding: var(--space-5); border-radius: var(--radius-hero); }
+.account-card-large { padding: var(--space-5); background: var(--surface-soft); border: 0; border-radius: 1rem; box-shadow: none; }
+.bank-connection-card { padding: var(--space-5); border-radius: var(--radius-hero); }
+.bank-connection-card__icon { border-radius: 0.875rem; }
+.bank-connection-card__actions { padding-top: var(--space-4); border-top: 1px solid var(--line); }
+
+.category-create { padding: var(--space-5); border-radius: var(--radius-hero); background: linear-gradient(135deg, var(--brand-soft), var(--surface)); }
+.category-library { padding: var(--space-2); border-radius: var(--radius-hero); }
+.category-library > .section-heading { padding: var(--space-4) var(--space-3); }
+.category-row { margin: 0; padding: var(--space-4); border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: var(--surface); }
+.category-row:first-child { border-radius: 0.875rem 0.875rem 0 0; }
+.category-row:last-child { border-bottom: 0; border-radius: 0 0 0.875rem 0.875rem; }
+.category-row__index,
+.category-row__icon { border-radius: 0.75rem; }
+
+.invest-page { gap: var(--space-6); }
+.invest-page > section { padding: clamp(1.25rem, 3vw, 2.5rem); border-radius: var(--radius-hero); }
+.invest-context-section { background: linear-gradient(150deg, var(--surface), var(--brand-soft)); }
+.invest-context__profile > span,
+.invest-context__figures > div { padding: var(--space-4); background: var(--surface); border: 0; border-radius: 0.875rem; }
+.invest-path { counter-reset: path; }
+.invest-path__item { padding-block: var(--space-4); border-bottom: 1px solid var(--line); }
+.invest-path__number { color: var(--brand); font-family: var(--font-mono); }
+.invest-path__icon { border-radius: 0.75rem; }
+.invest-example,
+.invest-platform,
+.invest-source { min-height: 100%; background: var(--surface-soft); border: 0; border-radius: 1rem; }
+.invest-platform:hover,
+.invest-source:hover,
+.invest-example:hover { background: var(--surface-raised); box-shadow: var(--shadow-sm); }
+.invest-disclaimer { border-left: 0.3rem solid var(--warning) !important; }
+
+@media (max-width: 63.9375rem) {
+  .mobile-header { background: color-mix(in srgb, var(--surface) 92%, transparent); box-shadow: 0 0.5rem 1.5rem rgb(8 32 21 / 7%); }
+  .mobile-nav { gap: 0.25rem; padding-inline: var(--space-2); background: var(--surface-raised); }
+  .mobile-nav .nav-link,
+  .mobile-nav__add { min-height: 3rem; border-radius: 0.75rem; }
+  .mobile-nav .nav-link--active { background: var(--brand-soft); }
+  .mobile-nav__add { box-shadow: 0 0.4rem 1rem color-mix(in srgb, var(--accent) 30%, transparent); }
+  .more-sheet { border-radius: 1.75rem 1.75rem 0 0; }
+}
+
+@media (max-width: 47.9375rem) {
+  .page { padding-inline: var(--space-4); }
+  .page-header { margin-bottom: var(--space-5); padding-bottom: var(--space-5); }
+  .page-header h1 { font-size: clamp(2.25rem, 11vw, 3rem); }
+  .page-header::after { width: 5rem; }
+  .dashboard-total { min-height: 14rem; padding: var(--space-5); border-radius: 1.25rem; }
+  .dashboard-shortcut { min-height: 5rem; }
+  .filter-panel,
+  .planning-calendar,
+  .planning-panel,
+  .accounts-panel,
+  .bank-connection-card,
+  .category-create,
+  .invest-page > section { padding: var(--space-4); border-radius: 1.125rem; }
+  .expense-section,
+  .category-library { padding: var(--space-1); border-radius: 1.125rem; }
+  .planning-overview > article { min-height: 7.5rem; padding: var(--space-4); }
+  .accounts-total { padding: var(--space-5); border-radius: 1.125rem; }
+  .invest-context__profile,
+  .invest-context__figures { gap: var(--space-2); }
+}
+
+/* --------------------------------------------------------------------------
    Authenticated application repair layer
    The legacy stylesheet remains below this file. These rules deliberately use
    semantic pairs so a surface can never inherit a foreground from the other
@@ -654,6 +896,11 @@ th {
 .accounts-total :is(span, small, p) { color: var(--muted-foreground); }
 .account-card-large,
 .bank-connection-card { min-width: 0; color: var(--surface-foreground); background: var(--surface-raised); border-color: var(--line); box-shadow: none; }
+.account-card-large__correct {
+  width: auto;
+  padding-inline: var(--space-3);
+  white-space: nowrap;
+}
 .bank-connection-card :is(h3, strong) { color: var(--surface-foreground); }
 .bank-connection-card :is(p, small, time) { color: var(--muted-foreground); }
 .bank-connection-card__actions { gap: var(--space-2); padding-top: var(--space-3); border-top: 1px solid var(--line); }
@@ -700,9 +947,24 @@ th {
   .planning-header-actions .button { flex: 1 1 0; min-width: 0; }
   .expense-import-row { align-items: stretch; flex-direction: column; }
   .expense-import-row .button { width: 100%; }
-  .expense-row { grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-3); }
-  .expense-row__actions { grid-column: 1 / -1; display: flex; width: 100%; }
-  .expense-row__actions .icon-button { flex: 1 1 0; }
+  .expense-row {
+    grid-template-columns: 2.75rem minmax(0, 1fr) auto;
+    align-items: start;
+    gap: var(--space-3);
+  }
+  .expense-row__receipt { margin-top: var(--space-1); }
+  .expense-row__amount { padding-top: var(--space-1); }
+  .expense-row__actions {
+    grid-column: 2 / -1;
+    justify-content: flex-end;
+    width: auto;
+    margin-top: calc(-1 * var(--space-1));
+  }
+  .expense-row__actions .icon-button {
+    width: var(--control-height);
+    min-width: var(--control-height);
+    min-height: var(--control-height);
+  }
   .planning-calendar__item { grid-template-columns: auto minmax(0, 1fr); }
   .calendar-amount { grid-column: 2; justify-self: start; }
   .bank-connection-card__actions .button,
@@ -1326,5 +1588,91 @@ th {
 
   .month-pulse {
     padding: var(--space-4);
+  }
+}
+
+/* A first bank connection is a primary onboarding moment, not a blank state. */
+.page--connections .bank-connections-empty {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-5);
+  min-height: 11rem;
+  padding: clamp(1.25rem, 3vw, 2.25rem);
+  border: 1px dashed color-mix(in oklab, var(--brand) 36%, var(--border));
+  border-radius: var(--radius-card);
+  background:
+    radial-gradient(circle at 8% 14%, color-mix(in oklab, var(--accent) 34%, transparent), transparent 22rem),
+    var(--surface-raised);
+  box-shadow: var(--shadow-sm);
+}
+
+.page--connections .bank-connections-empty__mark {
+  display: grid;
+  width: 4rem;
+  height: 4rem;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 1.25rem;
+  color: var(--brand-foreground);
+  background: var(--brand);
+  box-shadow: 0 0.75rem 1.5rem color-mix(in oklab, var(--brand) 26%, transparent);
+}
+
+.page--connections .bank-connections-empty__mark svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.page--connections .bank-connections-empty p {
+  max-width: 48rem;
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.975rem;
+  line-height: 1.6;
+}
+
+.page--connections .bank-connections-empty .button {
+  white-space: nowrap;
+}
+
+@media (max-width: 47.9375rem) {
+  .page--connections .bank-connections-empty {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: var(--space-4);
+  }
+
+  .page--connections .bank-connections-empty .button {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  /* The connection journey keeps its three steps, but should not push the
+     country picker behind the fixed mobile navigation. */
+  .page--connect .connect-steps {
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+  }
+
+  .page--connect .connect-steps li {
+    min-height: 3.25rem;
+    align-items: center;
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .page--connect .connect-steps li small {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .page--connect .connect-steps li strong {
+    font-size: 0.8125rem;
+    line-height: 1.25;
   }
 }

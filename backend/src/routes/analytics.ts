@@ -5,11 +5,15 @@ import { prisma } from "../prisma.js";
 import {
   calculateSpendingLevel,
   currentMonthContext,
+  dayBounds,
+  daysInMonth,
   moneyNumber,
-  monthBounds,
+  monthBoundsInTimeZone,
+  monthKeyForDate,
   monthsEndingAt,
   shiftMonth,
 } from "../services/analyticsService.js";
+import { aggregateExpenses } from "../services/financialAggregationService.js";
 import type { AuthenticatedRequest } from "../types.js";
 import { analyticsMonthSchema, analyticsTrendSchema } from "../validation.js";
 
@@ -46,21 +50,35 @@ function sortedCurrencyKeys(...maps: Map<string, Prisma.Decimal>[]) {
 }
 
 function todayCurrencyTotals(
-  expenses: Array<{ amount: Prisma.Decimal; currency?: string | null }>,
-  incomes: Array<{ amount: Prisma.Decimal; currency?: string | null }>,
+  expenses: Array<{
+    amount: Prisma.Decimal;
+    currency?: string | null;
+    account?: { currency?: string | null } | null;
+  }>,
+  incomes: Array<{
+    amount: Prisma.Decimal;
+    currency?: string | null;
+    account?: { currency?: string | null } | null;
+  }>,
   fallbackCurrency: string,
 ) {
   const expenseTotals = new Map<string, Prisma.Decimal>();
   const incomeTotals = new Map<string, Prisma.Decimal>();
   for (const expense of expenses) {
-    const currency = movementCurrency(expense.currency, fallbackCurrency);
+    const currency = movementCurrency(
+      expense.currency,
+      expense.account?.currency ?? fallbackCurrency,
+    );
     expenseTotals.set(
       currency,
       (expenseTotals.get(currency) ?? new Prisma.Decimal(0)).add(expense.amount),
     );
   }
   for (const income of incomes) {
-    const currency = movementCurrency(income.currency, fallbackCurrency);
+    const currency = movementCurrency(
+      income.currency,
+      income.account?.currency ?? fallbackCurrency,
+    );
     incomeTotals.set(
       currency,
       (incomeTotals.get(currency) ?? new Prisma.Decimal(0)).add(income.amount),
@@ -98,9 +116,8 @@ async function userContext(userId: string) {
   };
 }
 
-function dateBounds(day: string) {
-  const start = new Date(`${day}T00:00:00.000Z`);
-  return { start, end: new Date(start.getTime() + 86_400_000) };
+function dateBounds(day: string, timeZone: string) {
+  return dayBounds(day, timeZone);
 }
 
 function validateSelectedMonth(
@@ -129,7 +146,7 @@ async function categoriesAndBudgets(userId: string) {
 router.get("/today", async (request: AuthenticatedRequest, response, next) => {
   try {
     const context = await userContext(request.user!.id);
-    const { start, end } = dateBounds(context.today);
+    const { start, end } = dateBounds(context.today, context.timeZone);
     const [expenses, incomes, transfers] = await Promise.all([
       prisma.expense.findMany({
         where: { userId: request.user!.id, date: { gte: start, lt: end } },
@@ -193,7 +210,7 @@ router.get("/today", async (request: AuthenticatedRequest, response, next) => {
         type: "expense" as const,
         description: item.description,
         amount: moneyNumber(item.amount),
-        currency: movementCurrency(item.currency, context.currency),
+        currency: movementCurrency(item.currency, item.account?.currency ?? context.currency),
         date: item.date,
         createdAt: item.createdAt,
         accountName: item.account?.name ?? null,
@@ -206,7 +223,7 @@ router.get("/today", async (request: AuthenticatedRequest, response, next) => {
         type: "income" as const,
         description: item.description,
         amount: moneyNumber(item.amount),
-        currency: movementCurrency(item.currency, context.currency),
+        currency: movementCurrency(item.currency, item.account?.currency ?? context.currency),
         date: item.date,
         createdAt: item.createdAt,
         accountName: item.account?.name ?? null,
@@ -219,7 +236,7 @@ router.get("/today", async (request: AuthenticatedRequest, response, next) => {
         type: "transfer" as const,
         description: item.description || `Transferência para ${item.toAccount.name}`,
         amount: moneyNumber(item.amount),
-        currency: movementCurrency(item.currency, context.currency),
+        currency: movementCurrency(item.currency, item.fromAccount.currency ?? context.currency),
         date: item.date,
         createdAt: item.createdAt,
         accountName: `${item.fromAccount.name} → ${item.toAccount.name}`,
@@ -256,8 +273,8 @@ router.get("/summary", async (request: AuthenticatedRequest, response, next) => 
     if (!validateSelectedMonth(month, context.month, response)) return;
     const previousMonth = shiftMonth(month, -1);
     const [{ start, end }, previousBounds, categoryData] = await Promise.all([
-      Promise.resolve(monthBounds(month)),
-      Promise.resolve(monthBounds(previousMonth)),
+      Promise.resolve(monthBoundsInTimeZone(month, context.timeZone)),
+      Promise.resolve(monthBoundsInTimeZone(previousMonth, context.timeZone)),
       categoriesAndBudgets(request.user!.id),
     ]);
     const { categories } = categoryData;
@@ -281,40 +298,33 @@ router.get("/summary", async (request: AuthenticatedRequest, response, next) => 
           categoryId: true,
           amount: true,
           currency: true,
+          date: true,
           account: { select: { currency: true } },
         },
       }),
     ]);
-    const amountsByCurrency = new Map<string, Map<string, Prisma.Decimal>>();
-    const previousAmountsByCurrency = new Map<string, Map<string, Prisma.Decimal>>();
+    const expenseAggregate = aggregateExpenses(
+      [...expenses, ...previousExpenses],
+      context.timeZone,
+      context.currency,
+    );
+    const amountsByCurrency = new Map<string, Map<string, Prisma.Decimal>>(
+      expenseAggregate.byMonthCurrencyCategory.get(month) ?? new Map(),
+    );
+    const previousAmountsByCurrency = new Map<string, Map<string, Prisma.Decimal>>(
+      expenseAggregate.byMonthCurrencyCategory.get(previousMonth) ?? new Map(),
+    );
     const dailyAmounts = new Map<string, Prisma.Decimal>();
     const dailyAmountsByCurrency = new Map<string, Map<string, Prisma.Decimal>>();
-    for (const expense of expenses) {
-      const currency = movementCurrency(expense.currency, context.currency);
-      const amounts = amountsByCurrency.get(currency) ?? new Map<string, Prisma.Decimal>();
-      amounts.set(
-        expense.categoryId,
-        (amounts.get(expense.categoryId) ?? new Prisma.Decimal(0)).add(expense.amount),
-      );
-      amountsByCurrency.set(currency, amounts);
-      const day = expense.date.toISOString().slice(0, 10);
-      if (currency === context.currency) {
-        dailyAmounts.set(day, (dailyAmounts.get(day) ?? new Prisma.Decimal(0)).add(expense.amount));
+    for (const [day, currencies] of expenseAggregate.byDayCurrency) {
+      if (day.slice(0, 7) !== month) continue;
+      for (const [currency, amount] of currencies) {
+        const currencyDays =
+          dailyAmountsByCurrency.get(currency) ?? new Map<string, Prisma.Decimal>();
+        currencyDays.set(day, amount);
+        dailyAmountsByCurrency.set(currency, currencyDays);
+        if (currency === context.currency) dailyAmounts.set(day, amount);
       }
-      const currencyDays =
-        dailyAmountsByCurrency.get(currency) ?? new Map<string, Prisma.Decimal>();
-      currencyDays.set(day, (currencyDays.get(day) ?? new Prisma.Decimal(0)).add(expense.amount));
-      dailyAmountsByCurrency.set(currency, currencyDays);
-    }
-    for (const expense of previousExpenses) {
-      const currency = movementCurrency(expense.currency, context.currency);
-      const previousAmounts =
-        previousAmountsByCurrency.get(currency) ?? new Map<string, Prisma.Decimal>();
-      previousAmounts.set(
-        expense.categoryId,
-        (previousAmounts.get(expense.categoryId) ?? new Prisma.Decimal(0)).add(expense.amount),
-      );
-      previousAmountsByCurrency.set(currency, previousAmounts);
     }
     const amounts = amountsByCurrency.get(context.currency) ?? new Map<string, Prisma.Decimal>();
     const previousAmounts =
@@ -404,8 +414,8 @@ router.get("/levels", async (request: AuthenticatedRequest, response, next) => {
     const month = input.month ?? context.month;
     if (!validateSelectedMonth(month, context.month, response)) return;
     const historyMonths = monthsEndingAt(shiftMonth(month, -1), 3);
-    const historyStart = monthBounds(historyMonths[0]!).start;
-    const { end } = monthBounds(month);
+    const historyStart = monthBoundsInTimeZone(historyMonths[0]!, context.timeZone).start;
+    const { end } = monthBoundsInTimeZone(month, context.timeZone);
     const [{ categories, budgets }, expenses] = await Promise.all([
       categoriesAndBudgets(request.user!.id),
       prisma.expense.findMany({
@@ -419,23 +429,17 @@ router.get("/levels", async (request: AuthenticatedRequest, response, next) => {
         },
       }),
     ]);
+    const expenseAggregate = aggregateExpenses(expenses, context.timeZone, context.currency);
     const values = new Map<string, Map<string, Prisma.Decimal>>();
-    for (const expense of expenses) {
-      if (movementCurrency(expense.currency, context.currency) !== context.currency) continue;
-      const date = expense.date;
-      const expenseMonth = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
-      const categoryValues = values.get(expense.categoryId) ?? new Map<string, Prisma.Decimal>();
-      categoryValues.set(
-        expenseMonth,
-        (categoryValues.get(expenseMonth) ?? new Prisma.Decimal(0)).add(expense.amount),
-      );
-      values.set(expense.categoryId, categoryValues);
+    for (const [expenseMonth, currencies] of expenseAggregate.byMonthCurrencyCategory) {
+      for (const [categoryId, amount] of currencies.get(context.currency) ?? new Map()) {
+        const categoryValues = values.get(categoryId) ?? new Map<string, Prisma.Decimal>();
+        categoryValues.set(expenseMonth, amount);
+        values.set(categoryId, categoryValues);
+      }
     }
     const isCurrentMonth = month === context.month;
-    const selectedBounds = monthBounds(month);
-    const daysInMonth = isCurrentMonth
-      ? context.daysInMonth
-      : new Date(selectedBounds.end.getTime() - 1).getUTCDate();
+    const selectedDaysInMonth = isCurrentMonth ? context.daysInMonth : daysInMonth(month);
     return response.json({
       data: categories.map((category) => {
         const categoryValues = values.get(category.id) ?? new Map<string, Prisma.Decimal>();
@@ -449,8 +453,8 @@ router.get("/levels", async (request: AuthenticatedRequest, response, next) => {
           historyAmounts,
           monthlyLimit: budget?.monthlyLimit,
           isCurrentMonth,
-          elapsedDays: isCurrentMonth ? context.elapsedDays : daysInMonth,
-          daysInMonth,
+          elapsedDays: isCurrentMonth ? context.elapsedDays : selectedDaysInMonth,
+          daysInMonth: selectedDaysInMonth,
         });
         return {
           category: { id: category.id, name: category.name, icon: category.icon },
@@ -493,8 +497,8 @@ router.get("/trend", async (request: AuthenticatedRequest, response, next) => {
     const selectedMonth = requestedMonth ?? context.month;
     if (!validateSelectedMonth(selectedMonth, context.month, response)) return;
     const monthKeys = monthsEndingAt(selectedMonth, months);
-    const { start } = monthBounds(monthKeys[0]!);
-    const { end } = monthBounds(selectedMonth);
+    const { start } = monthBoundsInTimeZone(monthKeys[0]!, context.timeZone);
+    const { end } = monthBoundsInTimeZone(selectedMonth, context.timeZone);
     const [expenses, categories] = await Promise.all([
       prisma.expense.findMany({
         where: { userId: request.user!.id, date: { gte: start, lt: end } },
@@ -512,20 +516,10 @@ router.get("/trend", async (request: AuthenticatedRequest, response, next) => {
         select: { id: true, name: true, icon: true },
       }),
     ]);
+    const expenseAggregate = aggregateExpenses(expenses, context.timeZone, context.currency);
     const values = new Map<string, Map<string, Prisma.Decimal>>();
-    const totalsByCurrency = new Map<string, Prisma.Decimal>();
-    for (const expense of expenses) {
-      const currency = movementCurrency(expense.currency, context.currency);
-      const month = `${expense.date.getUTCFullYear()}-${String(expense.date.getUTCMonth() + 1).padStart(2, "0")}`;
-      const currencyTotal = totalsByCurrency.get(`${month}:${currency}`) ?? new Prisma.Decimal(0);
-      totalsByCurrency.set(`${month}:${currency}`, currencyTotal.add(expense.amount));
-      const monthValues = values.get(month) ?? new Map<string, Prisma.Decimal>();
-      if (currency !== context.currency) continue;
-      monthValues.set(
-        expense.categoryId,
-        (monthValues.get(expense.categoryId) ?? new Prisma.Decimal(0)).add(expense.amount),
-      );
-      values.set(month, monthValues);
+    for (const [month, currencies] of expenseAggregate.byMonthCurrencyCategory) {
+      values.set(month, currencies.get(context.currency) ?? new Map<string, Prisma.Decimal>());
     }
     return response.json({
       data: {
@@ -535,11 +529,13 @@ router.get("/trend", async (request: AuthenticatedRequest, response, next) => {
           const monthValues = values.get(month) ?? new Map<string, Prisma.Decimal>();
           return {
             month,
-            total: moneyNumber(sum([...monthValues.values()])),
+            total: moneyNumber(
+              expenseAggregate.byMonthCurrency.get(month)?.get(context.currency) ?? 0,
+            ),
             totalsByCurrency: Object.fromEntries(
-              [...totalsByCurrency.entries()]
-                .filter(([key]) => key.startsWith(`${month}:`))
-                .map(([key, amount]) => [key.slice(month.length + 1), moneyNumber(amount)]),
+              [...(expenseAggregate.byMonthCurrency.get(month) ?? new Map()).entries()].map(
+                ([entryCurrency, amount]) => [entryCurrency, moneyNumber(amount)],
+              ),
             ),
             categories: categories.map((category) => ({
               category: { id: category.id, name: category.name, icon: category.icon },

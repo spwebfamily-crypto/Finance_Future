@@ -1,6 +1,7 @@
 import { Router, type Response } from "express";
 import { requireAuth, sendError } from "../middleware.js";
 import { prisma } from "../prisma.js";
+import { isReservedCategoryName, RESERVED_CATEGORY_ERROR } from "../services/categoryPolicy.js";
 import type { AuthenticatedRequest } from "../types.js";
 import { expenseCreateSchema, incomeCreateSchema } from "../validation.js";
 
@@ -95,10 +96,17 @@ router.post("/expenses", async (request: AuthenticatedRequest, response, next) =
     const input = expenseCreateSchema.parse(request.body);
     const category = await prisma.category.findFirst({
       where: { id: input.categoryId, userId: request.user!.id },
-      select: { id: true },
+      select: { id: true, name: true },
     });
     if (!category)
       return sendError(response, 404, "CATEGORY_NOT_FOUND", "Categoria não encontrada.");
+    if (isReservedCategoryName(category.name))
+      return sendError(
+        response,
+        422,
+        RESERVED_CATEGORY_ERROR.code,
+        RESERVED_CATEGORY_ERROR.message,
+      );
     const account = input.accountId
       ? await prisma.account.findFirst({
           where: { id: input.accountId, userId: request.user!.id },

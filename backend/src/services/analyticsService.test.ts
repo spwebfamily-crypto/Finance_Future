@@ -2,6 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   calculateSpendingLevel,
   currentMonthContext,
+  dayBounds,
+  localDateKey,
+  monthBoundsInTimeZone,
+  monthKeyForDate,
   monthsEndingAt,
   shiftMonth,
 } from "./analyticsService.js";
@@ -111,6 +115,22 @@ describe("month helpers", () => {
   it("crosses year boundaries in chronological order", () => {
     expect(shiftMonth("2026-01", -1)).toBe("2025-12");
     expect(monthsEndingAt("2026-02", 3)).toEqual(["2025-12", "2026-01", "2026-02"]);
+  });
+
+  it("uses local-midnight bounds instead of UTC-midnight bounds", () => {
+    const bounds = dayBounds("2026-09-21", "Europe/Lisbon");
+    expect(bounds.start.toISOString()).toBe("2026-09-20T23:00:00.000Z");
+    expect(bounds.end.toISOString()).toBe("2026-09-21T23:00:00.000Z");
+
+    const month = monthBoundsInTimeZone("2026-09", "America/New_York");
+    expect(month.start.toISOString()).toBe("2026-09-01T04:00:00.000Z");
+    expect(month.end.toISOString()).toBe("2026-10-01T04:00:00.000Z");
+  });
+
+  it("groups movement dates in the user's local month and day", () => {
+    const date = new Date("2026-09-21T23:30:00.000Z");
+    expect(localDateKey(date, "Europe/Lisbon")).toBe("2026-09-22");
+    expect(monthKeyForDate(date, "Europe/Lisbon")).toBe("2026-09");
   });
 
   it("rejects invalid month and day inputs instead of silently normalizing them", () => {
