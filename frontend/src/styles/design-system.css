@@ -512,6 +512,205 @@ th {
   }
 }
 
+/* --------------------------------------------------------------------------
+   Authenticated application repair layer
+   The legacy stylesheet remains below this file. These rules deliberately use
+   semantic pairs so a surface can never inherit a foreground from the other
+   theme. Mobile is the base; wider layouts are progressive enhancements.
+   -------------------------------------------------------------------------- */
+
+.theme-toggle {
+  display: inline-flex;
+  min-width: var(--control-height);
+  min-height: var(--control-height);
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 0.5rem 0.75rem;
+  color: var(--ink-strong);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+
+.theme-toggle:hover { background: var(--surface-soft); border-color: var(--line-strong); }
+.theme-toggle svg { width: 1.125rem; height: 1.125rem; }
+.theme-toggle--compact { width: var(--control-height); padding: 0; }
+.theme-toggle__label { font-size: 0.875rem; font-weight: 680; }
+
+.more-sheet,
+.more-sheet :is(h2, p, span),
+.more-sheet__link { color: var(--surface-foreground); }
+.more-sheet { width: min(100%, 34rem); max-width: none; background: var(--surface-raised); }
+.more-sheet__link { min-height: 3rem; }
+.more-sheet__preferences .theme-toggle { justify-content: flex-start; }
+.more-sheet__logout { width: calc(100% - 2 * var(--space-4)); min-height: var(--control-height); }
+
+.mobile-nav {
+  height: auto;
+  min-height: calc(var(--nav-height) + env(safe-area-inset-bottom));
+  justify-content: space-between;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-2) calc(var(--space-2) + env(safe-area-inset-bottom));
+  color: var(--surface-foreground);
+  background: var(--surface-raised);
+}
+.mobile-nav :is(.nav-link, .mobile-nav__add) {
+  min-width: 0;
+  min-height: 3rem;
+  flex: 1 1 0;
+  justify-content: center;
+  padding: var(--space-1);
+  color: var(--muted-foreground);
+  font-size: 0.6875rem;
+  line-height: 1.1;
+}
+.mobile-nav :is(.nav-link, .mobile-nav__add) span:not(.nav-link__active-marker) {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mobile-nav :is(.nav-link, .mobile-nav__add) svg { flex: 0 0 auto; }
+.mobile-nav .nav-link--active,
+.mobile-nav .mobile-nav__add--active { color: var(--brand); background: var(--brand-soft); }
+.mobile-nav .mobile-nav__add { color: var(--accent-foreground); background: var(--accent); border: 1px solid var(--accent-border); }
+
+.tilt-card { transform: none !important; transition: none !important; }
+.tilt-card__spotlight { display: none; }
+.daily-review-card {
+  color: var(--surface-foreground);
+  background: var(--surface-raised);
+  border: 1px solid var(--line-strong);
+  box-shadow: none;
+}
+.daily-review-card :is(h3, p, small, span) { color: inherit; }
+.daily-review-card__top { color: var(--muted-foreground); }
+.daily-review-card__body { margin-top: var(--space-6); }
+.daily-review-card__amount > strong { color: var(--brand); }
+
+.page--expenses .filter-panel,
+.page--expenses .expense-section,
+.page--planning .planning-panel,
+.page--planning .planning-alerts,
+.page--planning .planning-calendar,
+.invest-page > section,
+.page--accounts .accounts-panel,
+.page--accounts .accounts-total,
+.page--bank-connections .accounts-panel,
+.page--categories .category-create,
+.page--categories .category-library {
+  color: var(--surface-foreground);
+  background: var(--surface);
+  border-color: var(--line);
+  box-shadow: none;
+}
+
+/* Movements: controls first, then a calm, scannable transaction ledger. */
+.page--expenses .filter-panel { padding: var(--space-4); }
+.filter-panel__heading { align-items: flex-start; }
+.filter-shortcuts { gap: var(--space-2); overflow-x: auto; padding-bottom: var(--space-1); scrollbar-width: thin; }
+.filter-chip { min-height: 2.75rem; white-space: nowrap; }
+.archive-search { min-height: 3rem; color: var(--surface-foreground); background: var(--surface-raised); border-color: var(--line); }
+.expense-import-row { gap: var(--space-3); padding: var(--space-4); color: var(--muted-foreground); background: var(--surface-soft); border: 1px solid var(--line); border-radius: var(--radius-card); }
+.expense-section__heading { gap: var(--space-3); }
+.expense-row { min-width: 0; padding: var(--space-4); background: var(--surface); border-color: var(--line); }
+.expense-row :is(strong, h3, .expense-row__amount) { color: var(--surface-foreground); }
+.expense-row :is(small, p, time) { color: var(--muted-foreground); }
+.expense-row__amount { font-family: var(--font-mono); font-weight: 720; white-space: nowrap; }
+
+/* Planning: financial reading order rather than a wall of equal cards. */
+.page--planning { display: grid; gap: var(--space-6); }
+.planning-header-actions { margin-top: calc(-1 * var(--space-5)); }
+.planning-grid { align-items: start; }
+.planning-panel { align-self: start; }
+.planning-overview > article { min-height: 8rem; display: grid; align-content: space-between; }
+.planning-overview > article > strong { color: inherit; font-family: var(--font-display); font-size: clamp(1.75rem, 5cqi, 2.8rem); line-height: 1; overflow-wrap: anywhere; }
+.planning-overview > article > span,
+.planning-overview > article > small { color: var(--muted-foreground); }
+.planning-overview__available > span,
+.planning-overview__available > small { color: inherit !important; }
+.planning-calendar__item { min-width: 0; padding: var(--space-3); background: var(--surface-raised); border: 1px solid var(--line); border-radius: var(--radius-control); }
+.planning-calendar__item > div { min-width: 0; }
+.planning-calendar__item :is(strong, small) { overflow-wrap: anywhere; }
+.planning-panel .section-heading { gap: var(--space-3); }
+.planning-disclosure summary { color: var(--surface-foreground); }
+
+/* Investing: educational sequence remains secondary to declared context. */
+.invest-page { display: grid; gap: var(--space-6); color: var(--surface-foreground); }
+.invest-page :is(p, small, dt, dd, .invest-example__identifier, .invest-platform__action) { color: var(--muted-foreground); }
+.invest-page :is(h2, h3, strong, .invest-path__number, .invest-example__kind) { color: var(--surface-foreground); }
+.invest-context__figures > div,
+.invest-context__profile > span,
+.invest-example,
+.invest-platform,
+.invest-source { box-shadow: none; }
+.invest-path__item { min-width: 0; }
+
+/* Accounts and linked banks: compact state, balance and next action. */
+.accounts-total { color: var(--surface-foreground); background: var(--surface-soft); }
+.accounts-total :is(strong, .accounts-total__value) { color: var(--surface-foreground); }
+.accounts-total :is(span, small, p) { color: var(--muted-foreground); }
+.account-card-large,
+.bank-connection-card { min-width: 0; color: var(--surface-foreground); background: var(--surface-raised); border-color: var(--line); box-shadow: none; }
+.bank-connection-card :is(h3, strong) { color: var(--surface-foreground); }
+.bank-connection-card :is(p, small, time) { color: var(--muted-foreground); }
+.bank-connection-card__actions { gap: var(--space-2); padding-top: var(--space-3); border-top: 1px solid var(--line); }
+
+/* Categories keep the value column reserved and move actions below on mobile. */
+.category-create,
+.category-library { padding: var(--space-4); }
+.category-row { min-width: 0; color: var(--surface-foreground); background: var(--surface-raised); border-color: var(--line); }
+.category-row :is(strong, b) { color: var(--surface-foreground); }
+.category-row :is(small, p) { color: var(--muted-foreground); }
+
+/* Daily summary: a clear present-day status, not a reward for spending. */
+.daily-highlight {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: center;
+  margin: var(--space-4) 0;
+  padding: var(--space-4);
+  color: var(--brand-soft-foreground);
+  background: var(--brand-soft);
+  border: 1px solid var(--brand-border);
+  border-radius: var(--radius-control);
+}
+.daily-highlight__icon { display: grid; width: 2.75rem; height: 2.75rem; place-items: center; color: var(--brand-foreground); background: var(--brand); border-radius: 50%; }
+.daily-highlight__icon svg { width: 1.25rem; height: 1.25rem; }
+.daily-highlight div { min-width: 0; display: grid; gap: 0.125rem; }
+.daily-highlight__eyebrow { font-size: 0.7rem; font-weight: 760; letter-spacing: 0.08em; text-transform: uppercase; }
+.daily-highlight strong { color: inherit; font-family: var(--font-display); font-size: 1.25rem; line-height: 1.1; }
+.daily-highlight small { color: inherit; opacity: 0.85; }
+.daily-highlight__count { grid-column: 1 / -1; font-size: 0.8125rem; font-weight: 650; }
+.heatmap { min-width: 0; }
+.heatmap__cell--today { outline: 0.1875rem solid var(--accent); outline-offset: 0.125rem; }
+
+@media (min-width: 48rem) {
+  .daily-highlight { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .daily-highlight__count { grid-column: auto; text-align: right; }
+}
+
+@media (max-width: 47.9375rem) {
+  .page--expenses .page-actions,
+  .page--planning .planning-header-actions { width: 100%; }
+  .page--expenses .page-actions .button,
+  .planning-header-actions .button { flex: 1 1 0; min-width: 0; }
+  .expense-import-row { align-items: stretch; flex-direction: column; }
+  .expense-import-row .button { width: 100%; }
+  .expense-row { grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-3); }
+  .expense-row__actions { grid-column: 1 / -1; display: flex; width: 100%; }
+  .expense-row__actions .icon-button { flex: 1 1 0; }
+  .planning-calendar__item { grid-template-columns: auto minmax(0, 1fr); }
+  .calendar-amount { grid-column: 2; justify-self: start; }
+  .bank-connection-card__actions .button,
+  .bank-connection-card__actions .icon-button { min-height: var(--control-height); }
+  .category-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .category-row__actions { grid-column: 1 / -1; }
+}
+
 /* Theme contract ----------------------------------------------------------
  * This final layer deliberately repairs legacy text that used the old
  * `--muted` name as a foreground. `--muted` is a surface token now; text must

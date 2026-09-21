@@ -1,41 +1,23 @@
-import { Monitor, Moon, Sun } from "lucide-react";
+import { Moon, Sun } from "lucide-react";
 import { useI18n } from "../i18n/I18nContext";
 import { useTheme } from "./ThemeProvider";
 
 export function ThemeToggle({ compact = false }: { compact?: boolean }) {
   const { translate } = useI18n();
-  const { preference, theme, setPreference } = useTheme();
+  const { theme, toggle } = useTheme();
   const dark = theme === "dark";
-  const label =
-    preference === "system"
-      ? translate("theme.system")
-      : dark
-        ? translate("theme.dark")
-        : translate("theme.light");
+  const nextLabel = dark ? translate("theme.light") : translate("theme.dark");
 
   return (
-    <label
+    <button
+      type="button"
       className={compact ? "theme-toggle theme-toggle--compact" : "theme-toggle"}
-      data-theme-preference={preference}
-      title={translate("theme.label")}
+      aria-label={`${translate("theme.label")}: ${nextLabel}`}
+      title={`${translate("theme.label")}: ${nextLabel}`}
+      onClick={toggle}
     >
-      {preference === "system" ? (
-        <Monitor aria-hidden="true" />
-      ) : dark ? (
-        <Moon aria-hidden="true" />
-      ) : (
-        <Sun aria-hidden="true" />
-      )}
-      {!compact && <span className="theme-toggle__label">{label}</span>}
-      <select
-        value={preference}
-        onChange={(event) => setPreference(event.target.value as "system" | "light" | "dark")}
-        aria-label={translate("theme.label")}
-      >
-        <option value="system">{translate("theme.system")}</option>
-        <option value="light">{translate("theme.light")}</option>
-        <option value="dark">{translate("theme.dark")}</option>
-      </select>
-    </label>
+      {dark ? <Sun aria-hidden="true" /> : <Moon aria-hidden="true" />}
+      {!compact && <span className="theme-toggle__label">{nextLabel}</span>}
+    </button>
   );
 }

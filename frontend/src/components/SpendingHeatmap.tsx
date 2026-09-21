@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { Flame } from "lucide-react";
+import { CalendarCheck, Flame } from "lucide-react";
 import type { DailyTotal } from "../types";
 import { EmptyState } from "./States";
 import { todayInputValue } from "../utils/format";
@@ -42,6 +42,9 @@ export function SpendingHeatmap({ month, byDay, currency }: SpendingHeatmapProps
   const leadingBlanks = cells.length ? weekdayIndex(cells[0]!.iso) : 0;
   const formatter = new Intl.DateTimeFormat(locale, { day: "numeric", month: "long" });
   const todayIso = todayInputValue();
+  const todayAmount = cells.find((cell) => cell.iso === todayIso)?.amount ?? 0;
+  const number = new Intl.NumberFormat(locale, { style: "currency", currency });
+  const activeDays = cells.filter((cell) => cell.amount > 0).length;
 
   // Intensidade em 4 níveis; o pico do mês define o teto de cada escala.
   function intensity(amount: number) {
@@ -66,6 +69,21 @@ export function SpendingHeatmap({ month, byDay, currency }: SpendingHeatmapProps
       </div>
       {byDay.length ? (
         <>
+          <div className="daily-highlight" aria-live="polite">
+            <span className="daily-highlight__icon" aria-hidden="true">
+              <CalendarCheck />
+            </span>
+            <div>
+              <span className="daily-highlight__eyebrow">Hoje</span>
+              <strong>{todayAmount ? number.format(todayAmount) : "Sem movimentos registados"}</strong>
+              <small>
+                {todayAmount
+                  ? "Veja os movimentos do dia antes de fechar o resumo."
+                  : "O seu resumo será atualizado quando houver um movimento."}
+              </small>
+            </div>
+            <span className="daily-highlight__count">{activeDays} dias com movimentos</span>
+          </div>
           <div
             className="heatmap"
             role="img"
@@ -82,7 +100,7 @@ export function SpendingHeatmap({ month, byDay, currency }: SpendingHeatmapProps
             {cells.map((cell) => {
               const level = intensity(cell.amount);
               const label = cell.amount
-                ? `${formatter.format(new Date(`${cell.iso}T12:00:00`))}: ${new Intl.NumberFormat(locale, { style: "currency", currency }).format(cell.amount)}`
+                ? `${formatter.format(new Date(`${cell.iso}T12:00:00`))}: ${number.format(cell.amount)}`
                 : `${formatter.format(new Date(`${cell.iso}T12:00:00`))}: sem despesas`;
               return (
                 <span

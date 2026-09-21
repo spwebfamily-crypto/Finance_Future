@@ -227,7 +227,7 @@ test.describe("visual financial surfaces", () => {
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
     await capture(page, testInfo, "dashboard-system-dark");
 
-    await page.locator(".theme-toggle select").first().selectOption("light");
+    await page.getByRole("button", { name: /tema.*claro/i }).first().click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
 
     await page.emulateMedia({ colorScheme: "dark" });
