@@ -889,7 +889,7 @@ export function PlanningPage() {
             </div>
             <Target aria-hidden="true" />
           </div>
-          <details className="planning-disclosure" open={goals.length === 0}>
+          <details className="planning-disclosure">
             <summary>
               <span>Adicionar meta</span>
               <small>Definir um valor e, se quiser, uma data.</small>
@@ -1062,7 +1062,7 @@ export function PlanningPage() {
             </div>
             <CircleDollarSign aria-hidden="true" />
           </div>
-          <details className="planning-disclosure" open={incomes.length === 0}>
+          <details className="planning-disclosure">
             <summary>
               <span>Registar rendimento</span>
               <small>Adicionar uma entrada recebida.</small>
@@ -1215,10 +1215,7 @@ export function PlanningPage() {
               </div>
               <Repeat2 aria-hidden="true" />
             </div>
-            <details
-              className="planning-disclosure planning-disclosure--subtle"
-              open={recurringIncomes.length === 0}
-            >
+            <details className="planning-disclosure planning-disclosure--subtle">
               <summary>
                 <span>Agendar rendimento recorrente</span>
                 <small>Salário, bolsa ou rendimento mensal.</small>
@@ -1438,7 +1435,7 @@ export function PlanningPage() {
           </div>
           <Repeat2 aria-hidden="true" />
         </div>
-        <details className="planning-disclosure" open={recurring.length === 0}>
+        <details className="planning-disclosure">
           <summary>
             <span>Agendar despesa recorrente</span>
             <small>Renda, seguro, subscrição ou outro pagamento mensal.</small>
@@ -1701,7 +1698,7 @@ export function PlanningPage() {
           </div>
           <CreditCard aria-hidden="true" />
         </div>
-        <details className="planning-disclosure" open={debts.length === 0}>
+        <details className="planning-disclosure">
           <summary>
             <span>Adicionar dívida</span>
             <small>Registe o saldo, a prestação e o próximo vencimento.</small>

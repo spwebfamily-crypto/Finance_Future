@@ -246,13 +246,15 @@ export function BankConnectionsPage() {
           "Sincronize para trazer gastos como despesas. Renove o acesso ou desligue quando quiser.",
         )}
         action={
-          <button
-            type="button"
-            className="button button--accent"
-            onClick={() => navigate("/accounts/connect")}
-          >
-            <Plus aria-hidden="true" /> {t("Ligar banco")}
-          </button>
+          live.length > 0 ? (
+            <button
+              type="button"
+              className="button button--accent"
+              onClick={() => navigate("/accounts/connect")}
+            >
+              <Plus aria-hidden="true" /> {t("Ligar banco")}
+            </button>
+          ) : undefined
         }
       />
 

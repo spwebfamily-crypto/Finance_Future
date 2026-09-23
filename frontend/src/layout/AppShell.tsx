@@ -375,7 +375,6 @@ export function AppShell() {
         </a>
         <aside className="sidebar">
           <Brand phase={isLoggingOut ? "exit" : "idle"} />
-          <p className="sidebar__eyebrow">{t("O seu espaço financeiro")}</p>
           <DesktopNavigation />
           <NavLink
             className="button button--accent sidebar__add"

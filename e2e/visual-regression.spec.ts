@@ -239,10 +239,137 @@ const viewports = [
   { name: "1024x768", width: 1024, height: 768 },
   { name: "1280x720", width: 1280, height: 720 },
   { name: "1440x900", width: 1440, height: 900 },
+  { name: "1600x900", width: 1600, height: 900 },
   { name: "844x390", width: 844, height: 390 },
 ];
 
 test.describe("visual financial surfaces", () => {
+  test("glass sidebar remains readable and usable across desktop sizes and themes", async ({
+    page,
+  }, testInfo) => {
+    await prepareVisualSession(page);
+    for (const viewport of [
+      { width: 1024, height: 768, theme: "light" as const },
+      { width: 1280, height: 720, theme: "light" as const },
+      { width: 1280, height: 720, theme: "dark" as const },
+    ]) {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.emulateMedia({ colorScheme: viewport.theme });
+      await page.goto("/dashboard");
+      await expect(page.getByRole("heading", { name: "Hoje, sem complicações" })).toBeVisible();
+      await expect(page.locator(".sidebar .nav-link--active")).toHaveAttribute("aria-current", "page");
+      const sidebar = await page.locator(".sidebar").boundingBox();
+      const language = await page.locator(".sidebar .language-switcher select").boundingBox();
+      const account = await page.locator(".sidebar .account-card").boundingBox();
+      expect(sidebar).not.toBeNull();
+      expect(language).not.toBeNull();
+      expect(account).not.toBeNull();
+      expect(language!.x).toBeGreaterThanOrEqual(sidebar!.x);
+      expect(language!.x + language!.width).toBeLessThanOrEqual(sidebar!.x + sidebar!.width);
+      expect(account!.y + account!.height).toBeLessThanOrEqual(viewport.height + 1);
+      const navHeights = await page.locator(".sidebar .side-nav .nav-link").evaluateAll((links) =>
+        links.map((link) => link.getBoundingClientRect().height),
+      );
+      expect(Math.min(...navHeights)).toBeGreaterThanOrEqual(44);
+      await assertNoOverflow(page);
+      await capture(page, testInfo, `sidebar-glass-${viewport.width}-${viewport.theme}`);
+      const accessibility = await new AxeBuilder({ page })
+        .include(".sidebar")
+        .withTags(["wcag2a", "wcag2aa"])
+        .analyze();
+      expect(
+        accessibility.violations.filter((issue) =>
+          ["critical", "serious"].includes(issue.impact ?? ""),
+        ),
+      ).toEqual([]);
+    }
+  });
+
+  test("desktop dashboard and planning keep their primary information above secondary content", async ({
+    page,
+  }, testInfo) => {
+    await prepareVisualSession(page);
+    await page.setViewportSize({ width: 1280, height: 720 });
+
+    await page.goto("/dashboard");
+    await expect(page.getByRole("heading", { name: "Hoje, sem complicações" })).toBeVisible();
+    const today = await page.locator(".today-overview").boundingBox();
+    const total = await page.locator(".dashboard-total").boundingBox();
+    const shortcuts = await page.locator(".dashboard-shortcuts").boundingBox();
+    expect(today).not.toBeNull();
+    expect(total).not.toBeNull();
+    expect(shortcuts).not.toBeNull();
+    expect(today!.x).toBeLessThan(total!.x);
+    expect(Math.abs(today!.y - total!.y)).toBeLessThan(2);
+    expect(shortcuts!.x).toBeGreaterThan(today!.x);
+    await assertNoOverflow(page);
+    await capture(page, testInfo, "dashboard-desktop-refined");
+
+    await page.goto("/planning");
+    await expect(page.getByRole("heading", { name: "Planeie antes de gastar" })).toBeVisible();
+    const overviewCards = page.locator(".planning-overview > article");
+    expect(await overviewCards.count()).toBe(4);
+    const firstCard = await overviewCards.nth(0).boundingBox();
+    const fourthCard = await overviewCards.nth(3).boundingBox();
+    expect(Math.abs(firstCard!.y - fourthCard!.y)).toBeLessThan(2);
+    await expect(page.locator(".planning-panel > .planning-disclosure[open]")).toHaveCount(0);
+    await assertNoOverflow(page);
+    await capture(page, testInfo, "planning-desktop-refined");
+  });
+
+  test("desktop accounts show balances before creation and prevent unavailable transfers", async ({
+    page,
+  }) => {
+    await prepareVisualSession(page);
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.goto("/accounts");
+    await expect(page.getByRole("heading", { name: "Contas e cartões" })).toBeVisible();
+    const balances = await page.locator(".accounts-panel--list").first().boundingBox();
+    const creation = await page.locator(".accounts-grid").boundingBox();
+    expect(balances!.y).toBeLessThan(creation!.y);
+    const transfer = page.locator(".accounts-grid .planning-disclosure").last();
+    await expect(transfer).not.toHaveAttribute("open");
+    await transfer.locator("summary").click();
+    await expect(transfer.getByText("Crie pelo menos duas contas")).toBeVisible();
+    await expect(transfer.locator("form")).toHaveCount(0);
+    await assertNoOverflow(page);
+
+    await page.goto("/accounts/connections");
+    await expect(page.getByRole("button", { name: "Ligar banco" })).toHaveCount(1);
+    await assertNoOverflow(page);
+  });
+
+  test("desktop operational pages keep readable lists and section widths", async ({
+    page,
+  }, testInfo) => {
+    await prepareVisualSession(page);
+    await page.setViewportSize({ width: 1280, height: 720 });
+    for (const surface of [
+      { path: "/expenses", heading: "Despesas", screenshot: "expenses-desktop-refined" },
+      { path: "/categories", heading: "Categorias", screenshot: "categories-desktop-refined" },
+      {
+        path: "/investments",
+        heading: "Investir começa por compreender",
+        screenshot: "investments-desktop-refined",
+      },
+    ]) {
+      await page.goto(surface.path);
+      await expect(page.getByRole("heading", { name: surface.heading, exact: true })).toBeVisible();
+      await assertNoOverflow(page);
+      await capture(page, testInfo, surface.screenshot);
+    }
+    const cardsFit = await page.locator(".invest-example").evaluateAll((cards) =>
+      cards.every((card) => card.scrollWidth <= card.clientWidth + 1),
+    );
+    expect(cardsFit).toBe(true);
+    const accessibility = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
+    expect(
+      accessibility.violations.filter((issue) =>
+        ["critical", "serious"].includes(issue.impact ?? ""),
+      ),
+    ).toEqual([]);
+  });
+
   for (const viewport of viewports) {
     test(`Dashboard remains usable at ${viewport.name}`, async ({ page }, testInfo) => {
       await prepareVisualSession(page);

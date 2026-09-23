@@ -354,6 +354,105 @@ export function AccountsPage() {
         </small>
       </section>
 
+      <section className="accounts-panel accounts-panel--list" aria-labelledby="accounts-title">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">{t("Saldos")}</p>
+            <h2 id="accounts-title">{t("As suas contas")}</h2>
+          </div>
+        </div>
+        <div className="account-cards">
+          {visibleAccounts.length ? (
+            visibleAccounts.map((account) => {
+              const balance = accountBalanceValue(account);
+              const cardUse =
+                balance !== null && account.type === "credit_card" && account.creditLimit
+                  ? Math.max(0, -balance) / account.creditLimit
+                  : null;
+              const isLinked = account.source === "bank";
+              return (
+                <article
+                  className={`account-card-large account-card-large--${account.type}${isLinked ? " account-card-large--linked" : ""}`}
+                  key={account.id}
+                >
+                  <span className="account-card-large__icon">
+                    <AccountIcon type={account.type} />
+                  </span>
+                  <div className="account-card-large__identity">
+                    <p>{t(accountLabels[account.type])}</p>
+                    <h3>
+                      <Link to={`/accounts/${account.id}`}>{account.name}</Link>
+                    </h3>
+                    <span
+                      className={`account-badge account-badge--${isLinked ? "bank" : "manual"}`}
+                    >
+                      {t(isLinked ? "Ligada ao banco" : "Manual")}
+                    </span>
+                    {(isLinked || cardUse !== null) && (
+                      <div className="account-card-large__meta">
+                        {isLinked && (
+                          <span>
+                            {account.lastSyncedAt
+                              ? t("Atualizado {date}", {
+                                  date: formatLocaleDate(account.lastSyncedAt, {
+                                    dateStyle: "short",
+                                    timeStyle: "short",
+                                  }),
+                                })
+                              : t("Ainda sem sincronização")}
+                          </span>
+                        )}
+                        {cardUse !== null && (
+                          <span>{Math.min(100, cardUse * 100).toFixed(0)}% do limite</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <strong>
+                    {balance === null
+                      ? t("Ainda sem sincronização")
+                      : formatCurrency(balance, account.currency ?? currency, locale)}
+                  </strong>
+                  <div className="account-card-large__actions">
+                    {isLinked && (
+                      <Link className="text-button" to="/accounts/connections">
+                        {t("Gerir ligação")}
+                      </Link>
+                    )}
+                    {!isLinked && (
+                      <button
+                        type="button"
+                        className="icon-button account-card-large__correct"
+                        aria-label={t("Corrigir saldo da conta {account}", {
+                          account: account.name,
+                        })}
+                        onClick={() => openBalanceCorrection(account)}
+                      >
+                        <PencilLine aria-hidden="true" />
+                        <span>{t("Corrigir saldo")}</span>
+                      </button>
+                    )}
+                    {!isLinked && (
+                      <button
+                        type="button"
+                        className="icon-button icon-button--danger"
+                        aria-label={t("Remover conta {account}", { account: account.name })}
+                        title={t("Remover conta")}
+                        onClick={() => setDeleteTarget(account)}
+                      >
+                        <Trash2 aria-hidden="true" />
+                      </button>
+                    )}
+                  </div>
+                </article>
+              );
+            })
+          ) : (
+            <p className="accounts-empty">{t("Crie uma conta ou ligue o banco para começar.")}</p>
+          )}
+        </div>
+      </section>
+
       <div className="accounts-grid">
         <section className="accounts-panel" aria-labelledby="account-create-title">
           <div className="section-heading">
@@ -470,7 +569,7 @@ export function AccountsPage() {
             </div>
             <ArrowRightLeft aria-hidden="true" />
           </div>
-          <details className="planning-disclosure" open={visibleAccounts.length < 2}>
+          <details className="planning-disclosure">
             <summary>
               <span>{t("Fazer transferência")}</span>
               <small>{t("Mover dinheiro entre duas contas.")}</small>
@@ -480,224 +579,129 @@ export function AccountsPage() {
                 {t("Crie pelo menos duas contas antes de fazer uma transferência.")}
               </p>
             )}
-            <form className="planning-form" onSubmit={createTransfer} noValidate>
-              <div className="planning-form__split">
+            {visibleAccounts.length >= 2 && (
+              <form className="planning-form" onSubmit={createTransfer} noValidate>
+                <div className="planning-form__split">
+                  <label className="field">
+                    <span>{t("De")}</span>
+                    <select
+                      ref={transferFromRef}
+                      value={transferForm.fromAccountId}
+                      onChange={(event) => {
+                        setTransferForm((form) => ({ ...form, fromAccountId: event.target.value }));
+                        setTransferErrors((current) => ({ ...current, fromAccountId: undefined }));
+                      }}
+                      aria-invalid={Boolean(transferErrors.fromAccountId)}
+                      aria-describedby={
+                        transferErrors.fromAccountId ? "transfer-from-error" : undefined
+                      }
+                    >
+                      <option value="">{t("Escolher")}</option>
+                      {visibleAccounts.map((account) => (
+                        <option key={account.id} value={account.id}>
+                          {account.name}
+                        </option>
+                      ))}
+                    </select>
+                    {transferErrors.fromAccountId && (
+                      <small className="field__error" id="transfer-from-error">
+                        {transferErrors.fromAccountId}
+                      </small>
+                    )}
+                  </label>
+                  <label className="field">
+                    <span>{t("Para")}</span>
+                    <select
+                      ref={transferToRef}
+                      value={transferForm.toAccountId}
+                      onChange={(event) => {
+                        setTransferForm((form) => ({ ...form, toAccountId: event.target.value }));
+                        setTransferErrors((current) => ({ ...current, toAccountId: undefined }));
+                      }}
+                      aria-invalid={Boolean(transferErrors.toAccountId)}
+                      aria-describedby={
+                        transferErrors.toAccountId ? "transfer-to-error" : undefined
+                      }
+                    >
+                      <option value="">{t("Escolher")}</option>
+                      {visibleAccounts.map((account) => (
+                        <option key={account.id} value={account.id}>
+                          {account.name}
+                        </option>
+                      ))}
+                    </select>
+                    {transferErrors.toAccountId && (
+                      <small className="field__error" id="transfer-to-error">
+                        {transferErrors.toAccountId}
+                      </small>
+                    )}
+                  </label>
+                </div>
+                <div className="planning-form__split">
+                  <label className="field">
+                    <span>{t("Valor")}</span>
+                    <input
+                      ref={transferAmountRef}
+                      inputMode="decimal"
+                      value={transferForm.amount}
+                      onChange={(event) => {
+                        setTransferForm((form) => ({ ...form, amount: event.target.value }));
+                        setTransferErrors((current) => ({ ...current, amount: undefined }));
+                      }}
+                      placeholder="0,00"
+                      aria-invalid={Boolean(transferErrors.amount)}
+                      aria-describedby={transferErrors.amount ? "transfer-amount-error" : undefined}
+                    />
+                    {transferErrors.amount && (
+                      <small className="field__error" id="transfer-amount-error">
+                        {transferErrors.amount}
+                      </small>
+                    )}
+                  </label>
+                  <label className="field">
+                    <span>{t("Data")}</span>
+                    <input
+                      ref={transferDateRef}
+                      type="date"
+                      value={transferForm.date}
+                      onChange={(event) => {
+                        setTransferForm((form) => ({ ...form, date: event.target.value }));
+                        setTransferErrors((current) => ({ ...current, date: undefined }));
+                      }}
+                      aria-invalid={Boolean(transferErrors.date)}
+                      aria-describedby={transferErrors.date ? "transfer-date-error" : undefined}
+                    />
+                    {transferErrors.date && (
+                      <small className="field__error" id="transfer-date-error">
+                        {transferErrors.date}
+                      </small>
+                    )}
+                  </label>
+                </div>
                 <label className="field">
-                  <span>{t("De")}</span>
-                  <select
-                    ref={transferFromRef}
-                    value={transferForm.fromAccountId}
-                    onChange={(event) => {
-                      setTransferForm((form) => ({ ...form, fromAccountId: event.target.value }));
-                      setTransferErrors((current) => ({ ...current, fromAccountId: undefined }));
-                    }}
-                    aria-invalid={Boolean(transferErrors.fromAccountId)}
-                    aria-describedby={
-                      transferErrors.fromAccountId ? "transfer-from-error" : undefined
+                  <span>
+                    {t("Nota")} <em>{t("opcional")}</em>
+                  </span>
+                  <input
+                    value={transferForm.description}
+                    onChange={(event) =>
+                      setTransferForm((form) => ({ ...form, description: event.target.value }))
                     }
-                  >
-                    <option value="">{t("Escolher")}</option>
-                    {visibleAccounts.map((account) => (
-                      <option key={account.id} value={account.id}>
-                        {account.name}
-                      </option>
-                    ))}
-                  </select>
-                  {transferErrors.fromAccountId && (
-                    <small className="field__error" id="transfer-from-error">
-                      {transferErrors.fromAccountId}
-                    </small>
-                  )}
-                </label>
-                <label className="field">
-                  <span>{t("Para")}</span>
-                  <select
-                    ref={transferToRef}
-                    value={transferForm.toAccountId}
-                    onChange={(event) => {
-                      setTransferForm((form) => ({ ...form, toAccountId: event.target.value }));
-                      setTransferErrors((current) => ({ ...current, toAccountId: undefined }));
-                    }}
-                    aria-invalid={Boolean(transferErrors.toAccountId)}
-                    aria-describedby={transferErrors.toAccountId ? "transfer-to-error" : undefined}
-                  >
-                    <option value="">{t("Escolher")}</option>
-                    {visibleAccounts.map((account) => (
-                      <option key={account.id} value={account.id}>
-                        {account.name}
-                      </option>
-                    ))}
-                  </select>
-                  {transferErrors.toAccountId && (
-                    <small className="field__error" id="transfer-to-error">
-                      {transferErrors.toAccountId}
-                    </small>
-                  )}
-                </label>
-              </div>
-              <div className="planning-form__split">
-                <label className="field">
-                  <span>{t("Valor")}</span>
-                  <input
-                    ref={transferAmountRef}
-                    inputMode="decimal"
-                    value={transferForm.amount}
-                    onChange={(event) => {
-                      setTransferForm((form) => ({ ...form, amount: event.target.value }));
-                      setTransferErrors((current) => ({ ...current, amount: undefined }));
-                    }}
-                    placeholder="0,00"
-                    aria-invalid={Boolean(transferErrors.amount)}
-                    aria-describedby={transferErrors.amount ? "transfer-amount-error" : undefined}
+                    placeholder={t("Ex.: reforço da poupança")}
                   />
-                  {transferErrors.amount && (
-                    <small className="field__error" id="transfer-amount-error">
-                      {transferErrors.amount}
-                    </small>
-                  )}
                 </label>
-                <label className="field">
-                  <span>{t("Data")}</span>
-                  <input
-                    ref={transferDateRef}
-                    type="date"
-                    value={transferForm.date}
-                    onChange={(event) => {
-                      setTransferForm((form) => ({ ...form, date: event.target.value }));
-                      setTransferErrors((current) => ({ ...current, date: undefined }));
-                    }}
-                    aria-invalid={Boolean(transferErrors.date)}
-                    aria-describedby={transferErrors.date ? "transfer-date-error" : undefined}
-                  />
-                  {transferErrors.date && (
-                    <small className="field__error" id="transfer-date-error">
-                      {transferErrors.date}
-                    </small>
-                  )}
-                </label>
-              </div>
-              <label className="field">
-                <span>
-                  {t("Nota")} <em>{t("opcional")}</em>
-                </span>
-                <input
-                  value={transferForm.description}
-                  onChange={(event) =>
-                    setTransferForm((form) => ({ ...form, description: event.target.value }))
-                  }
-                  placeholder={t("Ex.: reforço da poupança")}
-                />
-              </label>
-              <button
-                className="button button--primary"
-                disabled={isSaving || visibleAccounts.length < 2}
-                type="submit"
-              >
-                {t("Transferir")}
-              </button>
-            </form>
+                <button
+                  className="button button--primary"
+                  disabled={isSaving || visibleAccounts.length < 2}
+                  type="submit"
+                >
+                  {t("Transferir")}
+                </button>
+              </form>
+            )}
           </details>
         </section>
       </div>
-
-      <section className="accounts-panel accounts-panel--list" aria-labelledby="accounts-title">
-        <div className="section-heading">
-          <div>
-            <p className="eyebrow">{t("Saldos")}</p>
-            <h2 id="accounts-title">{t("As suas contas")}</h2>
-          </div>
-        </div>
-        <div className="account-cards">
-          {visibleAccounts.length ? (
-            visibleAccounts.map((account) => {
-              const balance = accountBalanceValue(account);
-              const cardUse =
-                balance !== null && account.type === "credit_card" && account.creditLimit
-                  ? Math.max(0, -balance) / account.creditLimit
-                  : null;
-              const isLinked = account.source === "bank";
-              return (
-                <article
-                  className={`account-card-large account-card-large--${account.type}${isLinked ? " account-card-large--linked" : ""}`}
-                  key={account.id}
-                >
-                  <span className="account-card-large__icon">
-                    <AccountIcon type={account.type} />
-                  </span>
-                  <div className="account-card-large__identity">
-                    <p>{t(accountLabels[account.type])}</p>
-                    <h3>
-                      <Link to={`/accounts/${account.id}`}>{account.name}</Link>
-                    </h3>
-                    <span
-                      className={`account-badge account-badge--${isLinked ? "bank" : "manual"}`}
-                    >
-                      {t(isLinked ? "Ligada ao banco" : "Manual")}
-                    </span>
-                    {(isLinked || cardUse !== null) && (
-                      <div className="account-card-large__meta">
-                        {isLinked && (
-                          <span>
-                            {account.lastSyncedAt
-                              ? t("Atualizado {date}", {
-                                  date: formatLocaleDate(account.lastSyncedAt, {
-                                    dateStyle: "short",
-                                    timeStyle: "short",
-                                  }),
-                                })
-                              : t("Ainda sem sincronização")}
-                          </span>
-                        )}
-                        {cardUse !== null && (
-                          <span>{Math.min(100, cardUse * 100).toFixed(0)}% do limite</span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  <strong>
-                    {balance === null
-                      ? t("Ainda sem sincronização")
-                      : formatCurrency(balance, account.currency ?? currency, locale)}
-                  </strong>
-                  <div className="account-card-large__actions">
-                    {isLinked && (
-                      <Link className="text-button" to="/accounts/connections">
-                        {t("Gerir ligação")}
-                      </Link>
-                    )}
-                    {!isLinked && (
-                      <button
-                        type="button"
-                        className="icon-button account-card-large__correct"
-                        aria-label={t("Corrigir saldo da conta {account}", {
-                          account: account.name,
-                        })}
-                        onClick={() => openBalanceCorrection(account)}
-                      >
-                        <PencilLine aria-hidden="true" />
-                        <span>{t("Corrigir saldo")}</span>
-                      </button>
-                    )}
-                    {!isLinked && (
-                      <button
-                        type="button"
-                        className="icon-button icon-button--danger"
-                        aria-label={t("Remover conta {account}", { account: account.name })}
-                        title={t("Remover conta")}
-                        onClick={() => setDeleteTarget(account)}
-                      >
-                        <Trash2 aria-hidden="true" />
-                      </button>
-                    )}
-                  </div>
-                </article>
-              );
-            })
-          ) : (
-            <p className="accounts-empty">{t("Crie uma conta ou ligue o banco para começar.")}</p>
-          )}
-        </div>
-      </section>
 
       <section className="accounts-panel accounts-panel--list" aria-labelledby="transfers-title">
         <div className="section-heading">
