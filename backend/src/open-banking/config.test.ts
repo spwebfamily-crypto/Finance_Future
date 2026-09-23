@@ -46,7 +46,7 @@ describe("open banking configuration", () => {
     expect(config.provider).toBe("enable_banking");
     expect(config.defaultCountry).toBe("PT");
     expect(config.syncIntervalMinutes).toBe(360);
-    expect(config.automaticSyncEnabled).toBe(false);
+    expect(config.automaticSyncEnabled).toBe(true);
     expect(config.dataKey).toHaveLength(0);
   });
 
@@ -57,7 +57,7 @@ describe("open banking configuration", () => {
     expect(config.callbackUrl).toBe(validCallback);
     expect(config.redirectOrigin).toBe("http://localhost:5173");
     expect(config.dataKey).toHaveLength(32);
-    expect(config.automaticSyncEnabled).toBe(false);
+    expect(config.automaticSyncEnabled).toBe(true);
 
     const automatic = await loadConfig({
       ...enabledFake,
@@ -65,6 +65,12 @@ describe("open banking configuration", () => {
       OPEN_BANKING_AUTOMATIC_SYNC_ENABLED: "true",
     });
     expect(automatic.automaticSyncEnabled).toBe(true);
+    await expect(
+      loadConfig({
+        ...enabledFake,
+        OPEN_BANKING_SYNC_INTERVAL_MINUTES: "359",
+      }),
+    ).rejects.toThrow(/SYNC_INTERVAL_MINUTES/);
   });
 
   it("accepts a trailing slash in the callback URL but rejects a wrong path", async () => {

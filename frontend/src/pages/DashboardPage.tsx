@@ -110,6 +110,7 @@ export function DashboardPage() {
   const [notice, setNotice] = useState("");
   const [newCategoryId, setNewCategoryId] = useState("");
   const [newLimit, setNewLimit] = useState("");
+  const [isBudgetFormOpen, setIsBudgetFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingLimit, setEditingLimit] = useState("");
   const [budgetDeleteTarget, setBudgetDeleteTarget] = useState<Budget | null>(null);
@@ -336,6 +337,7 @@ export function DashboardPage() {
       setBudgets((items) => [...items, created]);
       setNewCategoryId("");
       setNewLimit("");
+      setIsBudgetFormOpen(false);
       setNotice("Orçamento criado.");
       void load();
     } catch (requestError) {
@@ -867,8 +869,26 @@ export function DashboardPage() {
                 <h2 id="budgets-title">{t("Orçamentos por categoria")}</h2>
               </div>
             </div>
+            <button
+              className="button button--accent budget-create-trigger"
+              type="button"
+              aria-expanded={isBudgetFormOpen}
+              aria-controls="budget-create-form"
+              onClick={() => {
+                setIsBudgetFormOpen((open) => !open);
+                if (!isBudgetFormOpen)
+                  window.requestAnimationFrame(() => newCategoryRef.current?.focus());
+              }}
+            >
+              <Plus aria-hidden="true" /> {t("Definir limite")}
+            </button>
             <div className="budgets-layout">
-              <form className="budget-create" onSubmit={saveBudget} noValidate>
+              <form
+                id="budget-create-form"
+                className={`budget-create ${isBudgetFormOpen ? "budget-create--open" : ""}`}
+                onSubmit={saveBudget}
+                noValidate
+              >
                 <label className="field">
                   <span>{t("Categoria")}</span>
                   <select

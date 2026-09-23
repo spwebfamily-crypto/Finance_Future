@@ -15,6 +15,14 @@ export function bankSyncResultMessage(job: BankSyncJob, t: Translate) {
     return t("Sincronização concluída. Saldos e movimentos foram atualizados.");
   }
   if (job.status === "partial") {
+    if (
+      job.errorCode === "PROVIDER_PROVIDER_RATE_LIMITED" ||
+      job.errorCode === "BANK_PROVIDER_RATE_LIMITED"
+    ) {
+      return t(
+        "O banco limitou os pedidos. As contas já atualizadas foram guardadas; tente após a espera indicada.",
+      );
+    }
     return t(
       "Sincronização parcial. As contas disponíveis foram atualizadas; tente novamente para concluir.",
     );
@@ -29,7 +37,8 @@ export function bankSyncResultMessage(job: BankSyncJob, t: Translate) {
     case "PROVIDER_PROVIDER_TIMEOUT":
       return t("O banco está temporariamente indisponível. Tente sincronizar novamente.");
     case "PROVIDER_PROVIDER_RATE_LIMITED":
-      return t("O banco limitou os pedidos. Aguarde alguns minutos e tente novamente.");
+    case "BANK_PROVIDER_RATE_LIMITED":
+      return t("O banco limitou os pedidos. Aguarde até à próxima sincronização.");
     case "SYNC_JOB_STALE":
       return t("A sincronização anterior foi interrompida. Pode tentar novamente agora.");
     default:

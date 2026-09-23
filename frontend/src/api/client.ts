@@ -279,8 +279,10 @@ const errorMessages: Record<string, Record<string, string>> = {
     CONFLICT: "Já existe um registo com estes dados.",
     RESOURCE_IN_USE: "Este registo está em utilização e não pode ser eliminado.",
     INVALID_RECEIPT: "Não foi possível processar o comprovativo.",
-    BANK_EXPENSE_REVIEW_RATE_LIMITED:
-      "Pode confirmar até 10 despesas a cada 3 minutos. Aguarde antes de continuar.",
+    BANK_PROVIDER_RATE_LIMITED:
+      "O banco limitou os pedidos. Aguarde até à hora indicada para tentar novamente.",
+    BANK_ONLINE_CONTEXT_UNAVAILABLE:
+      "Não foi possível validar os dados desta sessão para atualizar o banco.",
     INTERNAL_ERROR: "Ocorreu um erro inesperado. Tente novamente.",
   },
   "en-GB": {
@@ -293,8 +295,10 @@ const errorMessages: Record<string, Record<string, string>> = {
     CONFLICT: "A record with these details already exists.",
     RESOURCE_IN_USE: "This record is in use and cannot be deleted.",
     INVALID_RECEIPT: "The receipt could not be processed.",
-    BANK_EXPENSE_REVIEW_RATE_LIMITED:
-      "You can confirm up to 10 expenses every 3 minutes. Wait before continuing.",
+    BANK_PROVIDER_RATE_LIMITED:
+      "The bank limited requests. Wait until the indicated time before trying again.",
+    BANK_ONLINE_CONTEXT_UNAVAILABLE:
+      "Could not validate this session to refresh the bank connection.",
     INTERNAL_ERROR: "An unexpected error occurred. Please try again.",
   },
   "es-ES": {
@@ -307,8 +311,10 @@ const errorMessages: Record<string, Record<string, string>> = {
     CONFLICT: "Ya existe un registro con estos datos.",
     RESOURCE_IN_USE: "Este registro está en uso y no se puede eliminar.",
     INVALID_RECEIPT: "No se pudo procesar el comprobante.",
-    BANK_EXPENSE_REVIEW_RATE_LIMITED:
-      "Puedes confirmar hasta 10 gastos cada 3 minutos. Espera antes de continuar.",
+    BANK_PROVIDER_RATE_LIMITED:
+      "El banco limitó las solicitudes. Espera hasta la hora indicada para intentarlo de nuevo.",
+    BANK_ONLINE_CONTEXT_UNAVAILABLE:
+      "No se pudo validar esta sesión para actualizar la conexión bancaria.",
     INTERNAL_ERROR: "Ocurrió un error inesperado. Inténtalo de nuevo.",
   },
 };

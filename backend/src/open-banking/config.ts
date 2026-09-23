@@ -49,10 +49,10 @@ const rawSchema = z.object({
   OPEN_BANKING_CALLBACK_URL: z.string().trim().default(""),
   OPEN_BANKING_DATA_KEY_B64: z.string().trim().default(""),
   OPEN_BANKING_CRON_SECRET: z.string().default(""),
-  OPEN_BANKING_SYNC_INTERVAL_MINUTES: z.coerce.number().int().min(15).max(10_080).default(360),
+  OPEN_BANKING_SYNC_INTERVAL_MINUTES: z.coerce.number().int().min(360).max(10_080).default(360),
   OPEN_BANKING_AUTOMATIC_SYNC_ENABLED: z
     .enum(["true", "false"])
-    .default("false")
+    .default("true")
     .transform((value) => value === "true"),
   ENABLE_BANKING_ENV: z.enum(["sandbox", "production"]).default("sandbox"),
   ENABLE_BANKING_APP_ID: z.string().trim().default(""),

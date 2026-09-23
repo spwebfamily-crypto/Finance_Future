@@ -17,7 +17,8 @@ manuais, no dinheiro nem na importação CSV.
 | `OPEN_BANKING_CALLBACK_URL` | quando ativo | URL absoluto, tem de terminar em `/api/open-banking/callback`, sem query/fragmento; HTTPS obrigatório em produção |
 | `OPEN_BANKING_DATA_KEY_B64` | quando ativo | base64 de **exatamente 32 bytes** (AES-256-GCM). Gerar com `openssl rand -base64 32` |
 | `OPEN_BANKING_CRON_SECRET` | quando ativo | mínimo 32 caracteres; protege as rotas internas |
-| `OPEN_BANKING_SYNC_INTERVAL_MINUTES` | não | 360 por omissão (mínimo 15) |
+| `OPEN_BANKING_SYNC_INTERVAL_MINUTES` | não | 360 por omissão e mínimo (6 horas) |
+| `OPEN_BANKING_AUTOMATIC_SYNC_ENABLED` | não | `true` por omissão; o servidor verifica ligações vencidas a cada 15 minutos |
 | `ENABLE_BANKING_ENV` | não | `sandbox` por omissão; `production` só com `NODE_ENV=production` |
 | `ENABLE_BANKING_APP_ID` | com `enable_banking` | application id do Enable Banking |
 | `ENABLE_BANKING_PRIVATE_KEY_B64` | em produção com `enable_banking` | chave privada RSA (PEM) em base64 |
@@ -50,6 +51,7 @@ Produção falha no arranque se o Open Banking estiver ativo e faltar uma variá
 | `POST /api/open-banking/connections/:id/disconnect` | utilizador |
 | `GET /api/open-banking/transactions` | utilizador |
 | `PATCH /api/open-banking/transactions/:id` | utilizador |
+| `GET /api/open-banking/sync-jobs?ids=:id1,:id2` | utilizador; consulta em lote, até 25 jobs |
 | `GET /api/open-banking/sync-jobs/:id` | utilizador |
 | `POST /api/internal/open-banking/sync-due` | `Authorization: Bearer <OPEN_BANKING_CRON_SECRET>` |
 | `POST /api/internal/open-banking/cleanup` | idem |
@@ -63,10 +65,11 @@ npm run open-banking:sync -- --limit 20 --retention-days 30
 
 Alternativamente, chamar `POST /api/internal/open-banking/sync-due` com o segredo do cron.
 
-O servidor também verifica ligações vencidas a cada minuto enquanto está ativo.
-O intervalo de cada conta continua a ser definido por
-`OPEN_BANKING_SYNC_INTERVAL_MINUTES`; o claim atómico impede que o servidor e o
-cron sincronizem a mesma ligação em paralelo.
+O servidor verifica ligações vencidas a cada 15 minutos enquanto está ativo.
+O intervalo mínimo é de 6 horas por ligação; o claim atómico impede que o
+servidor e o cron sincronizem a mesma ligação em paralelo. A sincronização
+manual iniciada pelo utilizador encaminha IP e agente do navegador ao provedor
+somente durante o processamento e não os persiste.
 
 Para auditar movimentos repetidos com a mesma referência estável do banco:
 

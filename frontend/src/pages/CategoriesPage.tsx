@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { createPortal } from "react-dom";
 import { Check, Edit3, FolderPlus, LockKeyhole, Plus, Trash2, X } from "lucide-react";
 import { categoryApi } from "../api/resources";
 import { errorMessage } from "../api/client";
@@ -54,8 +55,48 @@ export function CategoriesPage() {
   const [error, setError] = useState("");
   const [formError, setFormError] = useState("");
   const [notice, setNotice] = useState("");
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
   const nameRef = useRef<HTMLInputElement>(null);
   const editingNameRef = useRef<HTMLInputElement>(null);
+  const createTriggerRef = useRef<HTMLButtonElement>(null);
+  const createPanelRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (!isCreateOpen) return;
+    const trigger = createTriggerRef.current;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const frame = window.requestAnimationFrame(() => nameRef.current?.focus());
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsCreateOpen(false);
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const focusable = Array.from(
+        createPanelRef.current?.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      );
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+      trigger?.focus();
+    };
+  }, [isCreateOpen]);
 
   const loadCategories = useCallback(async () => {
     setIsLoading(true);
@@ -93,6 +134,7 @@ export function CategoriesPage() {
       setCategories((current) => [...current, created]);
       setName("");
       setIcon("sparkles");
+      setIsCreateOpen(false);
       setNotice("Categoria criada.");
     } catch (requestError) {
       setFormError(errorMessage(requestError));
@@ -144,6 +186,69 @@ export function CategoriesPage() {
     }
   }
 
+  const createPanel = (
+    <section
+      id="new-category-panel"
+      ref={createPanelRef}
+      className={`category-create ${isCreateOpen ? "category-create--open" : ""}`}
+      role={isCreateOpen ? "dialog" : undefined}
+      aria-modal={isCreateOpen ? "true" : undefined}
+      aria-labelledby="new-category-title"
+    >
+      <button
+        className="icon-button category-create__close"
+        type="button"
+        onClick={() => setIsCreateOpen(false)}
+        aria-label="Fechar nova categoria"
+      >
+        <X aria-hidden="true" />
+      </button>
+      <span className="category-create__shape" aria-hidden="true">
+        <FolderPlus />
+      </span>
+      <p className="eyebrow">Personalizar</p>
+      <h2 id="new-category-title">Nova categoria</h2>
+      <p>Crie um nome curto e associe-lhe um ícone para reconhecer os seus gastos num relance.</p>
+      <form className="stack-form" onSubmit={createCategory} noValidate>
+        {formError && (
+          <div className="form-alert" role="alert" id="category-name-error">
+            {formError}
+          </div>
+        )}
+        <label className="field">
+          <span>Nome da categoria</span>
+          <input
+            ref={nameRef}
+            type="text"
+            name="name"
+            value={name}
+            onChange={(event) => {
+              setName(event.target.value);
+              setFormError("");
+            }}
+            placeholder="Ex.: Casa"
+            maxLength={40}
+            aria-invalid={Boolean(formError) && !name.trim()}
+            aria-describedby={formError && !name.trim() ? "category-name-error" : undefined}
+          />
+        </label>
+        <div className="field">
+          <span>Ícone da categoria</span>
+          <IconPicker value={icon} onChange={setIcon} label="Escolher ícone da categoria" />
+        </div>
+        <button className="button button--primary button--wide" type="submit" disabled={isSaving}>
+          {isSaving && !editingId ? (
+            <Spinner label="A criar" />
+          ) : (
+            <>
+              <Plus aria-hidden="true" /> Criar categoria
+            </>
+          )}
+        </button>
+      </form>
+    </section>
+  );
+
   return (
     <div className="page page--categories">
       <NoticeToast message={notice} onClose={() => setNotice("")} />
@@ -153,58 +258,34 @@ export function CategoriesPage() {
         description="Agrupe os gastos de forma simples e reconhecível."
       />
 
-      <div className="categories-layout">
-        <section className="category-create" aria-labelledby="new-category-title">
-          <span className="category-create__shape" aria-hidden="true">
-            <FolderPlus />
-          </span>
-          <p className="eyebrow">Personalizar</p>
-          <h2 id="new-category-title">Nova categoria</h2>
-          <p>
-            Crie um nome curto e associe-lhe um ícone para reconhecer os seus gastos num relance.
-          </p>
-          <form className="stack-form" onSubmit={createCategory} noValidate>
-            {formError && (
-              <div className="form-alert" role="alert" id="category-name-error">
-                {formError}
-              </div>
-            )}
-            <label className="field">
-              <span>Nome da categoria</span>
-              <input
-                ref={nameRef}
-                type="text"
-                name="name"
-                value={name}
-                onChange={(event) => {
-                  setName(event.target.value);
-                  setFormError("");
-                }}
-                placeholder="Ex.: Casa"
-                maxLength={40}
-                aria-invalid={Boolean(formError) && !name.trim()}
-                aria-describedby={formError && !name.trim() ? "category-name-error" : undefined}
-              />
-            </label>
-            <div className="field">
-              <span>Ícone da categoria</span>
-              <IconPicker value={icon} onChange={setIcon} label="Escolher ícone da categoria" />
-            </div>
+      <button
+        ref={createTriggerRef}
+        className="button button--primary category-create-trigger"
+        type="button"
+        aria-haspopup="dialog"
+        aria-expanded={isCreateOpen}
+        aria-controls="new-category-panel"
+        onClick={() => setIsCreateOpen(true)}
+      >
+        <Plus aria-hidden="true" /> Nova categoria
+      </button>
+
+      {isCreateOpen &&
+        createPortal(
+          <>
             <button
-              className="button button--primary button--wide"
-              type="submit"
-              disabled={isSaving}
-            >
-              {isSaving && !editingId ? (
-                <Spinner label="A criar" />
-              ) : (
-                <>
-                  <Plus aria-hidden="true" /> Criar categoria
-                </>
-              )}
-            </button>
-          </form>
-        </section>
+              className="category-create-backdrop"
+              type="button"
+              aria-label="Fechar nova categoria"
+              onClick={() => setIsCreateOpen(false)}
+            />
+            {createPanel}
+          </>,
+          document.body,
+        )}
+
+      <div className="categories-layout">
+        {!isCreateOpen && createPanel}
 
         <section className="category-library" aria-labelledby="category-list-title">
           <div className="section-heading">

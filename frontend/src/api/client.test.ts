@@ -111,10 +111,10 @@ describe("API client", () => {
     );
   });
 
-  it("explains the expense confirmation cooldown in the selected language", () => {
-    document.documentElement.lang = "pt-PT";
-    expect(
-      errorMessage(new ApiError("rate limited", 429, "BANK_EXPENSE_REVIEW_RATE_LIMITED")),
-    ).toBe("Pode confirmar até 10 despesas a cada 3 minutos. Aguarde antes de continuar.");
+  it("explains bank provider rate limits in the selected language", () => {
+    document.documentElement.lang = "en-GB";
+    expect(errorMessage(new ApiError("rate limited", 429, "BANK_PROVIDER_RATE_LIMITED"))).toBe(
+      "The bank limited requests. Wait until the indicated time before trying again.",
+    );
   });
 });

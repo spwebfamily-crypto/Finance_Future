@@ -1,5 +1,5 @@
 import { createSign } from "node:crypto";
-import { ProviderError, type ProviderErrorCode } from "./contracts.js";
+import { ProviderError, type ProviderErrorCode, type PsuRequestHeaders } from "./contracts.js";
 
 export const ENABLE_BANKING_BASE_URL = "https://api.enablebanking.com";
 /** A documentação fixa o TTL máximo do JWT da aplicação em 24 h; 5 min é suficiente. */
@@ -7,6 +7,7 @@ export const ENABLE_BANKING_JWT_TTL_SECONDS = 300;
 const DEFAULT_TIMEOUT_MS = 15_000;
 const MAX_GET_ATTEMPTS = 3;
 const MAX_RETRY_DELAY_MS = 5_000;
+const MAX_RETRY_AFTER_MS = 7 * 24 * 60 * 60 * 1_000;
 
 export interface EnableBankingCredentials {
   appId: string;
@@ -64,7 +65,11 @@ const authorizationErrors = new Set([
  * Traduz a resposta de erro do provedor num código interno. O `message` do
  * provedor nunca é propagado nem registado: pode conter dados do PSU.
  */
-export function mapEnableBankingError(status: number, body: unknown): ProviderError {
+export function mapEnableBankingError(
+  status: number,
+  body: unknown,
+  retryAfterMs: number | null = null,
+): ProviderError {
   const errorBody = (body ?? {}) as EnableBankingErrorBody;
   const providerCode = typeof errorBody.error === "string" ? errorBody.error : null;
 
@@ -79,7 +84,7 @@ export function mapEnableBankingError(status: number, body: unknown): ProviderEr
     return new ProviderError("authorization_failed", status, providerCode);
   }
   if (providerCode === "ASPSP_RATE_LIMIT_EXCEEDED") {
-    return new ProviderError("provider_rate_limited", status, providerCode);
+    return new ProviderError("provider_rate_limited", status, providerCode, retryAfterMs);
   }
   if (providerCode === "ASPSP_TIMEOUT") {
     return new ProviderError("provider_timeout", status, providerCode);
@@ -94,7 +99,7 @@ export function mapEnableBankingError(status: number, body: unknown): ProviderEr
     return new ProviderError("provider_timeout", status, providerCode);
   }
   if (status === 429) {
-    return new ProviderError("provider_rate_limited", status, providerCode);
+    return new ProviderError("provider_rate_limited", status, providerCode, retryAfterMs);
   }
   if (status >= 500) {
     return new ProviderError("provider_unavailable", status, providerCode);
@@ -110,6 +115,7 @@ export interface EnableBankingRequestOptions {
   method?: "GET" | "POST" | "DELETE";
   body?: unknown;
   query?: Record<string, string | null | undefined>;
+  psuHeaders?: PsuRequestHeaders;
   timeoutMs?: number;
   fetchImpl?: typeof fetch;
   retryDelay?: (milliseconds: number) => Promise<void>;
@@ -120,14 +126,14 @@ function retryAfterMilliseconds(response: Response): number | null {
   if (!value) return null;
   const seconds = Number(value);
   if (Number.isFinite(seconds) && seconds >= 0)
-    return Math.min(seconds * 1_000, MAX_RETRY_DELAY_MS);
+    return Math.min(seconds * 1_000, MAX_RETRY_AFTER_MS);
   const date = Date.parse(value);
   if (Number.isNaN(date)) return null;
-  return Math.min(Math.max(0, date - Date.now()), MAX_RETRY_DELAY_MS);
+  return Math.min(Math.max(0, date - Date.now()), MAX_RETRY_AFTER_MS);
 }
 
 function retryable(error: ProviderError) {
-  return ["provider_rate_limited", "provider_timeout", "provider_unavailable"].includes(error.code);
+  return ["provider_timeout", "provider_unavailable"].includes(error.code);
 }
 
 export async function enableBankingRequest<T>(
@@ -159,6 +165,10 @@ export async function enableBankingRequest<T>(
         Accept: "application/json",
         Authorization: `Bearer ${createEnableBankingJwt(credentials)}`,
       };
+      if (options.psuHeaders) {
+        headers["Psu-Ip-Address"] = options.psuHeaders.ipAddress;
+        headers["Psu-User-Agent"] = options.psuHeaders.userAgent;
+      }
       if (body !== undefined) headers["Content-Type"] = "application/json";
       const response = await fetchImpl(url.toString(), {
         method,
@@ -176,7 +186,7 @@ export async function enableBankingRequest<T>(
           throw new ProviderError("provider_invalid_response", response.status);
         }
       }
-      if (!response.ok) throw mapEnableBankingError(response.status, parsed);
+      if (!response.ok) throw mapEnableBankingError(response.status, parsed, retryAfter);
       return parsed as T;
     } catch (error) {
       const mapped =
@@ -188,7 +198,9 @@ export async function enableBankingRequest<T>(
       if (attempt >= attempts || !retryable(mapped)) throw mapped;
       const exponential = 250 * 2 ** (attempt - 1);
       const jitter = Math.floor(Math.random() * 100);
-      await retryDelay(retryAfter ?? exponential + jitter);
+      await retryDelay(
+        retryAfter === null ? exponential + jitter : Math.min(retryAfter, MAX_RETRY_DELAY_MS),
+      );
     } finally {
       clearTimeout(timeout);
     }

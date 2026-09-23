@@ -22,6 +22,8 @@ export const bankErrorMessages = {
   BANK_SYNC_JOB_NOT_FOUND: "Sincronização não encontrada.",
   BANK_PROVIDER_UNAVAILABLE: "O serviço do banco não está disponível. Tente novamente mais tarde.",
   BANK_PROVIDER_RATE_LIMITED: "Foram feitos demasiados pedidos ao banco. Aguarde alguns minutos.",
+  BANK_ONLINE_CONTEXT_UNAVAILABLE:
+    "Não foi possível validar os dados desta sessão para atualizar o banco. Tente novamente mais tarde.",
   BANK_PROVIDER_INVALID_RESPONSE: "O banco devolveu uma resposta inesperada.",
   BANK_LINKED_BALANCE_READ_ONLY:
     "O saldo de uma conta ligada ao banco não pode ser corrigido à mão.",

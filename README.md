@@ -99,7 +99,7 @@ O Netlify Drop publica o `dist` já compilado e não aplica variáveis do painel
 - Start command: `npm run db:migrate -w backend && npm start -w backend`
 - Health check: `/api/health`
 - Variável recomendada no Render: `TRUST_PROXY_HOPS=2` (edge + load balancer; ajuste se a topologia mudar)
-- `OPEN_BANKING_AUTOMATIC_SYNC_ENABLED=false` mantém a importação exclusivamente manual; use `true` apenas se pretender reativar o cron.
+- `OPEN_BANKING_AUTOMATIC_SYNC_ENABLED=true` mantém a sincronização agendada das ligações ativas; `OPEN_BANKING_SYNC_INTERVAL_MINUTES` tem mínimo de 360 (6 horas). Configure `false` apenas se pretender suspender a atualização automática.
 
 Os novos comprovativos são guardados de forma privada no PostgreSQL, com limite de 10 MB por ficheiro e quotas configuráveis (`RECEIPT_QUOTA_MB_PER_USER`, 100 MB por omissão; `RECEIPT_TOTAL_QUOTA_MB`, 500 MB por omissão). `UPLOAD_DIR` serve apenas para abrir e limpar anexos legados criados antes desta migração. A migração não copia esses ficheiros antigos: descarregue-os antes do deploy e volte a anexá-los se existirem dados reais.
 

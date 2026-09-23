@@ -127,11 +127,23 @@ vi.mock("../prisma.js", () => ({
         },
       ),
       findMany: repositories.jobFindMany.mockImplementation(
-        async ({ where, take }: { where: { connectionId?: string }; take?: number }) => {
+        async ({
+          where,
+          take,
+        }: {
+          where: {
+            connectionId?: string;
+            userId?: string;
+            id?: { in: string[] };
+          };
+          take?: number;
+        }) => {
           const items = repositories.jobs.filter(
             (job) =>
               (!where.connectionId || job.connectionId === where.connectionId) &&
-              (job.status === "queued" || job.status === "running"),
+              (!where.userId || job.userId === where.userId) &&
+              (!where.id || where.id.in.includes(String(job.id))) &&
+              (where.id || job.status === "queued" || job.status === "running"),
           );
           return take === undefined ? items : items.slice(0, take);
         },
@@ -531,6 +543,39 @@ describe("open banking institutions, authorization and callback", () => {
     });
     expect(forbidden.status).toBe(404);
     expect((await forbidden.json()).error.code).toBe("BANK_CONNECTION_NOT_FOUND");
+  });
+
+  it("returns batched sync job states only for the authenticated user", async () => {
+    const ownedId = randomUUID();
+    const otherId = randomUUID();
+    repositories.jobs.push(
+      {
+        id: ownedId,
+        userId,
+        connectionId: "conn-1",
+        status: "running",
+        trigger: "manual",
+        createdAt: new Date(),
+      },
+      {
+        id: otherId,
+        userId: otherUserId,
+        connectionId: "conn-2",
+        status: "running",
+        trigger: "manual",
+        createdAt: new Date(),
+      },
+    );
+
+    const response = await fetch(
+      `${baseUrl}/api/open-banking/sync-jobs?ids=${ownedId},${otherId}`,
+      { headers: { Authorization: authorization() } },
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.data).toHaveLength(1);
+    expect(body.data[0].id).toBe(ownedId);
   });
 
   it("requires renewed consent instead of syncing a reauthorization-required connection", async () => {

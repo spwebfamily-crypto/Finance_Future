@@ -11,6 +11,7 @@ import type {
   ProviderBalance,
   ProviderTransaction,
   ProviderSession,
+  PsuRequestHeaders,
 } from "./contracts.js";
 import { createOpenBankingProvider } from "./providerFactory.js";
 import { decryptSessionId } from "./authorizationService.js";
@@ -21,6 +22,8 @@ import { cleanupStableBankTransactionDuplicates } from "./duplicateCleanup.js";
 const MAX_PAGES_PER_ACCOUNT = 100;
 const MAX_ACCOUNTS_PER_SYNC = 25;
 const RETRY_BACKOFF_MINUTES = [15, 60, 240];
+const PROVIDER_RATE_LIMIT_FALLBACK_MS = 6 * 60 * 60_000;
+const TRANSACTION_SYNC_OVERLAP_DAYS = 14;
 
 export interface SyncCounters {
   accountsProcessed: number;
@@ -366,7 +369,13 @@ async function upsertAccountLink(
       connectionId: connection.id,
       providerAccountHash: providerAccount.providerAccountHash,
     },
-    select: { id: true, accountId: true, displayName: true, currency: true },
+    select: {
+      id: true,
+      accountId: true,
+      displayName: true,
+      currency: true,
+      lastTransactionSyncAt: true,
+    },
   });
   const accountId = await ensureAccount(connection, providerAccount, existing?.accountId ?? null);
 
@@ -490,9 +499,14 @@ async function syncAccount(
   sessionId: string,
   providerAccount: ProviderAccount,
   counters: SyncCounters,
+  psuHeaders?: PsuRequestHeaders,
 ) {
   const link = await upsertAccountLink(connection, providerAccount);
-  const context = { sessionId, providerAccountId: providerAccount.providerAccountId };
+  const context = {
+    sessionId,
+    providerAccountId: providerAccount.providerAccountId,
+    ...(psuHeaders ? { psuHeaders } : {}),
+  };
 
   const balances = await provider.getBalances(context);
   const snapshot = selectBalances(balances, providerAccount.currency);
@@ -517,8 +531,20 @@ async function syncAccount(
   let continuationKey: string | null = null;
   const seenContinuationKeys = new Set<string>();
   let pages = 0;
+  const lastSync = link.lastTransactionSyncAt;
+  const dateFrom = lastSync
+    ? new Date(lastSync.getTime() - TRANSACTION_SYNC_OVERLAP_DAYS * 86_400_000)
+        .toISOString()
+        .slice(0, 10)
+    : null;
+  const strategy = lastSync ? "default" : "longest";
   do {
-    const page = await provider.getTransactions({ ...context, continuationKey });
+    const page = await provider.getTransactions({
+      ...context,
+      dateFrom,
+      strategy,
+      continuationKey,
+    });
     continuationKey = page.continuationKey;
     if (continuationKey !== null) {
       if (seenContinuationKeys.has(continuationKey)) {
@@ -555,7 +581,10 @@ function sanitizedErrorCode(error: unknown): string {
 }
 
 /** Executa um job já reclamado. Nunca lança: regista o resultado no próprio job. */
-export async function runSyncJob(job: BankSyncJob): Promise<SyncOutcome> {
+export async function runSyncJob(
+  job: BankSyncJob,
+  psuHeaders?: PsuRequestHeaders,
+): Promise<SyncOutcome> {
   const counters: SyncCounters = {
     accountsProcessed: 0,
     transactionsCreated: 0,
@@ -578,7 +607,7 @@ export async function runSyncJob(job: BankSyncJob): Promise<SyncOutcome> {
     provider = createOpenBankingProvider();
     sessionId = decryptSessionId(connection);
 
-    const sessionResult = await provider.getSession(sessionId);
+    const sessionResult = await provider.getSession(sessionId, psuHeaders);
     if (sessionResult.status !== "authorized") {
       await prisma.bankConnection.update({
         where: { id: connection.id },
@@ -612,7 +641,7 @@ export async function runSyncJob(job: BankSyncJob): Promise<SyncOutcome> {
 
     for (const providerAccount of session.accounts.slice(0, MAX_ACCOUNTS_PER_SYNC)) {
       try {
-        await syncAccount(connection, provider!, sessionId!, providerAccount, counters);
+        await syncAccount(connection, provider!, sessionId!, providerAccount, counters, psuHeaders);
         successfulAccountIds.push(providerAccount.providerAccountId);
       } catch (accountError) {
         // Log but continue with other accounts
@@ -621,6 +650,12 @@ export async function runSyncJob(job: BankSyncJob): Promise<SyncOutcome> {
           code: sanitizedErrorCode(accountError),
         });
         syncError = accountError;
+        if (
+          accountError instanceof ProviderError &&
+          accountError.code === "provider_rate_limited"
+        ) {
+          break;
+        }
       }
     }
 
@@ -659,9 +694,14 @@ export async function runSyncJob(job: BankSyncJob): Promise<SyncOutcome> {
       data: {
         status: finalStatus === "completed" ? "active" : "error",
         lastSyncedAt: new Date(),
-        nextSyncAt: config.automaticSyncEnabled
-          ? new Date(Date.now() + config.syncIntervalMinutes * 60_000)
-          : null,
+        nextSyncAt:
+          syncError instanceof ProviderError && syncError.code === "provider_rate_limited"
+            ? new Date(
+                Date.now() + Math.max(PROVIDER_RATE_LIMIT_FALLBACK_MS, syncError.retryAfterMs ?? 0),
+              )
+            : config.automaticSyncEnabled
+              ? new Date(Date.now() + config.syncIntervalMinutes * 60_000)
+              : null,
         lastErrorCode: syncError ? sanitizedErrorCode(syncError) : null,
         lastErrorAt: syncError ? new Date() : null,
       },
@@ -683,6 +723,10 @@ export async function runSyncJob(job: BankSyncJob): Promise<SyncOutcome> {
     const isTransient =
       error instanceof ProviderError &&
       ["provider_rate_limited", "provider_timeout", "provider_unavailable"].includes(error.code);
+    const retryDelayMs =
+      error instanceof ProviderError && error.code === "provider_rate_limited"
+        ? Math.max(PROVIDER_RATE_LIMIT_FALLBACK_MS, error.retryAfterMs ?? 0)
+        : backoffMinutes(job.attemptCount) * 60_000;
 
     await prisma.bankConnection.update({
       where: { id: job.connectionId },
@@ -697,26 +741,34 @@ export async function runSyncJob(job: BankSyncJob): Promise<SyncOutcome> {
         lastErrorCode: code,
         lastErrorAt: new Date(),
         nextSyncAt:
-          isConsentError || !config.automaticSyncEnabled
+          isConsentError || (!config.automaticSyncEnabled && !isTransient)
             ? null
-            : new Date(Date.now() + backoffMinutes(job.attemptCount) * 60_000),
+            : new Date(Date.now() + retryDelayMs),
       },
     });
 
     return {
       ...counters,
       status: "failed",
-      errorCode: isTransient ? "BANK_PROVIDER_UNAVAILABLE" : code,
+      errorCode:
+        error instanceof ProviderError && error.code === "provider_rate_limited"
+          ? "BANK_PROVIDER_RATE_LIMITED"
+          : isTransient
+            ? "BANK_PROVIDER_UNAVAILABLE"
+            : code,
     };
   }
 }
 
 /** Reclama e executa um job; usado pela rota interna e pelo comando CLI. */
-export async function processSyncJob(jobId: string): Promise<SyncOutcome | null> {
+export async function processSyncJob(
+  jobId: string,
+  psuHeaders?: PsuRequestHeaders,
+): Promise<SyncOutcome | null> {
   const job = await claimSyncJob(jobId);
   if (!job) return null;
 
-  const outcome = await runSyncJob(job);
+  const outcome = await runSyncJob(job, psuHeaders);
   await prisma.bankSyncJob.update({
     where: { id: job.id },
     data: {

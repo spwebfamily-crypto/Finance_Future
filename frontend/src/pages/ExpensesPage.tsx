@@ -8,6 +8,7 @@ import {
   FolderKanban,
   Landmark,
   MapPin,
+  MoreHorizontal,
   Plus,
   Receipt,
   Search,
@@ -590,6 +591,28 @@ export function ExpensesPage() {
                       <Trash2 aria-hidden="true" />
                     </button>
                   </div>
+                  <details
+                    className="expense-row__action-menu"
+                    onKeyDown={(event) => {
+                      if (event.key !== "Escape") return;
+                      event.currentTarget.open = false;
+                      event.currentTarget.querySelector("summary")?.focus();
+                    }}
+                  >
+                    <summary
+                      aria-label={`${t("Editar")} / ${t("Eliminar")}: ${expense.description}`}
+                    >
+                      <MoreHorizontal aria-hidden="true" />
+                    </summary>
+                    <div className="expense-row__action-options">
+                      <Link to={`/expenses/${expense.id}/edit`}>
+                        <Edit3 aria-hidden="true" /> {t("Editar")}
+                      </Link>
+                      <button type="button" onClick={() => setDeleteTarget(expense)}>
+                        <Trash2 aria-hidden="true" /> {t("Eliminar")}
+                      </button>
+                    </div>
+                  </details>
                 </motion.article>
               ))}
             </AnimatePresence>

@@ -96,6 +96,12 @@ interface FakeSession {
 export class FakeOpenBankingStore {
   readonly authorizations = new Map<string, FakeAuthorization>();
   readonly sessions = new Map<string, FakeSession>();
+  readonly transactionRequests: Array<{
+    providerAccountId: string;
+    dateFrom?: string | null;
+    strategy?: "default" | "longest";
+    continuationKey?: string | null;
+  }> = [];
   /** Permite simular falhas do provedor nos testes. */
   failNextRequests = 0;
   failWithCode: ProviderErrorCode = "provider_unavailable";
@@ -105,6 +111,7 @@ export class FakeOpenBankingStore {
   reset() {
     this.authorizations.clear();
     this.sessions.clear();
+    this.transactionRequests.length = 0;
     this.failNextRequests = 0;
     this.failWithCode = "provider_unavailable";
     this.failAccounts.clear();
@@ -306,6 +313,12 @@ export class FakeOpenBankingProvider implements OpenBankingProvider {
   }
 
   async getTransactions(input: GetTransactionsInput): Promise<ProviderTransactionPage> {
+    this.store.transactionRequests.push({
+      providerAccountId: input.providerAccountId,
+      dateFrom: input.dateFrom,
+      strategy: input.strategy,
+      continuationKey: input.continuationKey,
+    });
     const account = this.findAccount(input);
     const pageIndex = input.continuationKey ? Number.parseInt(input.continuationKey, 10) : 0;
     const page = account.pages[Number.isNaN(pageIndex) ? 0 : pageIndex] ?? [];

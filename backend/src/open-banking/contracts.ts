@@ -123,12 +123,20 @@ export interface ProviderTransactionPage {
 export interface ProviderAccountContext {
   sessionId: string;
   providerAccountId: string;
+  /** Só preenchido numa ação explícita do utilizador; nunca persistir ou registar. */
+  psuHeaders?: PsuRequestHeaders;
+}
+
+export interface PsuRequestHeaders {
+  ipAddress: string;
+  userAgent: string;
 }
 
 export interface GetTransactionsInput extends ProviderAccountContext {
   dateFrom?: string | null;
   dateTo?: string | null;
   continuationKey?: string | null;
+  strategy?: "default" | "longest";
 }
 
 export type ProviderErrorCode =
@@ -160,6 +168,8 @@ export class ProviderError extends Error {
     public readonly status: number | null = null,
     /** Código sanitizado do provedor; nunca incluir payload bancário. */
     public readonly providerCode: string | null = null,
+    /** Tempo seguro para nova tentativa; derivado apenas do cabeçalho Retry-After. */
+    public readonly retryAfterMs: number | null = null,
   ) {
     super(providerErrorMessages[code]);
     this.name = "ProviderError";
@@ -171,7 +181,7 @@ export interface OpenBankingProvider {
   listInstitutions(input: ListInstitutionsInput): Promise<Institution[]>;
   startAuthorization(input: StartAuthorizationInput): Promise<AuthorizationResult>;
   exchangeAuthorizationCode(code: string): Promise<ProviderSession>;
-  getSession(sessionId: string): Promise<ProviderSession>;
+  getSession(sessionId: string, psuHeaders?: PsuRequestHeaders): Promise<ProviderSession>;
   getAccount(input: ProviderAccountContext): Promise<ProviderAccount>;
   getBalances(input: ProviderAccountContext): Promise<ProviderBalance[]>;
   getTransactions(input: GetTransactionsInput): Promise<ProviderTransactionPage>;

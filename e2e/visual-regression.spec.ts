@@ -175,25 +175,28 @@ async function prepareVisualSession(page: Page, locale: "pt-PT" | "en-GB" = "pt-
         ? dashboard
         : path === "/planning/overview"
           ? planning
-        : path === "/analytics/summary"
-          ? summary
-          : path === "/expenses"
-            ? { data: expenses, meta: { page: 1, pageSize: 500, total: expenses.length, pageCount: 1 } }
-          : path === "/categories"
-            ? categories
-          : path === "/accounts"
-              ? [account]
-              : path === "/financial-profile"
-                ? profile
-                : path === "/open-banking/connections"
-                  ? []
-                  : path === "/notifications"
-                    ? { items: [], unreadCount: 0 }
-                    : path === "/notifications/preferences"
-                      ? { inAppEnabled: true, pushEnabled: false }
-                      : path === "/notifications/push-config"
-                        ? { enabled: false, publicKey: null }
-                        : { data: [] };
+          : path === "/analytics/summary"
+            ? summary
+            : path === "/expenses"
+              ? {
+                  data: expenses,
+                  meta: { page: 1, pageSize: 500, total: expenses.length, pageCount: 1 },
+                }
+              : path === "/categories"
+                ? categories
+                : path === "/accounts"
+                  ? [account]
+                  : path === "/financial-profile"
+                    ? profile
+                    : path === "/open-banking/connections"
+                      ? []
+                      : path === "/notifications"
+                        ? { items: [], unreadCount: 0 }
+                        : path === "/notifications/preferences"
+                          ? { inAppEnabled: true, pushEnabled: false }
+                          : path === "/notifications/push-config"
+                            ? { enabled: false, publicKey: null }
+                            : { data: [] };
     await route.fulfill({ contentType: "application/json", body: JSON.stringify(payload) });
   });
 }
@@ -230,6 +233,7 @@ async function capture(page: Page, testInfo: TestInfo, name: string) {
 const viewports = [
   { name: "360x800", width: 360, height: 800 },
   { name: "390x844", width: 390, height: 844 },
+  { name: "414x896", width: 414, height: 896 },
   { name: "768x1024", width: 768, height: 1024 },
   { name: "1023x768", width: 1023, height: 768 },
   { name: "1024x768", width: 1024, height: 768 },
@@ -296,7 +300,10 @@ test.describe("visual financial surfaces", () => {
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
     await capture(page, testInfo, "dashboard-system-dark");
 
-    await page.getByRole("button", { name: /tema.*claro/i }).first().click();
+    await page
+      .getByRole("button", { name: /tema.*claro/i })
+      .first()
+      .click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
 
     await page.emulateMedia({ colorScheme: "dark" });
@@ -311,16 +318,145 @@ test.describe("visual financial surfaces", () => {
       { path: "/expenses", heading: "Despesas", screenshot: "expenses-mobile" },
       { path: "/accounts", heading: "Contas e cartões", screenshot: "accounts-desktop" },
       { path: "/categories", heading: "Categorias", screenshot: "categories-mobile" },
-      { path: "/accounts/connections", heading: "Bancos ligados", screenshot: "connections-desktop" },
+      {
+        path: "/accounts/connections",
+        heading: "Bancos ligados",
+        screenshot: "connections-desktop",
+      },
       { path: "/accounts/connect", heading: "Ligar um banco", screenshot: "connect-mobile" },
     ];
 
     for (const [index, surface] of surfaces.entries()) {
-      await page.setViewportSize(index % 2 ? { width: 1280, height: 900 } : { width: 390, height: 844 });
+      await page.setViewportSize(
+        index % 2 ? { width: 1280, height: 900 } : { width: 390, height: 844 },
+      );
       await page.goto(surface.path);
       await expect(page.getByRole("heading", { name: surface.heading, exact: true })).toBeVisible();
       await assertNoOverflow(page);
       await capture(page, testInfo, surface.screenshot);
+    }
+  });
+
+  test("mobile category, budget, and movement controls stay usable", async ({ page }) => {
+    await prepareVisualSession(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.route("**/api/categories", async (route) => {
+      if (route.request().method() !== "POST") {
+        await route.fallback();
+        return;
+      }
+      const input = route.request().postDataJSON() as { name: string; icon: string };
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ id: "custom-mobile", ...input, isDefault: false }),
+      });
+    });
+
+    await page.goto("/categories");
+    const createTrigger = page.getByRole("button", { name: "Nova categoria" });
+    await createTrigger.click();
+    const createDialog = page.getByRole("dialog", { name: "Nova categoria" });
+    await expect(createDialog).toBeVisible();
+    await expect(createDialog.getByRole("textbox", { name: "Nome da categoria" })).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(createDialog).toBeHidden();
+    await expect(createTrigger).toBeFocused();
+    await createTrigger.click();
+    await createDialog.getByRole("textbox", { name: "Nome da categoria" }).fill("Telemóvel");
+    await createDialog.getByRole("button", { name: "Criar categoria" }).click();
+    await expect(createDialog).toBeHidden();
+    await expect(page.getByRole("heading", { name: "Telemóvel" })).toBeVisible();
+    await assertNoOverflow(page);
+
+    await page.goto("/expenses");
+    const firstMovement = page.locator(".expense-row").first();
+    await firstMovement.locator("summary").click();
+    await expect(firstMovement.getByRole("link", { name: "Editar" })).toBeVisible();
+    await expect(firstMovement.getByRole("button", { name: "Eliminar" })).toBeVisible();
+    await assertNoOverflow(page);
+
+    await page.goto("/dashboard");
+    const budgetTrigger = page.locator(".budget-create-trigger");
+    await budgetTrigger.click();
+    await expect(page.locator("#budget-create-form")).toBeVisible();
+    await expect(page.locator("#budget-create-form select")).toBeFocused();
+    await assertNoOverflow(page);
+  });
+
+  test("mobile financial surfaces remain readable in dark mode", async ({ page }, testInfo) => {
+    await prepareVisualSession(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });
+
+    for (const surface of ["/dashboard", "/expenses", "/categories"]) {
+      await page.goto(surface);
+      await assertNoOverflow(page);
+      await capture(page, testInfo, `${surface.slice(1)}-mobile-dark`);
+    }
+
+    await page.getByRole("button", { name: "Nova categoria" }).click();
+    const dialog = page.getByRole("dialog", { name: "Nova categoria" });
+    await expect(dialog).toBeVisible();
+    const dialogBox = await dialog.boundingBox();
+    expect(dialogBox?.y).toBeGreaterThan(40);
+    expect((dialogBox?.y ?? 0) + (dialogBox?.height ?? 0)).toBeLessThanOrEqual(844);
+    await page.screenshot({ path: testInfo.outputPath("categories-create-mobile-dark.png") });
+    const accessibility = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
+    expect(
+      accessibility.violations.filter((issue) =>
+        ["critical", "serious"].includes(issue.impact ?? ""),
+      ),
+    ).toEqual([]);
+  });
+
+  test("empty mobile libraries and ledgers keep their actions visible", async ({ page }) => {
+    await prepareVisualSession(page);
+    await page.setViewportSize({ width: 360, height: 800 });
+    await page.route("**/api/categories", async (route) => {
+      await route.fulfill({ contentType: "application/json", body: "[]" });
+    });
+    await page.route("**/api/expenses*", async (route) => {
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          data: [],
+          meta: { page: 1, pageSize: 500, total: 0, pageCount: 0 },
+        }),
+      });
+    });
+
+    await page.goto("/categories");
+    await expect(page.getByRole("heading", { name: "Sem categorias" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Nova categoria" })).toBeVisible();
+    await assertNoOverflow(page);
+
+    await page.goto("/expenses");
+    await expect(page.getByRole("heading", { name: "Ainda não há despesas" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Registar primeira despesa" })).toBeVisible();
+    await assertNoOverflow(page);
+  });
+
+  test("mobile financial controls keep readable contrast and touch targets", async ({ page }) => {
+    await prepareVisualSession(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+
+    for (const theme of ["light", "dark"] as const) {
+      await page.emulateMedia({ colorScheme: theme });
+      for (const path of ["/dashboard", "/expenses", "/categories"]) {
+        await page.goto(path);
+        const contrast = await new AxeBuilder({ page }).withRules(["color-contrast"]).analyze();
+        expect(
+          contrast.violations.flatMap((issue) => issue.nodes.map((node) => node.target.join(" "))),
+          `${theme} ${path}`,
+        ).toEqual([]);
+      }
+    }
+
+    await page.getByRole("button", { name: "Nova categoria" }).click();
+    for (const selector of [".category-create-trigger", ".icon-picker__option--selected"]) {
+      const box = await page.locator(selector).boundingBox();
+      expect(box?.width).toBeGreaterThanOrEqual(44);
+      expect(box?.height).toBeGreaterThanOrEqual(44);
     }
   });
 

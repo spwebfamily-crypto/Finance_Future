@@ -465,6 +465,9 @@ describe("sync engine", () => {
 
     const firstJob = await createJob(connection.id);
     const first = await processSyncJob(firstJob.id);
+    const linkAfterInitialSync = await prisma.bankAccountLink.findFirst({
+      where: { connectionId: connection.id },
+    });
     const secondJob = await createJob(connection.id);
     const second = await processSyncJob(secondJob.id);
 
@@ -474,6 +477,52 @@ describe("sync engine", () => {
     expect(dbCounts().bankAccountLink).toBe(1);
     expect(await prisma.account.count({ where: { userId } })).toBe(1);
     expect(await prisma.bankAccountLink.count({ where: { connectionId: connection.id } })).toBe(1);
+    expect(fakeOpenBankingStore.transactionRequests[0]).toMatchObject({
+      dateFrom: null,
+      strategy: "longest",
+    });
+    expect(fakeOpenBankingStore.transactionRequests[1]).toMatchObject({
+      dateFrom: new Date(linkAfterInitialSync!.lastTransactionSyncAt!.getTime() - 14 * 86_400_000)
+        .toISOString()
+        .slice(0, 10),
+      strategy: "default",
+    });
+  });
+
+  it("stops after an ASPSP rate limit and schedules retry no sooner than six hours", async () => {
+    const connection = await seedConnection();
+    const sessionId = await seedSessionWithAccounts([
+      {
+        providerAccountId: "acc-1",
+        providerAccountHash: "hash-1",
+        displayName: "Conta um",
+      },
+      {
+        providerAccountId: "acc-2",
+        providerAccountHash: "hash-2",
+        displayName: "Conta dois",
+      },
+    ]);
+    await linkSession(connection.id, sessionId);
+    provider.failAccountOnce("acc-1", "provider_rate_limited");
+
+    const outcome = await processSyncJob((await createJob(connection.id)).id);
+    const updatedConnection = await prisma.bankConnection.findUnique({
+      where: { id: connection.id },
+    });
+    const links = await prisma.bankAccountLink.findMany({ where: { connectionId: connection.id } });
+
+    expect(outcome).toMatchObject({
+      status: "partial",
+      errorCode: "PROVIDER_PROVIDER_RATE_LIMITED",
+      accountsProcessed: 0,
+    });
+    expect(updatedConnection!.lastErrorCode).toBe("PROVIDER_PROVIDER_RATE_LIMITED");
+    expect(updatedConnection!.nextSyncAt!.getTime()).toBeGreaterThanOrEqual(
+      Date.now() + 6 * 60 * 60_000 - 1_000,
+    );
+    expect(links.every((link) => link.lastTransactionSyncAt === null)).toBe(true);
+    expect(fakeOpenBankingStore.transactionRequests).toHaveLength(0);
   });
 
   it("preserves a removed transaction tombstone on later syncs", async () => {

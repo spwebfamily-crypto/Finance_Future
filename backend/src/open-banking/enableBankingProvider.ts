@@ -22,6 +22,7 @@ import type {
   ProviderTransaction,
   ProviderTransactionPage,
   GetTransactionsInput,
+  PsuRequestHeaders,
   StartAuthorizationInput,
   AuthorizationResult,
 } from "./contracts.js";
@@ -178,7 +179,7 @@ export class EnableBankingProvider implements OpenBankingProvider {
     return this.toSession(response, response.accounts ?? []);
   }
 
-  async getSession(sessionId: string): Promise<ProviderSession> {
+  async getSession(sessionId: string, psuHeaders?: PsuRequestHeaders): Promise<ProviderSession> {
     const response = await this.request<RawSession>(`/sessions/${sessionId}`, {
       credentials: this.credentials,
     });
@@ -187,8 +188,9 @@ export class EnableBankingProvider implements OpenBankingProvider {
     for (const entry of accountsData) {
       if (typeof entry?.uid !== "string") continue;
       try {
-        accounts.push(await this.getRawAccount(entry.uid));
-      } catch {
+        accounts.push(await this.getRawAccount(entry.uid, psuHeaders));
+      } catch (error) {
+        if (error instanceof ProviderError && error.code === "provider_rate_limited") throw error;
         // Uma conta inacessível não impede a sincronização das restantes.
       }
     }
@@ -205,7 +207,7 @@ export class EnableBankingProvider implements OpenBankingProvider {
   async getBalances(input: ProviderAccountContext): Promise<ProviderBalance[]> {
     const response = await this.request<RawBalances>(
       `/accounts/${input.providerAccountId}/balances`,
-      { credentials: this.credentials },
+      { credentials: this.credentials, psuHeaders: input.psuHeaders },
     );
     return (response.balances ?? []).map((balance) => {
       const currency = normalizeCurrency(balance.balance_amount?.currency);
@@ -238,7 +240,9 @@ export class EnableBankingProvider implements OpenBankingProvider {
           date_from: input.dateFrom ?? null,
           date_to: input.dateTo ?? null,
           continuation_key: input.continuationKey ?? null,
+          strategy: input.strategy ?? null,
         },
+        psuHeaders: input.psuHeaders,
       },
     );
 
@@ -260,9 +264,10 @@ export class EnableBankingProvider implements OpenBankingProvider {
     });
   }
 
-  private async getRawAccount(uid: string): Promise<RawAccount> {
+  private async getRawAccount(uid: string, psuHeaders?: PsuRequestHeaders): Promise<RawAccount> {
     return this.request<RawAccount>(`/accounts/${uid}/details`, {
       credentials: this.credentials,
+      psuHeaders,
     });
   }
 

@@ -28,6 +28,23 @@ describe("Open Banking resource requests", () => {
       returnPath: "/accounts/connections",
     });
   });
+
+  it("checks jobs in batches capped at the server limit", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(
+      async () =>
+        new Response(JSON.stringify({ data: [] }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+    );
+
+    await openBankingApi.syncJobs(Array.from({ length: 26 }, (_, index) => `job-${index}`));
+
+    const batches = fetchMock.mock.calls.map(([input]) =>
+      new URL(String(input), "http://localhost").searchParams.get("ids")!.split(","),
+    );
+    expect(batches.map((ids) => ids.length)).toEqual([25, 1]);
+  });
 });
 
 describe("password reset resource requests", () => {

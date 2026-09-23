@@ -99,6 +99,7 @@ describe("enable banking http client", () => {
       method: "POST",
       body: { code: "abc" },
       query: { date_from: "2026-01-01", ignored: null },
+      psuHeaders: { ipAddress: "203.0.113.10", userAgent: "ExpenseSnap test browser" },
       fetchImpl,
     });
 
@@ -107,6 +108,8 @@ describe("enable banking http client", () => {
     expect(seenHeaders.Authorization).toMatch(/^Bearer /);
     expect(seenHeaders.Accept).toBe("application/json");
     expect(seenHeaders["Content-Type"]).toBe("application/json");
+    expect(seenHeaders["Psu-Ip-Address"]).toBe("203.0.113.10");
+    expect(seenHeaders["Psu-User-Agent"]).toBe("ExpenseSnap test browser");
   });
 
   it("converts a timeout into a provider timeout error", async () => {
@@ -146,29 +149,43 @@ describe("enable banking http client", () => {
     ).rejects.toMatchObject({ code: "provider_unavailable" });
   });
 
-  it("retries a safe GET after Retry-After but never retries a POST", async () => {
+  it("does not retry a bank rate limit and keeps Retry-After for the sync scheduler", async () => {
     let getCalls = 0;
-    const retryDelays: number[] = [];
     const getFetch = (async () => {
       getCalls += 1;
-      return getCalls === 1
-        ? new Response(JSON.stringify({ error: "ASPSP_RATE_LIMIT_EXCEEDED" }), {
-            status: 429,
-            headers: { "retry-after": "1" },
-          })
-        : new Response(JSON.stringify({ ok: true }), { status: 200 });
+      return new Response(JSON.stringify({ error: "ASPSP_RATE_LIMIT_EXCEEDED" }), {
+        status: 429,
+        headers: { "retry-after": "21600" },
+      });
     }) as unknown as typeof fetch;
 
     await expect(
       enableBankingRequest<{ ok: boolean }>("/accounts/1/balances", {
         credentials,
         fetchImpl: getFetch,
-        retryDelay: async (milliseconds) => {
-          retryDelays.push(milliseconds);
-        },
+      }),
+    ).rejects.toMatchObject({ code: "provider_rate_limited", retryAfterMs: 21_600_000 });
+    expect(getCalls).toBe(1);
+
+    let transientCalls = 0;
+    const retryDelays: number[] = [];
+    const transientFetch = (async () => {
+      transientCalls += 1;
+      return transientCalls === 1
+        ? new Response(JSON.stringify({ error: "ASPSP_ERROR" }), {
+            status: 503,
+            headers: { "retry-after": "1" },
+          })
+        : new Response(JSON.stringify({ ok: true }), { status: 200 });
+    }) as unknown as typeof fetch;
+    await expect(
+      enableBankingRequest<{ ok: boolean }>("/accounts/1/balances", {
+        credentials,
+        fetchImpl: transientFetch,
+        retryDelay: async (milliseconds) => retryDelays.push(milliseconds),
       }),
     ).resolves.toEqual({ ok: true });
-    expect(getCalls).toBe(2);
+    expect(transientCalls).toBe(2);
     expect(retryDelays).toEqual([1_000]);
 
     let postCalls = 0;

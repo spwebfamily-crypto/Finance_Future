@@ -11,6 +11,7 @@ const api = vi.hoisted(() => ({
   institutions: vi.fn(),
   sync: vi.fn(),
   syncJob: vi.fn(),
+  syncJobs: vi.fn(),
   reauthorize: vi.fn(),
   disconnect: vi.fn(),
 }));
@@ -56,6 +57,9 @@ describe("BankConnectionsPage sync feedback", () => {
     api.institutions.mockReset().mockResolvedValue([]);
     api.sync.mockReset().mockResolvedValue({ jobId: "job-1", status: "queued" });
     api.syncJob.mockReset().mockResolvedValue(failedJob());
+    api.syncJobs
+      .mockReset()
+      .mockImplementation(async (ids: string[]) => (ids.includes("job-1") ? [failedJob()] : []));
   });
 
   it("shows an actionable error and never emits success for a failed job", async () => {
@@ -73,6 +77,8 @@ describe("BankConnectionsPage sync feedback", () => {
     expect(await screen.findByRole("alert", {}, { timeout: 5_000 })).toHaveTextContent(
       "temporariamente indisponível",
     );
+    expect(api.syncJobs).toHaveBeenCalledWith(["job-1"]);
+    expect(api.syncJob).not.toHaveBeenCalled();
     expect(completed).not.toHaveBeenCalled();
     window.removeEventListener(BANK_SYNC_COMPLETED_EVENT, completed);
   });

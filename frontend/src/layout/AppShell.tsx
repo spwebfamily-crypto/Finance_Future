@@ -1,5 +1,4 @@
 import {
-  AlertTriangle,
   Building2,
   CalendarClock,
   FolderOpen,
@@ -12,7 +11,6 @@ import {
   Shield,
   TrendingUp,
   WifiOff,
-  X,
 } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
@@ -25,12 +23,7 @@ import { ConfirmDialog } from "../components/ConfirmDialog";
 import { EmailVerificationBanner } from "../components/EmailVerificationBanner";
 import { DailyBankReviewModal } from "../components/DailyBankReviewModal";
 import { NotificationCenter } from "../components/NotificationCenter";
-import { openBankingApi } from "../api/resources";
-import { notifyBankSyncCompleted } from "../api/bank-sync-events";
-import { errorMessage } from "../api/client";
 import { LanguageSwitcher, useI18n } from "../i18n/I18nContext";
-import type { BankSyncJob } from "../types";
-import { bankSyncResultMessage, isBankSyncPending, isBankSyncSuccessful } from "../utils/bankSync";
 import {
   preloadAccountsPage,
   preloadBankConnectionsPage,
@@ -71,18 +64,6 @@ const secondaryLinks = [
   { to: routes.bankConnections, label: "Bancos", preload: preloadBankConnectionsPage },
   { to: routes.privacy, label: "Privacidade", preload: preloadPrivacyPage },
 ];
-
-async function waitForBankSync(jobId: string, connectionId: string): Promise<BankSyncJob | null> {
-  for (let attempt = 0; attempt < 80; attempt += 1) {
-    const job = await openBankingApi.syncJob(jobId);
-    if (!isBankSyncPending(job)) {
-      if (isBankSyncSuccessful(job)) notifyBankSyncCompleted(connectionId);
-      return job;
-    }
-    await new Promise((resolve) => window.setTimeout(resolve, 1500));
-  }
-  return null;
-}
 
 function DesktopNavigation() {
   const { t } = useI18n();
@@ -345,46 +326,6 @@ export function AppShell() {
   const [isOffline, setIsOffline] = useState(
     () => typeof navigator !== "undefined" && !navigator.onLine,
   );
-  const [bankSyncError, setBankSyncError] = useState("");
-  const autoSyncUserRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (!user?.id || isOffline || autoSyncUserRef.current === user.id) return;
-    autoSyncUserRef.current = user.id;
-    let active = true;
-    void (async () => {
-      try {
-        const connections = await openBankingApi.connections();
-        if (!active) return;
-        const results = await Promise.allSettled(
-          connections
-            .filter((connection) => connection.status === "active" && connection.accountCount > 0)
-            .map(async (connection) => {
-              const job = await openBankingApi.sync(connection.id);
-              return waitForBankSync(job.jobId, connection.id);
-            }),
-        );
-        if (!active) return;
-        const failed = results
-          .filter(
-            (result): result is PromiseFulfilledResult<BankSyncJob | null> =>
-              result.status === "fulfilled",
-          )
-          .map((result) => result.value)
-          .find((job): job is BankSyncJob => job?.status === "failed");
-        const rejected = results.find(
-          (result): result is PromiseRejectedResult => result.status === "rejected",
-        );
-        if (failed) setBankSyncError(bankSyncResultMessage(failed, t));
-        else if (rejected) setBankSyncError(errorMessage(rejected.reason));
-      } catch (requestError) {
-        if (active) setBankSyncError(errorMessage(requestError));
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, [isOffline, t, user?.id]);
 
   useEffect(() => {
     const online = () => setIsOffline(false);
@@ -499,14 +440,15 @@ export function AppShell() {
             <motion.button
               className="mobile-account"
               type="button"
-              onClick={requestLogout}
+              onClick={() => setMoreOpen(true)}
               disabled={isLoggingOut}
               aria-busy={isLoggingOut}
-              aria-label={isLoggingOut ? t("A terminar sessão") : t("Terminar sessão")}
+              aria-label={t("Mais")}
+              aria-expanded={moreOpen}
+              aria-controls="more-sheet"
               whileTap={reduceMotion ? undefined : { scale: 0.96 }}
             >
               <span aria-hidden="true">{initials}</span>
-              <LogOut aria-hidden="true" />
             </motion.button>
           </div>
         </header>
@@ -516,21 +458,6 @@ export function AppShell() {
             <div className="offline-banner" role="status">
               <WifiOff aria-hidden="true" />{" "}
               {t("Sem ligação. A mostrar os últimos dados guardados.")}
-            </div>
-          )}
-          {bankSyncError && !isOffline && (
-            <div className="bank-sync-banner" role="alert">
-              <AlertTriangle aria-hidden="true" />
-              <span>{bankSyncError}</span>
-              <NavLink to={routes.bankConnections}>{t("Ver bancos")}</NavLink>
-              <button
-                type="button"
-                className="icon-button"
-                onClick={() => setBankSyncError("")}
-                aria-label={t("Fechar aviso")}
-              >
-                <X aria-hidden="true" />
-              </button>
             </div>
           )}
           <EmailVerificationBanner />

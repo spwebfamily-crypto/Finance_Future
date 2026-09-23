@@ -571,6 +571,23 @@ export const openBankingApi = {
         cacheResponse: false,
       }),
     ),
+  syncJobs: async (jobIds: string[]) => {
+    const batches = Array.from({ length: Math.ceil(jobIds.length / 25) }, (_, index) =>
+      jobIds.slice(index * 25, (index + 1) * 25),
+    );
+    const results = await Promise.all(
+      batches.map(async (ids) => {
+        const params = new URLSearchParams({ ids: ids.join(",") });
+        return unwrap(
+          await apiRequest<ApiEnvelope<BankSyncJob[]> | BankSyncJob[]>(
+            `/open-banking/sync-jobs?${params.toString()}`,
+            { cacheResponse: false },
+          ),
+        );
+      }),
+    );
+    return results.flat();
+  },
   transactions: async (filters: BankTransactionFilters = {}) => {
     const params = new URLSearchParams();
     if (filters.accountId) params.set("accountId", filters.accountId);

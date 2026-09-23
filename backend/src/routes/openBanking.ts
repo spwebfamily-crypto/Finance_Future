@@ -1,4 +1,5 @@
 import { Router, type Request, type Response } from "express";
+import { isIP } from "node:net";
 import type { Prisma } from "@prisma/client";
 import rateLimit from "express-rate-limit";
 import { env } from "../config.js";
@@ -28,7 +29,7 @@ import {
   startAuthorization,
 } from "../open-banking/authorizationService.js";
 import { bankError, sendProviderError } from "../open-banking/errors.js";
-import { ProviderError } from "../open-banking/contracts.js";
+import { ProviderError, type PsuRequestHeaders } from "../open-banking/contracts.js";
 import { sha256Hex } from "../open-banking/crypto.js";
 import { FakeOpenBankingProvider } from "../open-banking/fakeOpenBankingProvider.js";
 import { createOpenBankingProvider } from "../open-banking/providerFactory.js";
@@ -76,22 +77,13 @@ const authenticatedLimiter = rateLimit({
   handler: (_request, response) => tooManyRequests(response),
 });
 
-/** Limita apenas confirmações de gastos; outras revisões não consomem esta quota. */
-const expenseReviewLimiter = rateLimit({
-  windowMs: 3 * 60_000,
-  limit: 10,
+const syncStatusLimiter = rateLimit({
+  windowMs: 15 * 60_000,
+  limit: 180,
   standardHeaders: "draft-7",
   legacyHeaders: false,
-  skipFailedRequests: true,
   keyGenerator: (request) => (request as AuthenticatedRequest).user!.id,
-  skip: (request) => request.body?.classification !== "expense",
-  handler: (_request, response) =>
-    sendError(
-      response,
-      429,
-      "BANK_EXPENSE_REVIEW_RATE_LIMITED",
-      "Pode confirmar até 10 despesas a cada 3 minutos. Aguarde antes de continuar.",
-    ),
+  handler: (_request, response) => tooManyRequests(response),
 });
 
 /** O callback é público: o limite é mais estrito e feito por IP. */
@@ -108,6 +100,20 @@ function isSecureRequest(request: Request) {
   const forwarded = request.headers["x-forwarded-proto"];
   const protocol = Array.isArray(forwarded) ? forwarded[0] : forwarded;
   return request.secure || protocol?.split(",")[0]?.trim() === "https";
+}
+
+function onlinePsuHeaders(request: AuthenticatedRequest): PsuRequestHeaders {
+  const ipAddress = request.ip?.trim() ?? "";
+  const userAgent = request.get("user-agent")?.trim().slice(0, 512) ?? "";
+  if (
+    !ipAddress ||
+    isIP(ipAddress) === 0 ||
+    !userAgent ||
+    (env.NODE_ENV === "production" && env.TRUST_PROXY_HOPS === 0)
+  ) {
+    throw bankError(503, "BANK_ONLINE_CONTEXT_UNAVAILABLE");
+  }
+  return { ipAddress, userAgent };
 }
 
 /** Códigos seguros devolvidos ao frontend; nunca incluem dados do provedor. */
@@ -409,7 +415,13 @@ router.post(
     try {
       const connection = await prisma.bankConnection.findFirst({
         where: { id: request.params.connectionId, userId: request.user!.id },
-        select: { id: true, status: true, disconnectedAt: true },
+        select: {
+          id: true,
+          status: true,
+          disconnectedAt: true,
+          lastErrorCode: true,
+          nextSyncAt: true,
+        },
       });
       if (!connection || connection.disconnectedAt) {
         throw bankError(404, "BANK_CONNECTION_NOT_FOUND");
@@ -424,14 +436,31 @@ router.post(
         throw bankError(409, "BANK_CONNECTION_REAUTH_REQUIRED");
       }
 
-      // Idempotente: o shell e a página podem pedir a mesma sincronização ao
-      // mesmo tempo. Ambos passam a acompanhar o job já ativo.
+      if (
+        connection.lastErrorCode === "PROVIDER_PROVIDER_RATE_LIMITED" &&
+        connection.nextSyncAt &&
+        connection.nextSyncAt.getTime() > Date.now()
+      ) {
+        const retryAfterSeconds = Math.ceil((connection.nextSyncAt.getTime() - Date.now()) / 1_000);
+        response.setHeader("Retry-After", String(retryAfterSeconds));
+        return sendError(
+          response,
+          429,
+          "BANK_PROVIDER_RATE_LIMITED",
+          "O banco limitou os pedidos. Aguarde até à hora indicada para tentar novamente.",
+          { retryAt: connection.nextSyncAt.toISOString() },
+        );
+      }
+
+      // Reutiliza um job ativo para evitar leituras concorrentes da mesma ligação.
       const activeJob = await findActiveSyncJob(connection.id);
       if (activeJob) {
         return response.status(202).json({
           data: { jobId: activeJob.id, status: activeJob.status, reused: true },
         });
       }
+
+      const psuHeaders = onlinePsuHeaders(request);
 
       const job = await prisma.bankSyncJob.create({
         data: {
@@ -442,8 +471,9 @@ router.post(
         select: { id: true, status: true },
       });
 
-      // O job é processado de imediato quando não há outro em curso.
-      void processSyncJob(job.id).catch(() => undefined);
+      // Cabeçalhos do PSU só seguem numa sincronização iniciada explicitamente
+      // pelo utilizador. Permanecem apenas em memória e nunca são guardados.
+      void processSyncJob(job.id, psuHeaders).catch(() => undefined);
 
       return response.status(202).json({
         data: { jobId: job.id, status: job.status, reused: false },
@@ -455,9 +485,57 @@ router.post(
 );
 
 router.get(
+  "/sync-jobs",
+  requireAuth,
+  syncStatusLimiter,
+  async (request: AuthenticatedRequest, response, next) => {
+    try {
+      const rawIds = request.query.ids;
+      const ids = typeof rawIds === "string" ? rawIds.split(",").filter(Boolean) : [];
+      if (
+        ids.length === 0 ||
+        ids.length > 25 ||
+        ids.some(
+          (id) =>
+            !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id),
+        )
+      ) {
+        return sendError(
+          response,
+          400,
+          "VALIDATION_ERROR",
+          "Indique entre 1 e 25 identificadores válidos de sincronização.",
+        );
+      }
+      const jobs = await prisma.bankSyncJob.findMany({
+        where: { id: { in: ids }, userId: request.user!.id },
+        select: {
+          id: true,
+          connectionId: true,
+          status: true,
+          trigger: true,
+          attemptCount: true,
+          startedAt: true,
+          finishedAt: true,
+          accountsProcessed: true,
+          transactionsCreated: true,
+          transactionsUpdated: true,
+          transactionsSkipped: true,
+          errorCode: true,
+          createdAt: true,
+        },
+      });
+      return response.json({ data: jobs });
+    } catch (error) {
+      return next(error);
+    }
+  },
+);
+
+router.get(
   "/sync-jobs/:jobId",
   requireAuth,
-  authenticatedLimiter,
+  syncStatusLimiter,
   async (request: AuthenticatedRequest, response, next) => {
     try {
       const job = await prisma.bankSyncJob.findFirst({
@@ -615,7 +693,6 @@ router.patch(
   "/transactions/:transactionId",
   requireAuth,
   authenticatedLimiter,
-  expenseReviewLimiter,
   async (request: AuthenticatedRequest, response, next) => {
     try {
       const input = openBankingTransactionReviewSchema.parse(request.body ?? {});
@@ -628,6 +705,7 @@ router.patch(
           expenseId: true,
           incomeId: true,
           transferId: true,
+          bankAccountLinkId: true,
           bankAccountLink: { select: { accountId: true } },
         },
       });
@@ -699,8 +777,9 @@ router.patch(
       // Gastos contabilizados voltam a despesa (ou saem delas) de imediato.
       await materializeBookedTransactions(
         request.user!.id,
-        undefined,
+        transaction.bankAccountLinkId,
         input.categoryId ? new Map([[transaction.id, input.categoryId]]) : undefined,
+        transaction.id,
       );
 
       return response.json({ data: updated });

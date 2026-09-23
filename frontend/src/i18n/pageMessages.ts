@@ -25,6 +25,17 @@ export const pageMessages = {
       "O banco está temporariamente indisponível. Tente sincronizar novamente.",
     "O banco limitou os pedidos. Aguarde alguns minutos e tente novamente.":
       "O banco limitou os pedidos. Aguarde alguns minutos e tente novamente.",
+    "O banco limitou os pedidos. Aguarde até à próxima sincronização.":
+      "O banco limitou os pedidos. Aguarde até à próxima sincronização.",
+    "Não foi possível consultar o estado da sincronização. Atualize a página.":
+      "Não foi possível consultar o estado da sincronização. Atualize a página.",
+    "O banco limitou os pedidos. As contas já atualizadas foram guardadas; tente após a espera indicada.":
+      "O banco limitou os pedidos. As contas já atualizadas foram guardadas; tente após a espera indicada.",
+    "O banco limitou as atualizações. Poderá tentar após {date}.":
+      "O banco limitou as atualizações. Poderá tentar após {date}.",
+    "a próxima sincronização agendada": "a próxima sincronização agendada",
+    "Disponível após {date}": "Disponível após {date}",
+    "Aguardar limite do banco": "Aguardar limite do banco",
     "A sincronização anterior foi interrompida. Pode tentar novamente agora.":
       "A sincronização anterior foi interrompida. Pode tentar novamente agora.",
     "A sincronização bancária falhou. Tente novamente ou renove o acesso.":
@@ -110,6 +121,17 @@ export const pageMessages = {
       "The bank is temporarily unavailable. Try syncing again.",
     "O banco limitou os pedidos. Aguarde alguns minutos e tente novamente.":
       "The bank limited requests. Wait a few minutes and try again.",
+    "O banco limitou os pedidos. Aguarde até à próxima sincronização.":
+      "The bank limited requests. Wait until the next scheduled sync.",
+    "Não foi possível consultar o estado da sincronização. Atualize a página.":
+      "Could not check the sync status. Refresh the page.",
+    "O banco limitou os pedidos. As contas já atualizadas foram guardadas; tente após a espera indicada.":
+      "The bank limited requests. Updates already received were saved; try again after the indicated wait.",
+    "O banco limitou as atualizações. Poderá tentar após {date}.":
+      "The bank limited updates. You can try again after {date}.",
+    "a próxima sincronização agendada": "the next scheduled sync",
+    "Disponível após {date}": "Available after {date}",
+    "Aguardar limite do banco": "Waiting for the bank limit",
     "A sincronização anterior foi interrompida. Pode tentar novamente agora.":
       "The previous sync was interrupted. You can try again now.",
     "A sincronização bancária falhou. Tente novamente ou renove o acesso.":
@@ -195,6 +217,17 @@ export const pageMessages = {
       "El banco no está disponible temporalmente. Intenta sincronizar de nuevo.",
     "O banco limitou os pedidos. Aguarde alguns minutos e tente novamente.":
       "El banco limitó las solicitudes. Espera unos minutos e inténtalo de nuevo.",
+    "O banco limitou os pedidos. Aguarde até à próxima sincronização.":
+      "El banco limitó las solicitudes. Espera hasta la próxima sincronización programada.",
+    "Não foi possível consultar o estado da sincronização. Atualize a página.":
+      "No se pudo consultar el estado de la sincronización. Actualiza la página.",
+    "O banco limitou os pedidos. As contas já atualizadas foram guardadas; tente após a espera indicada.":
+      "El banco limitó las solicitudes. Se guardaron las cuentas ya actualizadas; inténtalo después de la espera indicada.",
+    "O banco limitou as atualizações. Poderá tentar após {date}.":
+      "El banco limitó las actualizaciones. Puedes intentarlo después de {date}.",
+    "a próxima sincronização agendada": "la próxima sincronización programada",
+    "Disponível após {date}": "Disponible después de {date}",
+    "Aguardar limite do banco": "Esperando el límite del banco",
     "A sincronização anterior foi interrompida. Pode tentar novamente agora.":
       "La sincronización anterior se interrumpió. Puedes intentarlo de nuevo ahora.",
     "A sincronização bancária falhou. Tente novamente ou renove o acesso.":

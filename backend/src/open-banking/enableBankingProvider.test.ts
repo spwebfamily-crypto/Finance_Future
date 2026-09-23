@@ -315,12 +315,18 @@ describe("enable banking balances and transactions", () => {
       providerAccountId: account.uid,
       dateFrom: "2026-08-01",
       continuationKey: "pagina-1",
+      psuHeaders: { ipAddress: "203.0.113.10", userAgent: "ExpenseSnap test browser" },
     });
 
     expect(calls[0]?.options.query).toEqual({
       date_from: "2026-08-01",
       date_to: null,
       continuation_key: "pagina-1",
+      strategy: null,
+    });
+    expect(calls[0]?.options.psuHeaders).toEqual({
+      ipAddress: "203.0.113.10",
+      userAgent: "ExpenseSnap test browser",
     });
     expect(page.continuationKey).toBe("pagina-2");
     expect(page.transactions).toHaveLength(3);

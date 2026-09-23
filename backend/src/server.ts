@@ -20,7 +20,7 @@ const server = app.listen(env.PORT, "0.0.0.0", () => {
 // O cron continua suportado, mas o próprio servidor também reclama ligações
 // vencidas. O claim atómico impede sincronizações duplicadas se houver mais de
 // uma instância ou se o cron externo correr ao mesmo tempo.
-const AUTO_SYNC_TICK_MS = 60_000;
+const AUTO_SYNC_TICK_MS = 15 * 60_000;
 let automaticSyncRunning = false;
 async function runAutomaticSync() {
   if (!openBanking.enabled || !openBanking.automaticSyncEnabled || automaticSyncRunning) return;

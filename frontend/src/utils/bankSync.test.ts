@@ -37,4 +37,10 @@ describe("bank sync status", () => {
     expect(isBankSyncSuccessful(partial)).toBe(true);
     expect(bankSyncResultMessage(partial, t)).toContain("Sincronização parcial");
   });
+
+  it("explains when the bank rate limit stopped a partial sync", () => {
+    const partial = job("partial", "PROVIDER_PROVIDER_RATE_LIMITED");
+
+    expect(bankSyncResultMessage(partial, t)).toContain("tente após a espera indicada");
+  });
 });

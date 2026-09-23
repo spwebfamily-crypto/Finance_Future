@@ -22,11 +22,13 @@ const errorRecoveryHint =
 export function BankSyncStatus({
   status,
   lastSyncedAt,
+  nextSyncAt,
   errorCode,
   compact = false,
 }: {
   status: BankConnectionStatus;
   lastSyncedAt?: string | null;
+  nextSyncAt?: string | null;
   errorCode?: string | null;
   compact?: boolean;
 }) {
@@ -46,11 +48,20 @@ export function BankSyncStatus({
     <p className={`bank-status bank-status--${status}`}>
       {icon}
       <span>{t(labels[status])}</span>
-      {status === "error" && !compact && (
+      {status === "error" && !compact && errorCode !== "PROVIDER_PROVIDER_RATE_LIMITED" && (
         <>
           <small>{t(errorRecoveryHint)}</small>
           {errorCode && <small>{t("Código de diagnóstico: {code}", { code: errorCode })}</small>}
         </>
+      )}
+      {!compact && errorCode === "PROVIDER_PROVIDER_RATE_LIMITED" && (
+        <small>
+          {t("O banco limitou as atualizações. Poderá tentar após {date}.", {
+            date: nextSyncAt
+              ? formatDate(nextSyncAt, { dateStyle: "short", timeStyle: "short" })
+              : t("a próxima sincronização agendada"),
+          })}
+        </small>
       )}
       {!compact && lastSyncedAt && (
         <small>

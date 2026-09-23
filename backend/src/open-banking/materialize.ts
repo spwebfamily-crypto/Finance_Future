@@ -207,6 +207,7 @@ export async function materializeBookedTransactions(
   userId: string,
   linkId?: string,
   categoryByTransactionId: ReadonlyMap<string, string> = new Map(),
+  transactionId?: string,
 ): Promise<MaterializationCounters> {
   const counters: MaterializationCounters = {
     expensesCreated: 0,
@@ -220,6 +221,7 @@ export async function materializeBookedTransactions(
   const transactions = await prisma.bankTransaction.findMany({
     where: {
       userId,
+      ...(transactionId ? { id: transactionId } : {}),
       status: { in: [...MATERIALIZABLE_STATUSES] },
       ...(linkId ? { bankAccountLinkId: linkId } : {}),
     },

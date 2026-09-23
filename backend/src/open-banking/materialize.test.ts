@@ -188,6 +188,41 @@ describe("materialization", () => {
     expect(stored!.classification).toBe("expense");
   });
 
+  it("materializes each confirmed transaction directly without duplicating expenses", async () => {
+    const category = await seedCategory();
+    const { link } = await seedBankAccount({ displayName: "Conta", hash: "hash-many" });
+    const transactions = await Promise.all(
+      Array.from({ length: 11 }, (_, index) =>
+        seedTransaction(link.id as string, {
+          direction: "debit",
+          amount: "5.00",
+          description: `Compra ${index + 1}`,
+          classification: "expense",
+        }),
+      ),
+    );
+
+    for (const transaction of transactions) {
+      await materializeBookedTransactions(
+        userId,
+        link.id as string,
+        new Map([[transaction.id as string, category.id as string]]),
+        transaction.id as string,
+      );
+    }
+
+    expect(await prisma.expense.count({ where: { userId } })).toBe(11);
+    for (const transaction of transactions) {
+      await materializeBookedTransactions(
+        userId,
+        link.id as string,
+        new Map([[transaction.id as string, category.id as string]]),
+        transaction.id as string,
+      );
+    }
+    expect(await prisma.expense.count({ where: { userId } })).toBe(11);
+  });
+
   it("uses the category selected during the first expense confirmation", async () => {
     await seedCategory();
     const food = await prisma.category.create({

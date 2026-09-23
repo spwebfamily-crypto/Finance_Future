@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Plus } from "lucide-react";
 import { BankConnectionCard } from "../components/BankConnectionCard";
@@ -14,7 +14,7 @@ import { useI18n } from "../i18n/I18nContext";
 import { bankConnectionOutcomeMessage } from "../utils/bankConnectionOutcome";
 import { bankSyncResultMessage, isBankSyncPending, isBankSyncSuccessful } from "../utils/bankSync";
 
-const POLL_INTERVAL_MS = 3_000;
+const POLL_INTERVAL_MS = 10_000;
 
 export function BankConnectionsPage() {
   const { t } = useI18n();
@@ -36,6 +36,7 @@ export function BankConnectionsPage() {
   const [pendingJobs, setPendingJobs] = useState<
     Array<{ connectionId: string; jobId: string; pollFailures?: number }>
   >([]);
+  const hasPolledJobsRef = useRef(false);
 
   useEffect(() => {
     const outcome = searchParams.get("bankConnection");
@@ -93,17 +94,33 @@ export function BankConnectionsPage() {
 
   // Acompanha os jobs em curso sem bloquear a interface.
   useEffect(() => {
-    if (!pendingJobs.length) return;
+    if (!pendingJobs.length) {
+      hasPolledJobsRef.current = false;
+      return;
+    }
     let cancelled = false;
     const poll = async () => {
-      const remaining: typeof pendingJobs = [];
-      let hasFinishedJob = false;
-      for (const job of pendingJobs) {
-        try {
-          const status: BankSyncJob = await openBankingApi.syncJob(job.jobId);
+      try {
+        const statuses = await openBankingApi.syncJobs(pendingJobs.map((job) => job.jobId));
+        if (cancelled) return;
+        const byId = new Map(statuses.map((status) => [status.id, status]));
+        const remaining: typeof pendingJobs = [];
+        let hasFinishedJob = false;
+        for (const job of pendingJobs) {
+          const status: BankSyncJob | undefined = byId.get(job.jobId);
+          if (!status) {
+            const pollFailures = (job.pollFailures ?? 0) + 1;
+            if (pollFailures < 4) remaining.push({ ...job, pollFailures });
+            else {
+              setError(
+                t("Não foi possível consultar o estado da sincronização. Atualize a página."),
+              );
+            }
+            continue;
+          }
           if (isBankSyncPending(status)) {
             remaining.push({ ...job, pollFailures: 0 });
-          } else if (!cancelled) {
+          } else {
             hasFinishedJob = true;
             if (isBankSyncSuccessful(status)) {
               notifyBankSyncCompleted(job.connectionId);
@@ -112,21 +129,29 @@ export function BankConnectionsPage() {
               setError(bankSyncResultMessage(status, t));
             }
           }
-        } catch (requestError) {
-          const pollFailures = (job.pollFailures ?? 0) + 1;
-          if (pollFailures < 4) remaining.push({ ...job, pollFailures });
-          else if (!cancelled) setError(errorMessage(requestError));
+        }
+        setPendingJobs(remaining);
+        if (remaining.length || hasFinishedJob) {
+          // Atualiza saldos e ligações sem substituir a página por um skeleton.
+          void load(false, false);
+        }
+      } catch (requestError) {
+        if (!cancelled) {
+          setPendingJobs((jobs) =>
+            jobs.flatMap((job) => {
+              const pollFailures = (job.pollFailures ?? 0) + 1;
+              return pollFailures < 4 ? [{ ...job, pollFailures }] : [];
+            }),
+          );
+          if (pendingJobs.every((job) => (job.pollFailures ?? 0) >= 3)) {
+            setError(errorMessage(requestError));
+          }
         }
       }
-      if (cancelled) return;
-      setPendingJobs(remaining);
-      if (remaining.length || hasFinishedJob) {
-        // Atualiza os saldos e o estado da ligação sem substituir a página por
-        // um skeleton a cada ciclo de polling.
-        void load(false, false);
-      }
     };
-    const timer = window.setTimeout(poll, POLL_INTERVAL_MS);
+    const delay = hasPolledJobsRef.current ? POLL_INTERVAL_MS : 0;
+    hasPolledJobsRef.current = true;
+    const timer = window.setTimeout(poll, delay);
     return () => {
       cancelled = true;
       window.clearTimeout(timer);

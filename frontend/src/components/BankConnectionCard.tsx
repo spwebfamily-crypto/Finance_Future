@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { BankLogo } from "./BankLogo";
 import { BankSyncStatus } from "./BankSyncStatus";
@@ -28,6 +29,17 @@ export function BankConnectionCard({
   // Um erro não significa necessariamente que o consentimento deixou de ser
   // válido. Primeiro permite-se repetir a leitura usando a mesma sessão.
   const canSync = connection.status === "active" || connection.status === "error";
+  const retryAt =
+    connection.error?.code === "PROVIDER_PROVIDER_RATE_LIMITED" ? connection.nextSyncAt : null;
+  const [expiredRetryAt, setExpiredRetryAt] = useState<string | null>(null);
+  const cooldownActive = Boolean(retryAt && expiredRetryAt !== retryAt);
+
+  useEffect(() => {
+    if (!retryAt) return;
+    const remaining = new Date(retryAt).getTime() - Date.now();
+    const timer = window.setTimeout(() => setExpiredRetryAt(retryAt), Math.max(0, remaining));
+    return () => window.clearTimeout(timer);
+  }, [retryAt]);
 
   return (
     <article className="bank-connection-card">
@@ -46,6 +58,7 @@ export function BankConnectionCard({
       <BankSyncStatus
         status={connection.status}
         lastSyncedAt={connection.lastSyncedAt}
+        nextSyncAt={connection.nextSyncAt}
         errorCode={connection.error?.code}
       />
 
@@ -63,7 +76,7 @@ export function BankConnectionCard({
             type="button"
             className="button button--accent"
             onClick={() => onReauthorize(connection)}
-            disabled={busy}
+            disabled={busy || cooldownActive}
           >
             {t("Renovar acesso")}
           </button>
@@ -75,8 +88,23 @@ export function BankConnectionCard({
             onClick={() => onSync(connection)}
             disabled={busy}
           >
-            {busy ? <Spinner label={t("A sincronizar")} /> : <RefreshCw aria-hidden="true" />}
-            <span>{t(connection.status === "error" ? "Tentar novamente" : "Sincronizar")}</span>
+            {busy || cooldownActive ? (
+              <Spinner label={t(busy ? "A sincronizar" : "Aguardar limite do banco")} />
+            ) : (
+              <RefreshCw aria-hidden="true" />
+            )}
+            <span>
+              {t(
+                cooldownActive
+                  ? "Disponível após {date}"
+                  : connection.status === "error"
+                    ? "Tentar novamente"
+                    : "Sincronizar",
+                cooldownActive && retryAt
+                  ? { date: formatDate(retryAt, { dateStyle: "short", timeStyle: "short" }) }
+                  : undefined,
+              )}
+            </span>
           </button>
         )}
         <button
