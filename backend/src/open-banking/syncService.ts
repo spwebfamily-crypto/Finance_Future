@@ -624,6 +624,9 @@ export async function runSyncJob(
       };
     }
     session = sessionResult;
+    if (session.accounts.length === 0) {
+      throw new ProviderError("provider_invalid_response");
+    }
 
     const consentExpired =
       session.consentExpiresAt && new Date(session.consentExpiresAt).getTime() <= Date.now();

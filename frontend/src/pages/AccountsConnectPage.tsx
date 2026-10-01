@@ -10,8 +10,6 @@ import { errorMessage } from "../api/client";
 import type { BankInstitution, PsuType } from "../types";
 import { useI18n } from "../i18n/I18nContext";
 
-const supportedCountries = ["PT", "ES", "GB", "FR", "DE", "IT"] as const;
-
 function useOnlineStatus() {
   const [isOnline, setIsOnline] = useState(
     () => typeof navigator === "undefined" || navigator.onLine,
@@ -34,6 +32,7 @@ export function AccountsConnectPage() {
   const navigate = useNavigate();
   const isOnline = useOnlineStatus();
   const [institutions, setInstitutions] = useState<BankInstitution[]>([]);
+  const [availableCountries, setAvailableCountries] = useState<string[]>([]);
   const [query, setQuery] = useState("");
   const [country, setCountry] = useState("");
   const [psuType, setPsuType] = useState<PsuType>("personal");
@@ -44,14 +43,12 @@ export function AccountsConnectPage() {
 
   const load = useCallback(async () => {
     setError("");
-    if (!country) {
-      setInstitutions([]);
-      setIsLoading(false);
-      return;
-    }
     setIsLoading(true);
     try {
-      const items = await openBankingApi.institutions(country, psuType);
+      const items = await openBankingApi.institutions("ALL", psuType);
+      const countries = [...new Set(items.map((item) => item.country))].sort();
+      setAvailableCountries(countries);
+      setCountry((current) => countries.includes(current) ? current : "");
       setInstitutions(items);
       setSelectedId((current) =>
         current && items.some((item) => item.id === current) ? current : null,
@@ -61,10 +58,9 @@ export function AccountsConnectPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [country, psuType]);
+  }, [psuType]);
 
   useEffect(() => {
-    if (!country) return;
     let active = true;
     queueMicrotask(() => {
       if (active) void load();
@@ -74,14 +70,18 @@ export function AccountsConnectPage() {
     };
   }, [load]);
 
+  const visibleInstitutions = useMemo(
+    () => institutions.filter((institution) => institution.country === country),
+    [institutions, country],
+  );
   const selected = useMemo(
-    () => institutions.find((institution) => institution.id === selectedId) ?? null,
-    [institutions, selectedId],
+    () => visibleInstitutions.find((institution) => institution.id === selectedId) ?? null,
+    [visibleInstitutions, selectedId],
   );
   const countryNames = useMemo(() => {
     const names = new Intl.DisplayNames(locale, { type: "region" });
-    return new Map(supportedCountries.map((code) => [code, names.of(code) ?? code]));
-  }, [locale]);
+    return new Map(availableCountries.map((code) => [code, names.of(code) ?? code]));
+  }, [locale, availableCountries]);
 
   async function continueInBank() {
     if (!selected) return;
@@ -92,7 +92,7 @@ export function AccountsConnectPage() {
         institutionId: selected.id,
         country,
         psuType,
-        returnPath: "/accounts",
+        returnPath: "/accounts/connections",
       });
       window.location.assign(authorization.authorizationUrl);
     } catch (requestError) {
@@ -177,7 +177,7 @@ export function AccountsConnectPage() {
                 }}
               >
                 <option value="">{t("Escolher")}</option>
-                {supportedCountries.map((code) => (
+                {availableCountries.map((code) => (
                   <option key={code} value={code}>
                     {countryNames.get(code)}
                   </option>
@@ -209,9 +209,9 @@ export function AccountsConnectPage() {
               <Landmark aria-hidden="true" />{" "}
               {t("Escolha primeiro o país para ver os bancos disponíveis.")}
             </p>
-          ) : institutions.length ? (
+          ) : visibleInstitutions.length ? (
             <InstitutionPicker
-              institutions={institutions}
+              institutions={visibleInstitutions}
               query={query}
               onQueryChange={setQuery}
               selectedId={selectedId}

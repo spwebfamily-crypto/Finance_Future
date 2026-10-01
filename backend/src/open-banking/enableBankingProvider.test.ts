@@ -88,14 +88,32 @@ describe("enable banking institutions", () => {
       },
     ]);
   });
+
+  it("caches institutions separately for each country and PSU type", async () => {
+    const { provider, calls } = stubRequest(({ options }) => ({
+      aspsps: [{
+        name: `Banco ${options.query?.country ?? "Todos"} ${options.query?.psu_type}`,
+        country: options.query?.country ?? "PT",
+        psu_types: [options.query?.psu_type],
+        maximum_consent_validity: 86_400,
+      }],
+    }));
+    await provider.listInstitutions({ country: "PT", psuType: "personal" });
+    await provider.listInstitutions({ country: "ES", psuType: "personal" });
+    await provider.listInstitutions({ country: "PT", psuType: "business" });
+    await provider.listInstitutions({ country: "PT", psuType: "personal" });
+    expect(calls).toHaveLength(3);
+  });
 });
 
 describe("enable banking authorization", () => {
   it("requests only account information and forwards the state", async () => {
-    const { provider, calls } = stubRequest(() => ({
-      url: "https://auth.enablebanking.com/ais/start?sessionid=abc",
-      authorization_id: "73100c65-c54d-46a1-87d1-aa3effde435a",
-    }));
+    const { provider, calls } = stubRequest(({ path }) =>
+      path === "/aspsps" ? aspspResponse : {
+        url: "https://auth.enablebanking.com/ais/start?sessionid=abc",
+        authorization_id: "73100c65-c54d-46a1-87d1-aa3effde435a",
+      },
+    );
 
     const result = await provider.startAuthorization({
       institutionId: "PT|Banco Demo",
@@ -105,20 +123,25 @@ describe("enable banking authorization", () => {
       redirectUrl: "http://localhost:3000/api/open-banking/callback",
     });
 
-    const body = calls[0]?.options.body as Record<string, unknown>;
-    expect(calls[0]?.path).toBe("/auth");
+    const body = calls[1]?.options.body as Record<string, unknown>;
+    expect(calls[1]?.path).toBe("/auth");
     expect(body.state).toBe("state-aleatorio");
     expect(body.redirect_url).toBe("http://localhost:3000/api/open-banking/callback");
     expect(body.psu_type).toBe("personal");
     expect(body.aspsp).toEqual({ name: "Banco Demo", country: "PT" });
     expect((body.access as Record<string, unknown>).balances).toBe(true);
     expect((body.access as Record<string, unknown>).transactions).toBe(true);
+    const validityMs = Date.parse((body.access as Record<string, string>).valid_until) - Date.now();
+    expect(validityMs).toBeGreaterThan(89 * 86_400_000);
+    expect(validityMs).toBeLessThan(90 * 86_400_000);
     expect(result.providerAuthorizationId).toBe("73100c65-c54d-46a1-87d1-aa3effde435a");
     expect(result.authorizationUrl).toContain("auth.enablebanking.com");
   });
 
   it("rejects an authorization URL outside the provider domain", async () => {
-    const { provider } = stubRequest(() => ({ url: "https://phishing.example.com/ais/start" }));
+    const { provider } = stubRequest(({ path }) =>
+      path === "/aspsps" ? aspspResponse : { url: "https://phishing.example.com/ais/start" },
+    );
     await expect(
       provider.startAuthorization({
         institutionId: "PT|Banco Demo",
@@ -128,6 +151,25 @@ describe("enable banking authorization", () => {
         redirectUrl: "http://localhost:3000/api/open-banking/callback",
       }),
     ).rejects.toMatchObject({ code: "provider_invalid_response" });
+  });
+
+  it("uses the bank-specific consent limit when it is shorter than 90 days", async () => {
+    const { provider, calls } = stubRequest(({ path }) =>
+      path === "/aspsps"
+        ? { aspsps: [{ ...aspspResponse.aspsps[0], maximum_consent_validity: 86_400 }] }
+        : { url: "https://auth.enablebanking.com/ais/start?sessionid=short" },
+    );
+    await provider.startAuthorization({
+      institutionId: "PT|Banco Demo",
+      country: "PT",
+      psuType: "personal",
+      state: "state-curto",
+      redirectUrl: "http://localhost:3000/api/open-banking/callback",
+    });
+    const body = calls[1]?.options.body as { access: { valid_until: string } };
+    const validitySeconds = (Date.parse(body.access.valid_until) - Date.now()) / 1_000;
+    expect(validitySeconds).toBeGreaterThan(86_000);
+    expect(validitySeconds).toBeLessThan(86_400);
   });
 
   it("exchanges the authorization code for a session and masks the IBAN", async () => {
@@ -201,6 +243,32 @@ describe("enable banking authorization", () => {
       "/sessions/sess-1",
       `/accounts/${account.uid}/details`,
     ]);
+  });
+
+  it("recovers account IDs when a session omits accounts_data", async () => {
+    const { provider } = stubRequest(({ path }) => {
+      if (path === "/sessions/sess-1") {
+        return {
+          status: "AUTHORIZED",
+          aspsp: { name: "Banco Demo", country: "PT" },
+          accounts: [account.uid],
+        };
+      }
+      if (path === `/accounts/${account.uid}/details`) return account;
+      throw new Error(`Unexpected path: ${path}`);
+    });
+    const session = await provider.getSession("sess-1");
+    expect(session.accounts).toHaveLength(1);
+  });
+
+  it("surfaces the provider error when no authorized account details can be read", async () => {
+    const { provider } = stubRequest(({ path }) => {
+      if (path === "/sessions/sess-1") {
+        return { status: "AUTHORIZED", accounts_data: [{ uid: account.uid }] };
+      }
+      throw new Error("account details unavailable");
+    });
+    await expect(provider.getSession("sess-1")).rejects.toThrow("account details unavailable");
   });
 });
 

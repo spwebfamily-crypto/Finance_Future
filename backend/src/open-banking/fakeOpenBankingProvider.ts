@@ -218,7 +218,7 @@ export class FakeOpenBankingProvider implements OpenBankingProvider {
   async listInstitutions(input: ListInstitutionsInput): Promise<Institution[]> {
     return institutions.filter(
       (institution) =>
-        institution.country === input.country &&
+        (!input.country || institution.country === input.country) &&
         (input.psuType === "personal"
           ? institution.supportsPersonal
           : institution.supportsBusiness),

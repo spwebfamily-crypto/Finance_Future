@@ -22,6 +22,7 @@ import { CommandPaletteProvider, CommandPaletteTrigger } from "../components/Com
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { EmailVerificationBanner } from "../components/EmailVerificationBanner";
 import { DailyBankReviewModal } from "../components/DailyBankReviewModal";
+import { BankEntrySync } from "../components/BankEntrySync";
 import { NotificationCenter } from "../components/NotificationCenter";
 import { LanguageSwitcher, useI18n } from "../i18n/I18nContext";
 import {
@@ -460,6 +461,7 @@ export function AppShell() {
             </div>
           )}
           <EmailVerificationBanner />
+          <BankEntrySync offline={isOffline} />
           <AnimatePresence mode="popLayout" initial={false}>
             <motion.div
               className="route-stage"

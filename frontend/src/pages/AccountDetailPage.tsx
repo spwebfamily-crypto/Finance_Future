@@ -8,6 +8,7 @@ import { NoticeToast } from "../components/NoticeToast";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { PageHeader } from "../components/PageHeader";
 import { accountApi, categoryApi, openBankingApi } from "../api/resources";
+import { BANK_SYNC_COMPLETED_EVENT } from "../api/bank-sync-events";
 import { errorMessage } from "../api/client";
 import type {
   BankTransaction,
@@ -109,6 +110,12 @@ export function AccountDetailPage() {
     return () => {
       active = false;
     };
+  }, [load]);
+
+  useEffect(() => {
+    const refresh = () => void load();
+    window.addEventListener(BANK_SYNC_COMPLETED_EVENT, refresh);
+    return () => window.removeEventListener(BANK_SYNC_COMPLETED_EVENT, refresh);
   }, [load]);
 
   const currency = useMemo(() => account?.currency ?? "EUR", [account]);

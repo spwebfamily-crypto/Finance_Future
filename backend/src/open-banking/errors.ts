@@ -25,6 +25,8 @@ export const bankErrorMessages = {
   BANK_ONLINE_CONTEXT_UNAVAILABLE:
     "Não foi possível validar os dados desta sessão para atualizar o banco. Tente novamente mais tarde.",
   BANK_PROVIDER_INVALID_RESPONSE: "O banco devolveu uma resposta inesperada.",
+  BANK_NO_ACCOUNTS_AUTHORIZED:
+    "O banco não disponibilizou contas nesta autorização. Selecione as contas no banco e tente novamente.",
   BANK_LINKED_BALANCE_READ_ONLY:
     "O saldo de uma conta ligada ao banco não pode ser corrigido à mão.",
   BANK_LINKED_ACCOUNT_REQUIRES_DISCONNECT: "Desligue o banco antes de remover esta conta.",

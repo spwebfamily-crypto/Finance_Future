@@ -30,6 +30,7 @@ import {
 } from "recharts";
 import { Link } from "react-router-dom";
 import { accountApi, analyticsApi, budgetApi, categoryApi, dashboardApi } from "../api/resources";
+import { BANK_SYNC_COMPLETED_EVENT } from "../api/bank-sync-events";
 import { errorMessage } from "../api/client";
 import { EmptyState, ErrorState, Spinner } from "../components/States";
 import { PageHeader } from "../components/PageHeader";
@@ -206,6 +207,12 @@ export function DashboardPage() {
     return () => {
       active = false;
     };
+  }, [load]);
+
+  useEffect(() => {
+    const refresh = () => void load();
+    window.addEventListener(BANK_SYNC_COMPLETED_EVENT, refresh);
+    return () => window.removeEventListener(BANK_SYNC_COMPLETED_EVENT, refresh);
   }, [load]);
 
   const currency = summary?.currency || "EUR";

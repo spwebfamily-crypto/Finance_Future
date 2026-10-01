@@ -6,9 +6,8 @@ import {
   RiskTolerance,
 } from "@prisma/client";
 import { z } from "zod";
-import { OPEN_BANKING_COUNTRIES, OPEN_BANKING_RETURN_PATHS } from "./open-banking/config.js";
+import { OPEN_BANKING_RETURN_PATHS } from "./open-banking/config.js";
 
-const openBankingCountries = OPEN_BANKING_COUNTRIES;
 const openBankingReturnPaths = OPEN_BANKING_RETURN_PATHS;
 
 const dateOnly = /^\d{4}-\d{2}-\d{2}$/;
@@ -352,24 +351,16 @@ export const financialProfileUpsertSchema = z.object({
   riskTolerance: z.nativeEnum(RiskTolerance),
 });
 
+const openBankingCountry = z.string().trim().toUpperCase().regex(/^[A-Z]{2}$/);
+
 export const openBankingInstitutionsSchema = z.object({
-  country: z
-    .string()
-    .trim()
-    .length(2)
-    .transform((value) => value.toUpperCase())
-    .default("PT")
-    .refine(
-      (value): value is (typeof openBankingCountries)[number] =>
-        (openBankingCountries as readonly string[]).includes(value),
-      "País fora da allowlist de Open Banking.",
-    ),
+  country: z.union([openBankingCountry, z.literal("ALL")]).default("PT"),
   psuType: z.enum(["personal", "business"]).default("personal"),
 });
 
 export const openBankingAuthorizationSchema = z.object({
   institutionId: z.string().trim().min(1).max(160),
-  country: openBankingInstitutionsSchema.shape.country,
+  country: openBankingCountry,
   psuType: z.enum(["personal", "business"]).default("personal"),
   returnPath: z
     .string()
@@ -384,7 +375,7 @@ export const openBankingAuthorizationSchema = z.object({
 });
 
 export const openBankingReauthorizeSchema = z.object({
-  country: openBankingInstitutionsSchema.shape.country,
+  country: openBankingCountry,
   psuType: z.enum(["personal", "business"]).default("personal"),
   returnPath: openBankingAuthorizationSchema.shape.returnPath,
 });

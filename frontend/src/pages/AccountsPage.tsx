@@ -11,6 +11,7 @@ import {
   WalletCards,
 } from "lucide-react";
 import { accountApi } from "../api/resources";
+import { BANK_SYNC_COMPLETED_EVENT } from "../api/bank-sync-events";
 import { errorMessage } from "../api/client";
 import { BalanceCorrectionDialog } from "../components/BalanceCorrectionDialog";
 import { ConfirmDialog } from "../components/ConfirmDialog";
@@ -125,6 +126,12 @@ export function AccountsPage() {
     return () => {
       active = false;
     };
+  }, [load]);
+
+  useEffect(() => {
+    const refresh = () => void load(false);
+    window.addEventListener(BANK_SYNC_COMPLETED_EVENT, refresh);
+    return () => window.removeEventListener(BANK_SYNC_COMPLETED_EVENT, refresh);
   }, [load]);
 
   const currency = user?.currency || "EUR";

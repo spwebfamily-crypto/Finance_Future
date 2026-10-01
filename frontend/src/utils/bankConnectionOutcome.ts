@@ -5,6 +5,7 @@ const errorMessages: Record<string, string> = {
   provider_unavailable: "O serviço do banco está temporariamente indisponível. Tente novamente.",
   institution_unavailable: "Este banco já não está disponível para ligação neste momento.",
   invalid_state: "Não foi possível validar esta autorização. Inicie novamente a ligação.",
+  no_accounts: "O banco não disponibilizou nenhuma conta nesta autorização. Confirme que selecionou contas no banco e tente novamente.",
   replayed: "Esta autorização já foi utilizada. Inicie uma nova ligação ao banco.",
 };
 

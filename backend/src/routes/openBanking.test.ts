@@ -237,6 +237,15 @@ describe("open banking institutions, authorization and callback", () => {
     expect(body.data.map((item: { name: string }) => item.name)).toContain("Banco Demonstração");
   });
 
+  it("returns all provider institutions when the country filter is ALL", async () => {
+    const response = await fetch(`${baseUrl}/api/open-banking/institutions?country=ALL`, {
+      headers: { Authorization: authorization() },
+    });
+    const body = await response.json();
+    expect(response.status).toBe(200);
+    expect(body.data).toHaveLength(2);
+  });
+
   it("requires authentication on the authenticated routes", async () => {
     const institutions = await fetch(`${baseUrl}/api/open-banking/institutions`);
     expect(institutions.status).toBe(401);
@@ -249,14 +258,14 @@ describe("open banking institutions, authorization and callback", () => {
     expect(authorizations.status).toBe(401);
   });
 
-  it("rejects a country outside the allowlist", async () => {
+  it("allows any ISO country and returns only institutions offered by the provider", async () => {
     const response = await fetch(`${baseUrl}/api/open-banking/institutions?country=ZZ`, {
       headers: { Authorization: authorization() },
     });
     const body = await response.json();
 
-    expect(response.status).toBe(400);
-    expect(body.error.code).toBe("VALIDATION_ERROR");
+    expect(response.status).toBe(200);
+    expect(body.data).toEqual([]);
   });
 
   it("rejects an institution that the provider does not offer", async () => {
@@ -339,9 +348,25 @@ describe("open banking institutions, authorization and callback", () => {
     });
 
     expect(callback.status).toBe(303);
-    expect(callback.headers.get("location")).toBe(
-      "http://localhost:5173/accounts?bankConnection=success",
-    );
+    const redirect = new URL(callback.headers.get("location")!);
+    expect(`${redirect.origin}${redirect.pathname}`).toBe("http://localhost:5173/accounts");
+    expect(redirect.searchParams.get("bankConnection")).toBe("success");
+    expect(redirect.searchParams.get("connectionId")).toBe(repositories.connections[0]?.id);
+    expect(redirect.searchParams.get("jobId")).toBe(repositories.jobs[0]?.id);
+  });
+
+  it("reports a consent with no accessible accounts without creating an empty connection", async () => {
+    const { body } = await startAuthorization("/accounts/connections");
+    const pending = [...fakeOpenBankingStore.authorizations.values()][0];
+    pending.seed.accounts = [];
+    const bankRedirect = await fetch(localize(body.data.authorizationUrl), { redirect: "manual" });
+    const callback = await fetch(localize(bankRedirect.headers.get("location")!), {
+      redirect: "manual",
+    });
+    const redirect = new URL(callback.headers.get("location")!);
+    expect(redirect.searchParams.get("bankConnection")).toBe("error");
+    expect(redirect.searchParams.get("reason")).toBe("no_accounts");
+    expect(repositories.connections).toHaveLength(0);
   });
 
   it("reuses a disconnected connection for the same provider account", async () => {

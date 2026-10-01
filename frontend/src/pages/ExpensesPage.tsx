@@ -18,6 +18,7 @@ import {
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { errorMessage } from "../api/client";
 import { accountApi, categoryApi, expenseApi } from "../api/resources";
+import { BANK_SYNC_COMPLETED_EVENT } from "../api/bank-sync-events";
 import { useAuth } from "../auth/AuthContext";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { CategoryIcon } from "../components/CategoryIcon";
@@ -165,6 +166,12 @@ export function ExpensesPage() {
     return () => {
       active = false;
     };
+  }, [loadData]);
+
+  useEffect(() => {
+    const refresh = () => void loadData();
+    window.addEventListener(BANK_SYNC_COMPLETED_EVENT, refresh);
+    return () => window.removeEventListener(BANK_SYNC_COMPLETED_EVENT, refresh);
   }, [loadData]);
 
   useEffect(() => {

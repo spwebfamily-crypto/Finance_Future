@@ -19,7 +19,7 @@ export function BankConsentNotice({ institutionName }: { institutionName?: strin
           })}
         </li>
         <li>{t("Transformar cada gasto contabilizado numa despesa da aplicação.")}</li>
-        <li>{t("Renovar o consentimento quando o banco o pedir (em regra a cada 90 dias).")}</li>
+        <li>{t("Renovar o consentimento quando o prazo definido pelo banco terminar.")}</li>
       </ul>
       <p className="consent-notice__security">
         {t(

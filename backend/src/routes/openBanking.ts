@@ -102,7 +102,7 @@ function isSecureRequest(request: Request) {
   return request.secure || protocol?.split(",")[0]?.trim() === "https";
 }
 
-function onlinePsuHeaders(request: AuthenticatedRequest): PsuRequestHeaders {
+function onlinePsuHeaders(request: Request): PsuRequestHeaders {
   const ipAddress = request.ip?.trim() ?? "";
   const userAgent = request.get("user-agent")?.trim().slice(0, 512) ?? "";
   if (
@@ -126,6 +126,7 @@ const callbackReasons: Record<string, string> = {
   BANK_PROVIDER_UNAVAILABLE: "provider_unavailable",
   BANK_PROVIDER_RATE_LIMITED: "rate_limited",
   BANK_PROVIDER_INVALID_RESPONSE: "provider_error",
+  BANK_NO_ACCOUNTS_AUTHORIZED: "no_accounts",
 };
 
 function redirectToFrontend(
@@ -133,10 +134,15 @@ function redirectToFrontend(
   returnPath: string,
   outcome: "success" | "error",
   reason = "unexpected_error",
+  job?: { connectionId: string; jobId: string },
 ) {
   const url = new URL(buildFrontendRedirectUrl(returnPath));
   url.searchParams.set("bankConnection", outcome);
   if (outcome === "error") url.searchParams.set("reason", reason);
+  if (outcome === "success" && job) {
+    url.searchParams.set("connectionId", job.connectionId);
+    url.searchParams.set("jobId", job.jobId);
+  }
   response.set("Cache-Control", "no-store");
   response.set("Referrer-Policy", "no-referrer");
   return response.redirect(303, url.toString());
@@ -171,7 +177,7 @@ router.get(
       const filters = openBankingInstitutionsSchema.parse(request.query);
       const provider = createOpenBankingProvider();
       const institutions = await provider.listInstitutions({
-        country: filters.country,
+        country: filters.country === "ALL" ? "" : filters.country,
         psuType: filters.psuType,
       });
       return response.json({ data: institutions });
@@ -242,6 +248,9 @@ router.get("/callback", callbackLimiter, async (request, response, next) => {
 
     const provider = createOpenBankingProvider();
     const session = await provider.exchangeAuthorizationCode(query.code);
+    if (session.accounts.length === 0) {
+      throw bankError(422, "BANK_NO_ACCOUNTS_AUTHORIZED");
+    }
 
     let connectionId = attempt.connectionId;
     if (connectionId) {
@@ -263,9 +272,15 @@ router.get("/callback", callbackLimiter, async (request, response, next) => {
 
     // A primeira sincronização arranca de imediato, fora do pedido: o
     // utilizador é reencaminhado sem esperar pelo banco.
-    void processSyncJob(job.id).catch(() => undefined);
+    let psuHeaders: PsuRequestHeaders | undefined;
+    try {
+      psuHeaders = onlinePsuHeaders(request);
+    } catch {
+      // O banco pode aceitar a leitura sem contexto PSU; a falha será visível no job.
+    }
+    void processSyncJob(job.id, psuHeaders).catch(() => undefined);
 
-    return redirectToFrontend(response, returnPath, "success");
+    return redirectToFrontend(response, returnPath, "success", "", { connectionId, jobId: job.id });
   } catch (error) {
     if (error instanceof ProviderError || errorCodeOf(error)) {
       const code = errorCodeOf(error) ?? "BANK_PROVIDER_INVALID_RESPONSE";

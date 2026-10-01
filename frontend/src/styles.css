@@ -1139,6 +1139,21 @@ h3 {
   color: var(--ink-soft);
 }
 
+.bank-sync-banner--syncing,
+.bank-sync-banner--success {
+  color: var(--ink-strong);
+  background: var(--surface);
+  border-bottom-color: var(--line);
+}
+
+.bank-sync-banner--syncing > svg {
+  animation: bank-sync-spin 1.2s linear infinite;
+}
+
+@keyframes bank-sync-spin {
+  to { transform: rotate(360deg); }
+}
+
 @media (max-width: 35rem) {
   .bank-sync-banner {
     grid-template-columns: auto minmax(0, 1fr) auto;

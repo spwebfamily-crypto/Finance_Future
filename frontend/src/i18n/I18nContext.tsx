@@ -134,6 +134,15 @@ const en = {
     "Turn each booked outgoing transaction into an app expense.",
   "Renovar o consentimento quando o banco o pedir (em regra a cada 90 dias).":
     "Renew consent when your bank requests it (usually every 90 days).",
+  "Renovar o consentimento quando o prazo definido pelo banco terminar.":
+    "Renew consent when the period set by your bank ends.",
+  "A sincronizar os bancos ligados…": "Syncing connected banks…",
+  "Bancos atualizados. Saldos e movimentos disponíveis.":
+    "Banks updated. Balances and transactions are available.",
+  "Uma ligação bancária não foi atualizada. Consulte o estado e tente novamente.":
+    "A bank connection could not be updated. Check its status and try again.",
+  "O banco não disponibilizou nenhuma conta nesta autorização. Confirme que selecionou contas no banco e tente novamente.":
+    "The bank did not provide any accounts with this authorization. Select accounts at your bank and try again.",
   "Renovar acesso": "Renew access",
   Desligar: "Disconnect",
   "A sincronizar": "Syncing",
@@ -510,6 +519,15 @@ const es = {
     "Convertir cada cargo contabilizado en un gasto de la aplicación.",
   "Renovar o consentimento quando o banco o pedir (em regra a cada 90 dias).":
     "Renovar el consentimiento cuando el banco lo solicite (normalmente cada 90 días).",
+  "Renovar o consentimento quando o prazo definido pelo banco terminar.":
+    "Renueva el consentimiento cuando termine el plazo establecido por el banco.",
+  "A sincronizar os bancos ligados…": "Sincronizando los bancos conectados…",
+  "Bancos atualizados. Saldos e movimentos disponíveis.":
+    "Bancos actualizados. Saldos y movimientos disponibles.",
+  "Uma ligação bancária não foi atualizada. Consulte o estado e tente novamente.":
+    "No se pudo actualizar una conexión bancaria. Consulta su estado e inténtalo de nuevo.",
+  "O banco não disponibilizou nenhuma conta nesta autorização. Confirme que selecionou contas no banco e tente novamente.":
+    "El banco no proporcionó ninguna cuenta con esta autorización. Selecciona cuentas en el banco e inténtalo de nuevo.",
   "Renovar acesso": "Renovar acceso",
   Desligar: "Desconectar",
   "A sincronizar": "Sincronizando",

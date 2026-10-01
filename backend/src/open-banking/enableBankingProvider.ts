@@ -27,7 +27,7 @@ import type {
   AuthorizationResult,
 } from "./contracts.js";
 
-/** Consentimento pedido ao banco: 90 dias, abaixo do máximo anunciado de 180. */
+/** Prazo preferido, limitado pelo máximo anunciado por cada banco. */
 const CONSENT_VALIDITY_DAYS = 90;
 const MAX_ACCOUNTS_PER_SESSION = 25;
 const INSTITUTIONS_CACHE_MS = 60 * 60 * 1000;
@@ -63,6 +63,7 @@ interface RawSession {
   aspsp?: { name?: unknown; country?: unknown };
   psu_type?: unknown;
   access?: { valid_until?: unknown };
+  accounts?: unknown;
   accounts_data?: RawSessionAccount[];
 }
 
@@ -82,8 +83,11 @@ interface RawTransactions {
 
 type RawTransaction = Parameters<typeof mapTransaction>[0];
 
-function consentExpiry(now: Date, days = CONSENT_VALIDITY_DAYS) {
-  return new Date(now.getTime() + days * 24 * 60 * 60 * 1000).toISOString();
+function consentExpiry(now: Date, maximumSeconds: number | null) {
+  // A margem evita ultrapassar o limite do ASPSP entre o pedido ao catálogo e o /auth.
+  const requestedMs = CONSENT_VALIDITY_DAYS * 24 * 60 * 60 * 1000;
+  const bankLimitMs = maximumSeconds === null ? 24 * 60 * 60 * 1000 : maximumSeconds * 1000;
+  return new Date(now.getTime() + Math.min(requestedMs, Math.max(1_000, bankLimitMs - 60_000))).toISOString();
 }
 
 function requireHttps(value: unknown, allowedHosts: string[]): string {
@@ -105,7 +109,11 @@ export type EnableBankingRequestFn = typeof enableBankingRequest;
 export class EnableBankingProvider implements OpenBankingProvider {
   readonly name = "enable_banking" as const;
 
-  private institutionsCache: { expiresAt: number; items: Institution[] } | null = null;
+  private institutionsCache = new Map<string, {
+    expiresAt: number;
+    items: Institution[];
+    maximumConsentValidity: Map<string, number | null>;
+  }>();
 
   constructor(
     private readonly credentials: EnableBankingCredentials,
@@ -114,17 +122,31 @@ export class EnableBankingProvider implements OpenBankingProvider {
   ) {}
 
   async listInstitutions(input: ListInstitutionsInput): Promise<Institution[]> {
-    const cached = this.institutionsCache;
+    const cacheKey = `${input.country}|${input.psuType}`;
+    const cached = this.institutionsCache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) {
-      return cached.items.filter((item) => item.country === input.country);
+      return cached.items;
     }
 
     const response = await this.request<{ aspsps?: RawAspsp[] }>("/aspsps", {
       credentials: this.credentials,
-      query: { country: input.country, psu_type: input.psuType, service: "AIS" },
+      query: { country: input.country || null, psu_type: input.psuType, service: "AIS" },
     });
-    const items = (response.aspsps ?? []).map((aspsp) => this.toInstitution(aspsp));
-    this.institutionsCache = { expiresAt: Date.now() + INSTITUTIONS_CACHE_MS, items };
+    const aspsps = response.aspsps ?? [];
+    const items = aspsps.map((aspsp) => this.toInstitution(aspsp));
+    const maximumConsentValidity = new Map<string, number | null>();
+    aspsps.forEach((aspsp, index) => {
+      const maximum = Number(aspsp.maximum_consent_validity);
+      maximumConsentValidity.set(
+        items[index]!.id,
+        Number.isFinite(maximum) && maximum > 0 ? maximum : null,
+      );
+    });
+    this.institutionsCache.set(cacheKey, {
+      expiresAt: Date.now() + INSTITUTIONS_CACHE_MS,
+      items,
+      maximumConsentValidity,
+    });
     return items;
   }
 
@@ -146,6 +168,13 @@ export class EnableBankingProvider implements OpenBankingProvider {
     const [country, ...nameParts] = input.institutionId.split("|");
     const name = nameParts.join("|");
     if (!country || !name) throw new ProviderError("invalid_request");
+    const institutions = await this.listInstitutions({ country, psuType: input.psuType });
+    if (!institutions.some((institution) => institution.id === input.institutionId)) {
+      throw new ProviderError("invalid_request");
+    }
+    const maximumSeconds = this.institutionsCache
+      .get(`${country}|${input.psuType}`)
+      ?.maximumConsentValidity.get(input.institutionId) ?? null;
 
     const response = await this.request<{ url?: unknown; authorization_id?: unknown }>("/auth", {
       credentials: this.credentials,
@@ -154,7 +183,7 @@ export class EnableBankingProvider implements OpenBankingProvider {
         access: {
           balances: true,
           transactions: true,
-          valid_until: consentExpiry(new Date()),
+          valid_until: consentExpiry(new Date(), maximumSeconds),
         },
         aspsp: { name, country },
         state: input.state,
@@ -183,16 +212,29 @@ export class EnableBankingProvider implements OpenBankingProvider {
     const response = await this.request<RawSession>(`/sessions/${sessionId}`, {
       credentials: this.credentials,
     });
-    const accountsData = (response.accounts_data ?? []).slice(0, MAX_ACCOUNTS_PER_SESSION);
+    const accountsData = (response.accounts_data?.length
+      ? response.accounts_data
+      : Array.isArray(response.accounts)
+        ? response.accounts.map((uid): RawSessionAccount => ({ uid }))
+        : []).slice(0, MAX_ACCOUNTS_PER_SESSION);
     const accounts: RawAccount[] = [];
+    let firstAccountError: unknown = null;
     for (const entry of accountsData) {
       if (typeof entry?.uid !== "string") continue;
       try {
-        accounts.push(await this.getRawAccount(entry.uid, psuHeaders));
+        const details = await this.getRawAccount(entry.uid, psuHeaders);
+        accounts.push({
+          ...details,
+          identification_hash: details.identification_hash ?? entry.identification_hash,
+        });
       } catch (error) {
         if (error instanceof ProviderError && error.code === "provider_rate_limited") throw error;
+        firstAccountError ??= error;
         // Uma conta inacessível não impede a sincronização das restantes.
       }
+    }
+    if (accountsData.length > 0 && accounts.length === 0) {
+      throw firstAccountError ?? new ProviderError("provider_invalid_response");
     }
     // `GET /sessions/{session_id}` não devolve o próprio `session_id`; ele já
     // está no caminho do pedido. Mantê-lo como fallback evita rejeitar uma

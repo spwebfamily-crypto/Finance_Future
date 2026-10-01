@@ -67,6 +67,7 @@ describe("AccountsConnectPage", () => {
   }
 
   async function choosePortugal() {
+    await screen.findByRole("option", { name: "Portugal" });
     await userEvent.setup().selectOptions(screen.getByLabelText("País"), "PT");
   }
 
@@ -77,10 +78,21 @@ describe("AccountsConnectPage", () => {
     expect(screen.getByText("Outro Banco")).toBeInTheDocument();
   });
 
+  it("offers countries returned by the provider beyond the original fixed list", async () => {
+    api.institutions.mockResolvedValue([
+      ...institutions,
+      { ...institutions[0], id: "PL|Banco Exemplo", name: "Banco Exemplo", country: "PL" },
+    ]);
+    renderPage();
+    await screen.findByRole("option", { name: "Polónia" });
+    await userEvent.setup().selectOptions(screen.getByLabelText("País"), "PL");
+    expect(screen.getByText("Banco Exemplo")).toBeInTheDocument();
+    expect(api.institutions).toHaveBeenCalledWith("ALL", "personal");
+  });
+
   it("shows an error state with a retry when the list fails", async () => {
     api.institutions.mockRejectedValueOnce(new Error("indisponível"));
     renderPage();
-    await choosePortugal();
     expect(await screen.findByText("indisponível")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Tentar novamente" })).toBeInTheDocument();
   });
@@ -88,6 +100,7 @@ describe("AccountsConnectPage", () => {
   it("filters banks by name", async () => {
     const user = userEvent.setup();
     renderPage();
+    await screen.findByRole("option", { name: "Portugal" });
     await user.selectOptions(screen.getByLabelText("País"), "PT");
     await screen.findByText("Banco Demonstração");
 
@@ -100,6 +113,7 @@ describe("AccountsConnectPage", () => {
   it("requires a bank before continuing and then redirects to the bank", async () => {
     const user = userEvent.setup();
     renderPage();
+    await screen.findByRole("option", { name: "Portugal" });
     await user.selectOptions(screen.getByLabelText("País"), "PT");
     await screen.findByText("Banco Demonstração");
 
@@ -114,7 +128,7 @@ describe("AccountsConnectPage", () => {
         institutionId: "PT|Banco Demonstração",
         country: "PT",
         psuType: "personal",
-        returnPath: "/accounts",
+        returnPath: "/accounts/connections",
       }),
     );
     expect(assign).toHaveBeenCalledWith("https://banco.example/autorizar");

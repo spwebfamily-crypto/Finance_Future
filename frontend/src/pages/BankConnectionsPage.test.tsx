@@ -82,4 +82,17 @@ describe("BankConnectionsPage sync feedback", () => {
     expect(completed).not.toHaveBeenCalled();
     window.removeEventListener(BANK_SYNC_COMPLETED_EVENT, completed);
   });
+
+  it("tracks the initial job returned by the bank callback", async () => {
+    render(
+      <MemoryRouter initialEntries={["/accounts/connections?bankConnection=success&connectionId=connection-1&jobId=job-1"]}>
+        <BankConnectionsPage />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByRole("alert", {}, { timeout: 5_000 })).toHaveTextContent(
+      "temporariamente indisponível",
+    );
+    expect(api.sync).not.toHaveBeenCalled();
+    expect(api.syncJobs).toHaveBeenCalledWith(["job-1"]);
+  });
 });

@@ -7,7 +7,7 @@ import { ErrorState, LoadingState } from "../components/States";
 import { NoticeToast } from "../components/NoticeToast";
 import { PageHeader } from "../components/PageHeader";
 import { openBankingApi } from "../api/resources";
-import { notifyBankSyncCompleted } from "../api/bank-sync-events";
+import { BANK_SYNC_COMPLETED_EVENT, notifyBankSyncCompleted } from "../api/bank-sync-events";
 import { errorMessage } from "../api/client";
 import type { BankConnectionSummary, BankInstitution, BankRetention, BankSyncJob } from "../types";
 import { useI18n } from "../i18n/I18nContext";
@@ -35,7 +35,12 @@ export function BankConnectionsPage() {
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const [pendingJobs, setPendingJobs] = useState<
     Array<{ connectionId: string; jobId: string; pollFailures?: number }>
-  >([]);
+  >(() => {
+    if (searchParams.get("bankConnection") !== "success") return [];
+    const connectionId = searchParams.get("connectionId");
+    const jobId = searchParams.get("jobId");
+    return connectionId && jobId ? [{ connectionId, jobId, pollFailures: 0 }] : [];
+  });
   const hasPolledJobsRef = useRef(false);
 
   useEffect(() => {
@@ -44,6 +49,8 @@ export function BankConnectionsPage() {
     const nextParams = new URLSearchParams(searchParams);
     nextParams.delete("bankConnection");
     nextParams.delete("reason");
+    nextParams.delete("connectionId");
+    nextParams.delete("jobId");
     setSearchParams(nextParams, { replace: true });
   }, [searchParams, setSearchParams]);
 
@@ -90,6 +97,12 @@ export function BankConnectionsPage() {
     return () => {
       active = false;
     };
+  }, [load]);
+
+  useEffect(() => {
+    const refresh = () => void load(false, false);
+    window.addEventListener(BANK_SYNC_COMPLETED_EVENT, refresh);
+    return () => window.removeEventListener(BANK_SYNC_COMPLETED_EVENT, refresh);
   }, [load]);
 
   // Acompanha os jobs em curso sem bloquear a interface.
